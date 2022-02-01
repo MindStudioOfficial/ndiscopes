@@ -24,11 +24,17 @@ class NDI {
   ///
   /// Update this by calling [await updateSources()].
   Pointer<NDIlib_source_t>? _pSources;
+  NDIlib_find_instance_t? _pFind;
 
   /// The List of [NDISource] containing available NDI sources.
   ///
   /// Update this by calling [await updateSources()].
   List<NDISource> sources = [];
+
+  Pointer<NDIlib_source_t>? getSourceAt(int index) {
+    if (_pSources == null) return null;
+    return _pSources!.elementAt(index);
+  }
 
   /// Asynchronously update the [ndi.sources] list of NDI sources.
   ///
@@ -36,7 +42,8 @@ class NDI {
   Future<void> updateSoures() async {
     Completer completer = Completer();
     ReceivePort receivePort = ReceivePort();
-    await Isolate.spawn(_updateSourcePointer, _SMObject(receivePort.sendPort));
+    Isolate iso = await Isolate.spawn(
+        _updateSourcePointer, _SMObject(receivePort.sendPort, _pFind != null ? _pFind!.address : null));
     receivePort.listen(
       (data) {
         if (data is Map<String, int>) {
@@ -45,9 +52,11 @@ class NDI {
           _pSources = Pointer.fromAddress(data["pSources"]!).cast<NDIlib_source_t>();
           sources = [];
           for (int i = 0; i < sourceCount; i++) {
-            sources.add(NDISource(_pSources![i]));
-            completer.complete();
+            sources.add(NDISource(_pSources!.elementAt(i)));
           }
+          completer.complete();
+          receivePort.close();
+          iso.kill(priority: Isolate.immediate);
         }
       },
       onDone: () {
@@ -62,8 +71,13 @@ class NDI {
     Pointer<NDIlib_find_create_t> pCreateSettings = calloc.call<NDIlib_find_create_t>(1);
     pCreateSettings.ref.show_local_sources = 1;
 
-    NDIlib_find_instance_t pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
-    if (!_ndi.NDIlib_find_wait_for_sources(pNDIfind, 5000)) {
+    late NDIlib_find_instance_t pNDIfind;
+    if (object.pFindA == null) {
+      pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
+    } else {
+      pNDIfind = Pointer.fromAddress(object.pFindA!);
+    }
+    if (!_ndi.NDIlib_find_wait_for_sources(pNDIfind, 10000)) {
       calloc.free(pCreateSettings);
       return;
     }
@@ -90,7 +104,7 @@ class NDI {
     _fReceivePort!.listen(
       (data) {
         if (data is Map<String, int>) {
-          if (data["pRGBA"] == null || data["width"] == null || data["height"] == null) {
+          if (data["pRGBA"] != null && data["width"] != null && data["height"] != null) {
             Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]!);
             Uint8List pxs = pRGBA.asTypedList(data["width"]! * data["height"]! * 4);
 
@@ -118,8 +132,8 @@ class NDI {
 
   static void _getFrames(_FMObject object) {
     NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
-    Pointer<NDIlib_source_t> pSources = Pointer.fromAddress(object.pSourceA);
-    _ndi.NDIlib_recv_connect(pNDIrecv, pSources);
+    Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA);
+    _ndi.NDIlib_recv_connect(pNDIrecv, pSource);
 
     Pointer<NDIlib_video_frame_v2_t> pVideoFrame = calloc<NDIlib_video_frame_v2_t>();
     int width = 0;
@@ -154,7 +168,8 @@ class NDI {
 
 class _SMObject {
   SendPort sendPort;
-  _SMObject(this.sendPort);
+  int? pFindA;
+  _SMObject(this.sendPort, this.pFindA);
 }
 
 class _FMObject {
@@ -167,12 +182,12 @@ class _FMObject {
 ///
 /// Access a sources name with the [name] property.
 class NDISource {
-  NDIlib_source_t source;
+  Pointer<NDIlib_source_t> source;
   NDISource(this.source);
 
   /// Access the name of the given NDI source.
   String get name {
-    return source.p_ndi_name.cast<Utf8>().toDartString();
+    return source.ref.p_ndi_name.cast<Utf8>().toDartString();
   }
 
   @override

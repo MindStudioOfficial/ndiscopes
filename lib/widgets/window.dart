@@ -11,20 +11,30 @@ final bc = WindowButtonColors(
 );
 
 class WindowTitleBar extends StatelessWidget {
-  const WindowTitleBar({Key? key}) : super(key: key);
+  final String sourceName;
+  const WindowTitleBar({Key? key, required this.sourceName}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: MediaQuery.of(context).size.width,
       height: 32.0,
-      color: Colors.transparent,
+      color: const Color.fromARGB(255, 14, 14, 14),
       child: MoveWindow(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Container(),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    "NDI Scopes by MindStudio  -  $sourceName",
+                    style: TextStyle(color: Colors.white.withOpacity(.2)),
+                  ),
+                ),
+              ),
             ),
             MinimizeWindowButton(colors: bc),
             MaximizeWindowButton(colors: bc),
