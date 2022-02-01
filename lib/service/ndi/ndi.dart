@@ -1,13 +1,18 @@
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:isolate';
+import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:ndiscopes/bindings/ndi_ffi_bindigs.dart';
+import 'dart:ui' as ui;
+
+import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
 
 NDIffi _ndi = NDIffi(DynamicLibrary.open("bin/Processing.NDI.Lib.x64.dll"));
+PixconvertCUDA _pixconvertCUDA = PixconvertCUDA(DynamicLibrary.open("bin/pixconvert_cu.dll"));
 
 class NDI {
-  /// The class wrapping around the NDI FFI bindings.
+  /// A class wrapping around the NDI FFI bindings.
   NDI() {
     _ndi.NDIlib_v5_load();
     if (!_ndi.NDIlib_initialize()) {
@@ -73,11 +78,89 @@ class NDI {
     calloc.free(pCreateSettings);
     calloc.free(pSourceCount);
   }
+
+  ReceivePort? _fReceivePort;
+  Isolate? _fIsolate;
+
+  /// A stream yielding the NDI Frames converted to an ui.Image.
+  Future<void> getFrames(Pointer<NDIlib_source_t> source, Function(NDIFrame frame) onFrame) async {
+    final completer = Completer();
+    _fReceivePort = ReceivePort();
+    _fIsolate = await Isolate.spawn(_getFrames, _FMObject(source.address, _fReceivePort!.sendPort));
+    _fReceivePort!.listen(
+      (data) {
+        if (data is Map<String, int>) {
+          if (data["pRGBA"] == null || data["width"] == null || data["height"] == null) {
+            Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]!);
+            Uint8List pxs = pRGBA.asTypedList(data["width"]! * data["height"]! * 4);
+
+            ui.decodeImageFromPixels(pxs, data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (result) {
+              calloc.free(pRGBA);
+              onFrame(NDIFrame(iRGBA: result));
+            });
+          }
+        }
+      },
+      onDone: () {
+        completer.complete();
+      },
+    );
+    return completer.future;
+  }
+
+  void stopGetFrames() {
+    if (_fIsolate == null || _fReceivePort == null) return;
+    _fReceivePort!.close();
+    _fIsolate!.kill(priority: Isolate.immediate);
+    _fIsolate = null;
+    _fReceivePort = null;
+  }
+
+  static void _getFrames(_FMObject object) {
+    NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
+    Pointer<NDIlib_source_t> pSources = Pointer.fromAddress(object.pSourceA);
+    _ndi.NDIlib_recv_connect(pNDIrecv, pSources);
+
+    Pointer<NDIlib_video_frame_v2_t> pVideoFrame = calloc<NDIlib_video_frame_v2_t>();
+    int width = 0;
+    int height = 0;
+
+    int frame = -1;
+
+    while (true) {
+      frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
+      if (frame != NDIlib_frame_type_e.NDIlib_frame_type_video) continue;
+      width = pVideoFrame.ref.xres;
+      height = pVideoFrame.ref.yres;
+
+      Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
+
+      switch (pVideoFrame.ref.FourCC) {
+        case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY:
+          _pixconvertCUDA.uyvyToRGBA(width, height, pVideoFrame.ref.p_data, pRGBA);
+          break;
+        default:
+          print("unsupported format");
+      }
+      _ndi.NDIlib_recv_free_video_v2(pNDIrecv, pVideoFrame);
+      object.sendPort.send(<String, int>{
+        "width": width,
+        "height": height,
+        "pRGBA": pRGBA.address,
+      });
+    }
+  }
 }
 
 class _SMObject {
   SendPort sendPort;
   _SMObject(this.sendPort);
+}
+
+class _FMObject {
+  int pSourceA;
+  SendPort sendPort;
+  _FMObject(this.pSourceA, this.sendPort);
 }
 
 /// A class wrapping around the internal [NDIlib_source_t] type.
@@ -96,4 +179,9 @@ class NDISource {
   String toString() {
     return name;
   }
+}
+
+class NDIFrame {
+  ui.Image iRGBA;
+  NDIFrame({required this.iRGBA});
 }

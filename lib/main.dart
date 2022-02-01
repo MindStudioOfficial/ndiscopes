@@ -1,6 +1,7 @@
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
+import 'package:ndiscopes/widgets/player.dart';
 
 late NDI ndi;
 
@@ -15,23 +16,26 @@ void main() {
   });
 }
 
-class Main extends StatelessWidget {
+class Main extends StatefulWidget {
   const Main({Key? key}) : super(key: key);
 
+  @override
+  State<Main> createState() => _MainState();
+}
+
+class _MainState extends State<Main> {
+  NDIFrame? currentFrame;
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         backgroundColor: Colors.grey.shade900,
-        body: Center(
-          child: TextButton(
-            onPressed: () async {
-              await ndi.updateSoures();
-              print(ndi.sources);
-            },
-            child: const Text("Update Sources"),
-          ),
+        body: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            FrameViewer(frame: currentFrame),
+          ],
         ),
       ),
     );
