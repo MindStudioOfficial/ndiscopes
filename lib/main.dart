@@ -51,7 +51,8 @@ class _MainState extends State<Main> {
                         ndi.stopGetFrames();
                         selectedSource = NDISource(pS);
                         setState(() {});
-                        ndi.getFrames(selectedSource!.source, (frame) => setState(() => currentFrame = frame));
+                        ndi.getFrames(selectedSource!.source, const Size(600, 255),
+                            (frame) => setState(() => currentFrame = frame));
                       }
                     }),
                 Scopes(frame: currentFrame),

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:ndiscopes/bindings/ndi_ffi_bindigs.dart';
 import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
 
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
 
@@ -97,20 +98,47 @@ class NDI {
   Isolate? _fIsolate;
 
   /// A stream yielding the NDI Frames converted to an ui.Image.
-  Future<void> getFrames(Pointer<NDIlib_source_t> source, Function(NDIFrame frame) onFrame) async {
+  Future<void> getFrames(Pointer<NDIlib_source_t> source, Size scopeSize, Function(NDIFrame frame) onFrame) async {
     final completer = Completer();
     _fReceivePort = ReceivePort();
-    _fIsolate = await Isolate.spawn(_getFrames, _FMObject(source.address, _fReceivePort!.sendPort));
+    _fIsolate = await Isolate.spawn(_getFrames, _FMObject(source.address, _fReceivePort!.sendPort, scopeSize));
     _fReceivePort!.listen(
       (data) {
         if (data is Map<String, int>) {
-          if (data["pRGBA"] != null && data["width"] != null && data["height"] != null) {
+          if (data["pRGBA"] != null &&
+              data["width"] != null &&
+              data["height"] != null &&
+              data["pWF"] != null &&
+              data["pWFRgb"] != null &&
+              data["pWFParade"] != null &&
+              data["scopeWidth"] != null &&
+              data["scopeHeight"] != null) {
             Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]!);
-            Uint8List pxs = pRGBA.asTypedList(data["width"]! * data["height"]! * 4);
+            Pointer<Uint8> pWF = Pointer.fromAddress(data["pWF"]!);
+            Pointer<Uint8> pWFRgb = Pointer.fromAddress(data["pWFRgb"]!);
+            Pointer<Uint8> pWFParade = Pointer.fromAddress(data["pWFParade"]!);
 
-            ui.decodeImageFromPixels(pxs, data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (result) {
+            Uint8List pxs = pRGBA.asTypedList(data["width"]! * data["height"]! * 4);
+            int scopeWidth = data["scopeWidth"]!;
+            int scopeHeight = data["scopeHeight"]!;
+
+            ui.decodeImageFromPixels(pxs, data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (iRGBA) {
               calloc.free(pRGBA);
-              onFrame(NDIFrame(iRGBA: result));
+              ui.decodeImageFromPixels(
+                  pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
+                  (iWF) {
+                calloc.free(pWF);
+                ui.decodeImageFromPixels(
+                    pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
+                    (iWFRgb) {
+                  calloc.free(pWFRgb);
+                  ui.decodeImageFromPixels(pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight,
+                      ui.PixelFormat.rgba8888, (iWFParade) {
+                    calloc.free(pWFParade);
+                    onFrame(NDIFrame(iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade));
+                  });
+                });
+              });
             });
           }
         }
@@ -148,10 +176,24 @@ class NDI {
       height = pVideoFrame.ref.yres;
 
       Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
+      Pointer<Uint8> pWF = calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
+      Pointer<Uint8> pWFRgb = calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
+      Pointer<Uint8> pWFParade =
+          calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
 
       switch (pVideoFrame.ref.FourCC) {
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY:
-          _pixconvertCUDA.uyvyToRGBA(width, height, pVideoFrame.ref.p_data, pRGBA);
+          _pixconvertCUDA.uyvyToScopes(
+            width,
+            height,
+            pVideoFrame.ref.p_data,
+            pRGBA,
+            object.scopeSize.width.toInt(),
+            object.scopeSize.height.toInt(),
+            pWF,
+            pWFRgb,
+            pWFParade,
+          );
           break;
         default:
           print("unsupported format");
@@ -161,6 +203,11 @@ class NDI {
         "width": width,
         "height": height,
         "pRGBA": pRGBA.address,
+        "pWF": pWF.address,
+        "pWFRgb": pWFRgb.address,
+        "pWFParade": pWFParade.address,
+        "scopeWidth": object.scopeSize.width.toInt(),
+        "scopeHeight": object.scopeSize.height.toInt(),
       });
     }
   }
@@ -175,7 +222,8 @@ class _SMObject {
 class _FMObject {
   int pSourceA;
   SendPort sendPort;
-  _FMObject(this.pSourceA, this.sendPort);
+  Size scopeSize;
+  _FMObject(this.pSourceA, this.sendPort, this.scopeSize);
 }
 
 /// A class wrapping around the internal [NDIlib_source_t] type.
@@ -198,5 +246,8 @@ class NDISource {
 
 class NDIFrame {
   ui.Image iRGBA;
-  NDIFrame({required this.iRGBA});
+  ui.Image iWF;
+  ui.Image iWFRgb;
+  ui.Image iWFParade;
+  NDIFrame({required this.iRGBA, required this.iWF, required this.iWFRgb, required this.iWFParade});
 }

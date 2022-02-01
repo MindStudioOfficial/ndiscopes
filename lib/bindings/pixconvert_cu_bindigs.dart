@@ -71,4 +71,26 @@ class PixconvertCUDA {
               ffi.Pointer<ffi.Uint8>)>>('rgbaToWaveform');
   late final _rgbaToWaveform = _rgbaToWaveformPtr
       .asFunction<void Function(int, int, ffi.Pointer<ffi.Uint8>, int, int, ffi.Pointer<ffi.Uint8>)>();
+
+  void uyvyToScopes(
+      int srcWidth,
+      int srcHeight,
+      ffi.Pointer<ffi.Uint8> src,
+      ffi.Pointer<ffi.Uint8> dest,
+      int scopeWidth,
+      int scopeHeight,
+      ffi.Pointer<ffi.Uint8> wf,
+      ffi.Pointer<ffi.Uint8> wfRgb,
+      ffi.Pointer<ffi.Uint8> wfParade) {
+    return _uyvyToScopes(srcWidth, srcHeight, src, dest, scopeWidth, scopeHeight, wf, wfRgb, wfParade);
+  }
+
+  late final _uyvyToScopesPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Int32, ffi.Int32, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, ffi.Int32, ffi.Int32,
+              ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>)>>("uyvyToScopes");
+
+  late final _uyvyToScopes = _uyvyToScopesPtr.asFunction<
+      void Function(int, int, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, int, int, ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>)>();
 }
