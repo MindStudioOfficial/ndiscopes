@@ -12,7 +12,7 @@ void main() {
   runApp(const Main());
 
   doWhenWindowReady(() {
-    const initialSize = Size(1280, 720);
+    const initialSize = Size(1920, 1080);
     appWindow.size = initialSize;
     appWindow.show();
   });

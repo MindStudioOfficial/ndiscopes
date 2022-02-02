@@ -23,6 +23,7 @@ class _ScopesState extends State<Scopes> {
           Scope(img: widget.frame != null ? widget.frame!.iWF : null, title: "Luma Waveform"),
           Scope(img: widget.frame != null ? widget.frame!.iWFRgb : null, title: "RGB Waveform"),
           Scope(img: widget.frame != null ? widget.frame!.iWFParade : null, title: "RGB Parade"),
+          VScope(img: widget.frame != null ? widget.frame!.iVScope : null, title: "Vectorscope"),
         ],
       ),
     );
@@ -39,6 +40,104 @@ class Scope extends StatefulWidget {
 }
 
 class _ScopeState extends State<Scope> {
+  bool expanded = false;
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              expanded = !expanded;
+            });
+          },
+          child: Container(
+            height: 30,
+            color: cScopeTitleBackground,
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Icon(
+                  expanded ? Icons.expand_more_sharp : Icons.expand_less_sharp,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    child: Text(
+                      widget.title,
+                      style: tSmall,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedContainer(
+          decoration: dBorderDecoration,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOutQuad,
+          height: expanded ? 296 : 0,
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: SizedBox(
+              width: 600,
+              height: 296,
+              child: Center(
+                child: ClipRect(
+                  child: CustomPaint(
+                    painter: ScopePainter(img: widget.img),
+                    size: const Size(600, 276),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ScopePainter extends CustomPainter {
+  ui.Image? img;
+  ScopePainter({required this.img});
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint p = Paint();
+    canvas.drawColor(Colors.black, BlendMode.srcATop);
+    if (img != null) {
+      canvas.drawImage(img!, const Offset(10, 10), p);
+    }
+    p = Paint()..color = Colors.white.withOpacity(.3);
+    for (int i = 0; i <= 8; i++) {
+      double y = i * (img != null ? img!.height : 256) / 8;
+
+      canvas.drawLine(Offset(10, y + 10), Offset(img != null ? img!.width + 10 : 580, y + 10), p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
+  }
+}
+
+class VScope extends StatefulWidget {
+  final String title;
+  final ui.Image? img;
+  const VScope({Key? key, required this.img, required this.title}) : super(key: key);
+
+  @override
+  _VScopeState createState() => _VScopeState();
+}
+
+class _VScopeState extends State<VScope> {
   bool expanded = true;
   @override
   Widget build(BuildContext context) {
@@ -81,20 +180,33 @@ class _ScopeState extends State<Scope> {
           decoration: dBorderDecoration,
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOutQuad,
-          height: expanded ? 295 : 0,
+          height: expanded ? 600 : 0,
           child: SingleChildScrollView(
             physics: const NeverScrollableScrollPhysics(),
-            child: SizedBox(
-              width: 600,
-              height: 295,
-              child: Center(
-                child: ClipRect(
-                  child: CustomPaint(
-                    painter: ScopePainter(img: widget.img),
-                    size: const Size(600, 275),
+            child: Stack(
+              children: [
+                SizedBox(
+                  width: 600,
+                  height: 600,
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: ClipRect(
+                      child: CustomPaint(
+                        painter: VScopePainter(img: widget.img),
+                        size: const Size(276, 276),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                Positioned(
+                  left: -20,
+                  top: 5,
+                  child: Image.asset(
+                    "graphics/vscope.png",
+                    color: Colors.white.withOpacity(.3),
+                  ),
+                )
+              ],
             ),
           ),
         ),
@@ -103,9 +215,9 @@ class _ScopeState extends State<Scope> {
   }
 }
 
-class ScopePainter extends CustomPainter {
+class VScopePainter extends CustomPainter {
   ui.Image? img;
-  ScopePainter({required this.img});
+  VScopePainter({required this.img});
   @override
   void paint(Canvas canvas, Size size) {
     Paint p = Paint();
@@ -114,11 +226,6 @@ class ScopePainter extends CustomPainter {
       canvas.drawImage(img!, const Offset(10, 10), p);
     }
     p = Paint()..color = Colors.white.withOpacity(.3);
-    for (int i = 0; i <= 8; i++) {
-      double y = i * (img != null ? img!.height : 256) / 8;
-
-      canvas.drawLine(Offset(10, y + 10), Offset(img != null ? img!.width + 10 : 580, y + 10), p);
-    }
   }
 
   @override

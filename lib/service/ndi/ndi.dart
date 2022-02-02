@@ -111,12 +111,14 @@ class NDI {
               data["pWF"] != null &&
               data["pWFRgb"] != null &&
               data["pWFParade"] != null &&
+              data["pVScope"] != null &&
               data["scopeWidth"] != null &&
               data["scopeHeight"] != null) {
             Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]!);
             Pointer<Uint8> pWF = Pointer.fromAddress(data["pWF"]!);
             Pointer<Uint8> pWFRgb = Pointer.fromAddress(data["pWFRgb"]!);
             Pointer<Uint8> pWFParade = Pointer.fromAddress(data["pWFParade"]!);
+            Pointer<Uint8> pVscope = Pointer.fromAddress(data["pVScope"]!);
 
             Uint8List pxs = pRGBA.asTypedList(data["width"]! * data["height"]! * 4);
             int scopeWidth = data["scopeWidth"]!;
@@ -135,7 +137,11 @@ class NDI {
                   ui.decodeImageFromPixels(pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight,
                       ui.PixelFormat.rgba8888, (iWFParade) {
                     calloc.free(pWFParade);
-                    onFrame(NDIFrame(iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade));
+                    ui.decodeImageFromPixels(pVscope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight,
+                        scopeHeight, ui.PixelFormat.rgba8888, (iVScope) {
+                      calloc.free(pVscope);
+                      onFrame(NDIFrame(iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade, iVScope: iVScope));
+                    });
                   });
                 });
               });
@@ -180,6 +186,8 @@ class NDI {
       Pointer<Uint8> pWFRgb = calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
       Pointer<Uint8> pWFParade =
           calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
+      Pointer<Uint8> pVScope =
+          calloc.call<Uint8>(object.scopeSize.height.toInt() * object.scopeSize.height.toInt() * 4);
 
       switch (pVideoFrame.ref.FourCC) {
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY:
@@ -193,6 +201,7 @@ class NDI {
             pWF,
             pWFRgb,
             pWFParade,
+            pVScope,
           );
           break;
         default:
@@ -206,6 +215,7 @@ class NDI {
         "pWF": pWF.address,
         "pWFRgb": pWFRgb.address,
         "pWFParade": pWFParade.address,
+        "pVScope": pVScope.address,
         "scopeWidth": object.scopeSize.width.toInt(),
         "scopeHeight": object.scopeSize.height.toInt(),
       });
@@ -249,5 +259,7 @@ class NDIFrame {
   ui.Image iWF;
   ui.Image iWFRgb;
   ui.Image iWFParade;
-  NDIFrame({required this.iRGBA, required this.iWF, required this.iWFRgb, required this.iWFParade});
+  ui.Image iVScope;
+  NDIFrame(
+      {required this.iRGBA, required this.iWF, required this.iWFRgb, required this.iWFParade, required this.iVScope});
 }
