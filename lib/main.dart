@@ -34,32 +34,39 @@ class _MainState extends State<Main> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         backgroundColor: Colors.grey.shade900,
-        body: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            WindowTitleBar(sourceName: selectedSource != null ? selectedSource!.name : "No Source"),
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FrameViewer(
-                    frame: currentFrame,
-                    onSelectSource: (index) {
-                      final pS = ndi.getSourceAt(index);
+        body: LayoutBuilder(builder: (context, constraints) {
+          return Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              WindowTitleBar(sourceName: selectedSource != null ? selectedSource!.name : "No Source"),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FrameViewer(
+                      frame: currentFrame,
+                      onSelectSource: (index) {
+                        final pS = ndi.getSourceAt(index);
 
-                      if (pS != null) {
-                        ndi.stopGetFrames();
-                        selectedSource = NDISource(pS);
-                        setState(() {});
-                        ndi.getFrames(selectedSource!.source, const Size(600, 255),
-                            (frame) => setState(() => currentFrame = frame));
-                      }
-                    }),
-                Scopes(frame: currentFrame),
-              ],
-            ),
-          ],
-        ),
+                        if (pS != null) {
+                          ndi.stopGetFrames();
+                          selectedSource = NDISource(pS);
+                          setState(() {});
+                          ndi.getFrames(selectedSource!.source, const Size(580, 256),
+                              (frame) => setState(() => currentFrame = frame));
+                        }
+                      }),
+                  Container(
+                    height: constraints.maxHeight - appWindow.titleBarHeight - 2,
+                    color: Colors.black,
+                    width: 600,
+                    child: Scopes(frame: currentFrame),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }),
       ),
     );
   }

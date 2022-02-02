@@ -34,7 +34,7 @@ class NDI {
 
   Pointer<NDIlib_source_t>? getSourceAt(int index) {
     if (_pSources == null) return null;
-    return _pSources!.elementAt(index);
+    return _pSources!.elementAt(index * 2);
   }
 
   /// Asynchronously update the [ndi.sources] list of NDI sources.
@@ -53,7 +53,7 @@ class NDI {
           _pSources = Pointer.fromAddress(data["pSources"]!).cast<NDIlib_source_t>();
           sources = [];
           for (int i = 0; i < sourceCount; i++) {
-            sources.add(NDISource(_pSources!.elementAt(i)));
+            sources.add(NDISource(_pSources!.elementAt(i * 2)));
           }
           completer.complete();
           receivePort.close();

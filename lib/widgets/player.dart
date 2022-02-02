@@ -124,7 +124,7 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
                       style: tSmall,
                     ),
                   ),
-                  color: cSourceCardColor,
+                  color: cSourceCard,
                   shape: Border.all(),
                 ),
                 onTap: () {
