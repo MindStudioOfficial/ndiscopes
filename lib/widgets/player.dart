@@ -6,9 +6,12 @@ import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'dart:ui' as ui;
 
 class FrameViewer extends StatelessWidget {
-  final NDIFrame? frame;
+  final NDIOutputFrame? frame;
+  final NDIOutputFrame? overlay;
+  final double? overlayOpacity;
   final Function(int index) onSelectSource;
-  const FrameViewer({Key? key, required this.frame, required this.onSelectSource}) : super(key: key);
+  const FrameViewer({Key? key, required this.frame, required this.onSelectSource, this.overlay, this.overlayOpacity})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +24,15 @@ class FrameViewer extends StatelessWidget {
               fit: BoxFit.contain,
               child: frame != null
                   ? CustomPaint(
-                      painter: ImagePainter(img: frame!.iRGBA),
-                      size: Size(frame!.iRGBA.width.toDouble(), frame!.iRGBA.height.toDouble()),
+                      painter: ImagePainter(
+                        img: frame!.iRGBA,
+                        overlay: overlay != null ? overlay!.iRGBA : null,
+                        opacity: overlayOpacity,
+                      ),
+                      size: Size(
+                        frame!.iRGBA.width.toDouble(),
+                        frame!.iRGBA.height.toDouble(),
+                      ),
                     )
                   : Container(
                       color: Colors.black,
@@ -33,7 +43,6 @@ class FrameViewer extends StatelessWidget {
           ),
           IconButton(
             onPressed: () async {
-              await ndi.updateSoures();
               showDialog(
                 context: context,
                 builder: (context) {
@@ -57,14 +66,20 @@ class FrameViewer extends StatelessWidget {
 
 class ImagePainter extends CustomPainter {
   ui.Image? img;
+  ui.Image? overlay;
+  double? opacity;
   BlendMode? bm;
-  ImagePainter({required this.img, this.bm});
+  ImagePainter({required this.img, this.bm, this.overlay, this.opacity});
 
   @override
   void paint(Canvas canvas, Size size) {
     Paint p = Paint()..blendMode = bm ?? BlendMode.srcOver;
     if (img != null) {
       canvas.drawImage(img!, Offset.zero, p);
+    }
+    if (overlay != null) {
+      p.color = Colors.black.withOpacity(opacity ?? .5);
+      canvas.drawImage(overlay!, Offset.zero, p);
     }
   }
 
@@ -83,6 +98,17 @@ class SourceSelectDialog extends StatefulWidget {
 }
 
 class _SourceSelectDialogState extends State<SourceSelectDialog> {
+  bool loading = true;
+  @override
+  void initState() {
+    super.initState();
+    ndi.updateSoures().then((_) {
+      setState(() {
+        loading = false;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SimpleDialog(
@@ -97,9 +123,14 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
             style: tDefault,
           ),
           IconButton(
-            onPressed: (() async {
-              await ndi.updateSoures();
+            onPressed: (() {
+              loading = true;
               setState(() {});
+              ndi.updateSoures().then((_) {
+                setState(() {
+                  loading = false;
+                });
+              });
             }),
             color: Colors.white,
             iconSize: 25,
@@ -108,6 +139,17 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
         ],
       ),
       children: [
+        if (loading)
+          const Center(
+            child: SizedBox(
+              width: 15,
+              height: 15,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            ),
+          ),
         SizedBox(
           height: 300,
           width: 300,

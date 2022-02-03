@@ -26,7 +26,9 @@ class Main extends StatefulWidget {
 }
 
 class _MainState extends State<Main> {
-  NDIFrame? currentFrame;
+  NDIOutputFrame? currentFrame;
+  NDIOutputFrame? overlayFrame;
+  double overlayOpacity = .5;
   NDISource? selectedSource;
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,8 @@ class _MainState extends State<Main> {
                 children: [
                   FrameViewer(
                       frame: currentFrame,
+                      overlay: overlayFrame,
+                      overlayOpacity: overlayOpacity,
                       onSelectSource: (index) {
                         final pS = ndi.getSourceAt(index);
 
@@ -60,7 +64,10 @@ class _MainState extends State<Main> {
                     height: constraints.maxHeight - appWindow.titleBarHeight - 2,
                     color: Colors.black,
                     width: 600,
-                    child: Scopes(frame: currentFrame),
+                    child: Scopes(
+                      frame: currentFrame,
+                      overlay: overlayFrame,
+                    ),
                   ),
                 ],
               ),

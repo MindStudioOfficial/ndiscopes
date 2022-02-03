@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:ndiscopes/bindings/ndi_ffi_bindigs.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-
+import 'dart:convert';
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
 
 NDIffi _ndi = NDIffi(DynamicLibrary.open("bin/Processing.NDI.Lib.x64.dll"));
@@ -82,6 +83,7 @@ class NDI {
       calloc.free(pCreateSettings);
       return;
     }
+    sleep(const Duration(seconds: 1));
 
     final pSourceCount = calloc.call<Uint32>(1);
     final pSources = _ndi.NDIlib_find_get_current_sources(pNDIfind, pSourceCount);
@@ -98,7 +100,8 @@ class NDI {
   Isolate? _fIsolate;
 
   /// A stream yielding the NDI Frames converted to an ui.Image.
-  Future<void> getFrames(Pointer<NDIlib_source_t> source, Size scopeSize, Function(NDIFrame frame) onFrame) async {
+  Future<void> getFrames(
+      Pointer<NDIlib_source_t> source, Size scopeSize, Function(NDIOutputFrame frame) onFrame) async {
     final completer = Completer();
     _fReceivePort = ReceivePort();
     _fIsolate = await Isolate.spawn(_getFrames, _FMObject(source.address, _fReceivePort!.sendPort, scopeSize));
@@ -140,7 +143,8 @@ class NDI {
                     ui.decodeImageFromPixels(pVscope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight,
                         scopeHeight, ui.PixelFormat.rgba8888, (iVScope) {
                       calloc.free(pVscope);
-                      onFrame(NDIFrame(iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade, iVScope: iVScope));
+                      onFrame(NDIOutputFrame(
+                          iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade, iVScope: iVScope));
                     });
                   });
                 });
@@ -254,12 +258,102 @@ class NDISource {
   }
 }
 
-class NDIFrame {
+class NDIOutputFrame {
   ui.Image iRGBA;
   ui.Image iWF;
   ui.Image iWFRgb;
   ui.Image iWFParade;
   ui.Image iVScope;
-  NDIFrame(
+  NDIOutputFrame(
       {required this.iRGBA, required this.iWF, required this.iWFRgb, required this.iWFParade, required this.iVScope});
+}
+
+enum NDIInputFormat {
+  uyvy,
+  uyva,
+  rgba,
+  rgbx,
+  bgra,
+  i420,
+  nv12,
+  p216,
+  pa16,
+  yv12,
+}
+
+class SavedInputFrame {
+  NDIInputFormat format;
+  Uint8List bytes;
+  int width;
+  int height;
+  String name;
+
+  SavedInputFrame(
+      {required this.bytes, required this.width, required this.height, required this.format, required this.name});
+
+  Future<NDIOutputFrame?> convertToScopes(int scopeWidth, int scopeHeight) {
+    final c = Completer<NDIOutputFrame?>();
+    if (format == NDIInputFormat.uyvy) {
+      Pointer<Uint8> pSrc = calloc.call<Uint8>(width * height * 2);
+      for (int i = 0; i < bytes.length; i++) {
+        pSrc[i] = bytes[i];
+      }
+      Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
+      Pointer<Uint8> pWF = calloc.call<Uint8>(width * height * 4);
+      Pointer<Uint8> pWFRgb = calloc.call<Uint8>(width * height * 4);
+      Pointer<Uint8> pWFParade = calloc.call<Uint8>(width * height * 4);
+      Pointer<Uint8> pVScope = calloc.call<Uint8>(width * height * 4);
+
+      _pixconvertCUDA.uyvyToScopes(
+          width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope);
+
+      ui.decodeImageFromPixels(pRGBA.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888, (iRGBA) {
+        calloc.free(pRGBA);
+        ui.decodeImageFromPixels(
+            pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
+          calloc.free(pWF);
+          ui.decodeImageFromPixels(
+              pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
+              (iWFRgb) {
+            calloc.free(pWFRgb);
+            ui.decodeImageFromPixels(
+                pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
+                (iWFParade) {
+              calloc.free(pWFParade);
+              ui.decodeImageFromPixels(
+                  pVScope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight, scopeHeight, ui.PixelFormat.rgba8888,
+                  (iVScope) {
+                calloc.free(pVScope);
+                c.complete(
+                    NDIOutputFrame(iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade, iVScope: iVScope));
+              });
+            });
+          });
+        });
+      });
+    } else {
+      c.complete(null);
+    }
+    return c.future;
+  }
+
+  Map<String, dynamic> toJSON() {
+    return {
+      'name': name,
+      'width': width,
+      'height': height,
+      'bytes': base64.encode(bytes),
+      'format': format.index,
+    };
+  }
+
+  factory SavedInputFrame.fromJSON(Map<String, dynamic> json) {
+    return SavedInputFrame(
+      bytes: json['bytes'] ?? Uint8List.fromList([0]),
+      width: json['width'] ?? 0,
+      height: json['height'] ?? 0,
+      format: NDIInputFormat.values[json['format'] ?? 0],
+      name: json['name'] ?? "",
+    );
+  }
 }
