@@ -32,6 +32,7 @@ class WindowTitleBar extends StatelessWidget {
                   child: Text(
                     "NDI Scopes by MindStudio  -  $sourceName",
                     style: TextStyle(color: Colors.white.withOpacity(.2)),
+                    overflow: TextOverflow.visible,
                   ),
                 ),
               ),

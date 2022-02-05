@@ -1,3 +1,4 @@
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/main.dart';
 import 'package:ndiscopes/models/colors.dart';
@@ -5,61 +6,213 @@ import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'dart:ui' as ui;
 
-class FrameViewer extends StatelessWidget {
+enum OverlayMode {
+  splitVertical,
+  splitHorizontal,
+  opacity,
+}
+
+class FrameViewer extends StatefulWidget {
   final NDIOutputFrame? frame;
   final NDIOutputFrame? overlay;
   final double? overlayOpacity;
   final Function(int index) onSelectSource;
-  const FrameViewer({Key? key, required this.frame, required this.onSelectSource, this.overlay, this.overlayOpacity})
-      : super(key: key);
+  final Function() onSaveFrame;
+  final Function() onRemoveOverlay;
+  const FrameViewer({
+    Key? key,
+    required this.frame,
+    required this.onSelectSource,
+    this.overlay,
+    this.overlayOpacity,
+    required this.onSaveFrame,
+    required this.onRemoveOverlay,
+  }) : super(key: key);
 
   @override
+  State<FrameViewer> createState() => _FrameViewerState();
+}
+
+class _FrameViewerState extends State<FrameViewer> {
+  OverlayMode overlayMode = OverlayMode.splitHorizontal;
+  double splitPos = 0.5;
+  bool flipSplit = false;
+  @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Stack(
-        children: [
-          AspectRatio(
+    return Stack(
+      children: [
+        Center(
+          child: AspectRatio(
             aspectRatio: 16 / 9,
             child: FittedBox(
               fit: BoxFit.contain,
-              child: frame != null
-                  ? CustomPaint(
+              child: ClipRect(
+                child: Stack(
+                  children: [
+                    CustomPaint(
                       painter: ImagePainter(
-                        img: frame!.iRGBA,
-                        overlay: overlay != null ? overlay!.iRGBA : null,
-                        opacity: overlayOpacity,
+                        img: widget.frame != null ? widget.frame!.iRGBA : null,
+                        overlay: widget.overlay != null ? widget.overlay!.iRGBA : null,
+                        opacity: widget.overlayOpacity,
+                        flipSplit: flipSplit,
+                        splitPos: splitPos,
+                        overlayMode: overlayMode,
                       ),
                       size: Size(
-                        frame!.iRGBA.width.toDouble(),
-                        frame!.iRGBA.height.toDouble(),
+                        widget.frame != null ? widget.frame!.iRGBA.width.toDouble() : 1920,
+                        widget.frame != null ? widget.frame!.iRGBA.height.toDouble() : 1080,
                       ),
-                    )
-                  : Container(
-                      color: Colors.black,
-                      width: 1920,
-                      height: 1080,
                     ),
+                    if (widget.overlay != null && overlayMode == OverlayMode.splitVertical)
+                      Positioned(
+                        left: widget.overlay!.iRGBA.width * splitPos - 22.5,
+                        top: widget.overlay!.iRGBA.height / 2 - 22.5,
+                        child: Listener(
+                          onPointerMove: (event) {
+                            splitPos = (splitPos + event.localDelta.dx / widget.overlay!.iRGBA.width).clamp(0, 1);
+                            setState(() {});
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(22.5),
+                            child: Container(
+                              width: 45,
+                              height: 45,
+                              color: Colors.black.withOpacity(.7),
+                              child: const Center(
+                                child: Icon(
+                                  FluentIcons.auto_fit_width_24_filled,
+                                  color: Colors.white,
+                                  size: 35,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (widget.overlay != null && overlayMode == OverlayMode.splitHorizontal)
+                      Positioned(
+                        left: widget.overlay!.iRGBA.width / 2 - 22.5,
+                        top: widget.overlay!.iRGBA.height * splitPos - 22.5,
+                        child: Listener(
+                          onPointerMove: (event) {
+                            splitPos = (splitPos + event.localDelta.dy / widget.overlay!.iRGBA.height).clamp(0, 1);
+                            setState(() {});
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(22.5),
+                            child: Container(
+                              width: 45,
+                              height: 45,
+                              color: Colors.black.withOpacity(.7),
+                              child: const Center(
+                                child: Icon(
+                                  FluentIcons.auto_fit_height_24_filled,
+                                  color: Colors.white,
+                                  size: 35,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
-          IconButton(
-            onPressed: () async {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return SourceSelectDialog(
-                    onSelectSource: onSelectSource,
-                  );
-                },
-              );
-            },
-            iconSize: 25,
-            color: Colors.white,
-            icon: const Icon(
-              Icons.collections_sharp,
+        ),
+        Align(
+          alignment: Alignment.topLeft,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: IconButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return SourceSelectDialog(
+                      onSelectSource: widget.onSelectSource,
+                    );
+                  },
+                );
+              },
+              iconSize: 25,
+              color: Colors.white,
+              icon: const Icon(
+                Icons.collections_sharp,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        Align(
+          alignment: Alignment.bottomRight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.overlay != null) ...[
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                    iconSize: 25,
+                    color: Colors.white,
+                    onPressed: () {
+                      widget.onRemoveOverlay();
+                    },
+                    icon: const Icon(FluentIcons.dismiss_24_filled),
+                  ),
+                ),
+                if (overlayMode != OverlayMode.opacity) ...[
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: IconButton(
+                      iconSize: 25,
+                      color: Colors.white,
+                      onPressed: () {
+                        overlayMode = overlayMode == OverlayMode.splitHorizontal
+                            ? OverlayMode.splitVertical
+                            : OverlayMode.splitHorizontal;
+                        setState(() {});
+                      },
+                      icon: Icon(
+                        overlayMode == OverlayMode.splitHorizontal
+                            ? FluentIcons.split_vertical_28_regular
+                            : FluentIcons.split_horizontal_28_regular,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: IconButton(
+                      iconSize: 25,
+                      color: Colors.white,
+                      onPressed: () {
+                        flipSplit = !flipSplit;
+                        setState(() {});
+                      },
+                      icon: Icon(
+                        overlayMode == OverlayMode.splitHorizontal
+                            ? FluentIcons.flip_vertical_24_regular
+                            : FluentIcons.flip_horizontal_24_regular,
+                      ),
+                    ),
+                  ),
+                ]
+              ],
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: IconButton(
+                  iconSize: 25,
+                  color: Colors.white,
+                  onPressed: () {
+                    widget.onSaveFrame();
+                  },
+                  icon: const Icon(Icons.save_sharp),
+                ),
+              ),
+            ],
+          ),
+        )
+      ],
     );
   }
 }
@@ -69,17 +222,61 @@ class ImagePainter extends CustomPainter {
   ui.Image? overlay;
   double? opacity;
   BlendMode? bm;
-  ImagePainter({required this.img, this.bm, this.overlay, this.opacity});
+  double splitPos;
+  bool flipSplit;
+  OverlayMode overlayMode;
+  ImagePainter({
+    required this.img,
+    this.bm,
+    this.overlay,
+    this.opacity,
+    required this.flipSplit,
+    required this.splitPos,
+    required this.overlayMode,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     Paint p = Paint()..blendMode = bm ?? BlendMode.srcOver;
+    canvas.drawColor(Colors.black, BlendMode.srcOver);
     if (img != null) {
       canvas.drawImage(img!, Offset.zero, p);
     }
     if (overlay != null) {
-      p.color = Colors.black.withOpacity(opacity ?? .5);
-      canvas.drawImage(overlay!, Offset.zero, p);
+      switch (overlayMode) {
+        case OverlayMode.opacity:
+          p.color = Colors.black.withOpacity(opacity ?? .5);
+          canvas.drawImage(overlay!, Offset.zero, p);
+          break;
+        case OverlayMode.splitVertical:
+          p.color = Colors.white;
+          canvas.drawImageRect(
+            overlay!,
+            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
+                Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos,
+                    overlay!.height.toDouble()),
+            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
+                Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos,
+                    overlay!.height.toDouble()),
+            p,
+          );
+
+          break;
+        case OverlayMode.splitHorizontal:
+          p.color = Colors.white;
+          canvas.drawImageRect(
+            overlay!,
+            Offset(0, flipSplit ? overlay!.height * splitPos : 0) &
+                Size(overlay!.width.toDouble(),
+                    flipSplit ? overlay!.height * (1 - splitPos) : overlay!.height * splitPos),
+            Offset(0, flipSplit ? overlay!.height * splitPos : 0) &
+                Size(overlay!.width.toDouble(),
+                    flipSplit ? overlay!.height * (1 - splitPos) : overlay!.height * splitPos),
+            p,
+          );
+          break;
+        default:
+      }
     }
   }
 

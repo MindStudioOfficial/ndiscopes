@@ -61,9 +61,7 @@ class NDI {
           iso.kill(priority: Isolate.immediate);
         }
       },
-      onDone: () {
-        print("done finding sources");
-      },
+      onDone: () {},
     );
     return completer.future;
   }
@@ -225,6 +223,28 @@ class NDI {
       });
     }
   }
+
+  SavedInputFrame? getSingleFrame(Pointer<NDIlib_source_t> pSource) {
+    NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
+    _ndi.NDIlib_recv_connect(pNDIrecv, pSource);
+    Pointer<NDIlib_video_frame_v2_t> pVideoFrame = calloc<NDIlib_video_frame_v2_t>();
+    int frame = -1;
+    int i = 0;
+    while (frame != NDIlib_frame_type_e.NDIlib_frame_type_video && i < 50) {
+      i++;
+      frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
+      if (frame != NDIlib_frame_type_e.NDIlib_frame_type_video) continue;
+      if (pVideoFrame.ref.FourCC != NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY) continue;
+      int width = pVideoFrame.ref.xres;
+      int height = pVideoFrame.ref.yres;
+
+      Uint8List data = Uint8List.fromList(pVideoFrame.ref.p_data.asTypedList(width * height * 2));
+      _ndi.NDIlib_recv_free_video_v2(pNDIrecv, pVideoFrame);
+      return SavedInputFrame(
+          bytes: data, width: width, height: height, format: NDIInputFormat.uyvy, timestamp: DateTime.now());
+    }
+    return null;
+  }
 }
 
 class _SMObject {
@@ -286,10 +306,10 @@ class SavedInputFrame {
   Uint8List bytes;
   int width;
   int height;
-  String name;
+  DateTime timestamp;
 
   SavedInputFrame(
-      {required this.bytes, required this.width, required this.height, required this.format, required this.name});
+      {required this.bytes, required this.width, required this.height, required this.format, required this.timestamp});
 
   Future<NDIOutputFrame?> convertToScopes(int scopeWidth, int scopeHeight) {
     final c = Completer<NDIOutputFrame?>();
@@ -339,7 +359,7 @@ class SavedInputFrame {
 
   Map<String, dynamic> toJSON() {
     return {
-      'name': name,
+      'timestamp': timestamp.millisecondsSinceEpoch,
       'width': width,
       'height': height,
       'bytes': base64.encode(bytes),
@@ -349,11 +369,11 @@ class SavedInputFrame {
 
   factory SavedInputFrame.fromJSON(Map<String, dynamic> json) {
     return SavedInputFrame(
-      bytes: json['bytes'] ?? Uint8List.fromList([0]),
+      bytes: json['bytes'] != null ? base64.decode(json['bytes']) : Uint8List.fromList([0]),
       width: json['width'] ?? 0,
       height: json['height'] ?? 0,
       format: NDIInputFormat.values[json['format'] ?? 0],
-      name: json['name'] ?? "",
+      timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] ?? 0),
     );
   }
 }

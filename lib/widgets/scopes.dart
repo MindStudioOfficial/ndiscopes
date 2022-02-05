@@ -64,7 +64,7 @@ class Scope extends StatefulWidget {
 }
 
 class _ScopeState extends State<Scope> {
-  bool expanded = false;
+  bool expanded = true;
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -137,13 +137,20 @@ class ScopePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     Paint p = Paint();
     canvas.drawColor(Colors.black, BlendMode.srcATop);
-    if (img != null) {
-      canvas.drawImage(img!, const Offset(10, 10), p);
-    }
+
     if (overlay != null) {
-      p.color = Colors.black.withOpacity((opacity ?? .5).clamp(0, 1));
+      p.color = Colors.black.withOpacity((opacity ?? .2).clamp(0, 1));
+      p.colorFilter =
+          const ColorFilter.matrix(<double>[0, 1, 0, 0, 255, 0, 0, 1, 0, 255, 1, 0, 0, 0, 255, .2, .2, .2, 0, 0]);
       canvas.drawImage(overlay!, const Offset(10, 10), p);
     }
+
+    if (img != null) {
+      Paint p2 = Paint();
+      p2.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
+      canvas.drawImage(img!, const Offset(10, 10), p2);
+    }
+
     p = Paint()..color = Colors.white.withOpacity(.3);
     for (int i = 0; i <= 8; i++) {
       double y = i * (img != null ? img!.height : 256) / 8;
@@ -257,14 +264,21 @@ class VScopePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     Paint p = Paint();
     canvas.drawColor(Colors.black, BlendMode.srcATop);
-    if (img != null) {
-      canvas.drawImage(img!, const Offset(10, 10), p);
-    }
     if (overlay != null) {
       p.color = Colors.black.withOpacity((opacity ?? .5).clamp(0, 1));
+
+      p.colorFilter =
+          const ColorFilter.matrix(<double>[0, 0, 0, 0, 255, 0, .1, 0, 0, 0, 0, 0, 0, 0, 255, 0, 1, 0, 0, 0]);
       canvas.drawImage(overlay!, const Offset(10, 10), p);
     }
-    p = Paint()..color = Colors.white.withOpacity(.3);
+
+    if (img != null) {
+      Paint p2 = Paint();
+      if (overlay != null) {
+        p2.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
+      }
+      canvas.drawImage(img!, const Offset(10, 10), p2);
+    }
   }
 
   @override
