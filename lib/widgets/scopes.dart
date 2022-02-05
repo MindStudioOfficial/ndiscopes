@@ -112,11 +112,14 @@ class _ScopeState extends State<Scope> {
             child: SizedBox(
               width: 600,
               height: 296,
-              child: Center(
+              child: FittedBox(
+                fit: BoxFit.contain,
                 child: ClipRect(
                   child: CustomPaint(
                     painter: ScopePainter(img: widget.img, opacity: widget.overlayOpacity, overlay: widget.overlay),
-                    size: const Size(600, 276),
+                    size: widget.img != null
+                        ? Size(widget.img!.width + 20, widget.img!.height + 20)
+                        : const Size(600, 275),
                   ),
                 ),
               ),
@@ -235,7 +238,9 @@ class _VScopeState extends State<VScope> {
                       child: CustomPaint(
                         painter:
                             VScopePainter(img: widget.img, opacity: widget.overlayOpacity, overlay: widget.overlay),
-                        size: const Size(276, 276),
+                        size: widget.img != null
+                            ? Size(widget.img!.width + 20, widget.img!.height + 20)
+                            : const Size(276, 276),
                       ),
                     ),
                   ),

@@ -142,7 +142,7 @@ class _FramebrowserState extends State<Framebrowser> {
                                 jsonDecode(
                                   fse.readAsStringSync(),
                                 ),
-                              ).convertToScopes(600, 256).then(
+                              ).convertToScopes(580, 256).then(
                                 (frame) {
                                   if (frame != null) widget.onselectFrame(frame);
                                 },

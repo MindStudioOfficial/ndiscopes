@@ -34,7 +34,7 @@ class FrameViewer extends StatefulWidget {
 }
 
 class _FrameViewerState extends State<FrameViewer> {
-  OverlayMode overlayMode = OverlayMode.splitHorizontal;
+  OverlayMode overlayMode = OverlayMode.splitVertical;
   double splitPos = 0.5;
   bool flipSplit = false;
   @override

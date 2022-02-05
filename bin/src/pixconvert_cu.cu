@@ -28,6 +28,11 @@ __device__ uint8_t clampUint8(int v)
     return (uint8_t)v;
 }
 
+__device__ int minInt(int a, int b) {
+    if(a>b) return b;
+    return a;
+}
+
 __global__ void kernelUyvyRGBA(uint8_t *d_src, uint8_t *d_dest, int pixcount)
 {
     int pix = blockIdx.x * blockDim.x + threadIdx.x;
@@ -227,9 +232,9 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     int oU = u - 128;
     int oV = v - 128;
 
-    uint8_t r = clampUint8((int)roundf(1.164 * oY + 1.793 * oV));
-    uint8_t g = clampUint8((int)roundf(1.164 * oY - 0.213 * oU - 0.533 * oV));
-    uint8_t b = clampUint8((int)roundf(1.164 * oY + 2.112 * oU));
+    uint8_t r = clampUint8((int)round(1.164 * oY + 1.793 * oV));
+    uint8_t g = clampUint8((int)round(1.164 * oY - 0.213 * oU - 0.533 * oV));
+    uint8_t b = clampUint8((int)round(1.164 * oY + 2.112 * oU));
 
     // write RGB to d_dest
     int offset = pix * 4;
@@ -240,8 +245,8 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
 
     // make wF
     int x = pix % srcWidth;
-    int ox = (int)floor(scopeWidth * (x / (double)srcWidth));
-    int oy = (int)floor(scopeHeight * (1 - (y / (double)255)));
+    int ox = minInt((int)round(scopeWidth * (x / (double)srcWidth)),scopeWidth-1);
+    int oy = minInt((int)round(scopeHeight * (1 - (y / (double)255))),scopeHeight-1);
 
     int destI = 4 * (oy * scopeWidth + ox);
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
@@ -251,9 +256,9 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     }
 
     // make wFRGB
-    int or = (int)floor(scopeHeight * (1 - (r / (double)255)));
-    int og = (int)floor(scopeHeight * (1 - (g / (double)255)));
-    int ob = (int)floor(scopeHeight * (1 - (b / (double)255)));
+    int or = minInt((int)round(scopeHeight * (1 - (r / (double)255))),scopeHeight-1);
+    int og = minInt((int)round(scopeHeight * (1 - (g / (double)255))),scopeHeight-1);
+    int ob = minInt((int)round(scopeHeight * (1 - (b / (double)255))),scopeHeight-1);
 
     int destR = 4 * (or *scopeWidth + ox);
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
@@ -275,7 +280,7 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     }
 
     double third = (scopeWidth / (double)3);
-    ox = (int)floor(third * (x / (double)srcWidth));
+    ox = (int)round(third * (x / (double)srcWidth));
 
     destR = 4 * (or *scopeWidth + ox);
     destG = 4 * (og * scopeWidth + (ox + (int)floor(third)));
@@ -299,8 +304,8 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
         d_wfParade[destB + 3] = 255;
     }
 
-    ox = (int)floor(scopeHeight * (u / (double)255));
-    oy = (int)floor(scopeHeight * (1-(v /  (double)255)));
+    ox = minInt((int)round(scopeHeight * (u / (double)255)),scopeHeight-1);
+    oy = minInt((int)round(scopeHeight * (1-(v /  (double)255))),scopeHeight-1);
     destI = 4 * (oy * scopeHeight + ox);
     if (destI >= 0 && destI < (scopeHeight * scopeHeight*4))
     {
