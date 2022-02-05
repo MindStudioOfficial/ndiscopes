@@ -147,7 +147,9 @@ class ScopePainter extends CustomPainter {
 
     if (img != null) {
       Paint p2 = Paint();
-      p2.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
+      if (overlay != null) {
+        p2.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
+      }
       canvas.drawImage(img!, const Offset(10, 10), p2);
     }
 

@@ -220,13 +220,16 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
         u = d_src[pixb - 2];
     }
 
+    // from [https://web.archive.org/web/20180423091842/http://www.equasys.de/colorconversion.html]
+
     // calculate RGB
     int oY = y - 16;
     int oU = u - 128;
     int oV = v - 128;
-    uint8_t r = clampUint8((int)roundf(1.164 * oY + 1.596 * oV));
-    uint8_t g = clampUint8((int)roundf(1.164 * oY - 0.392 * oU - 0.813 * oV));
-    uint8_t b = clampUint8((int)roundf(1.164 * oY + 2.017 * oU));
+
+    uint8_t r = clampUint8((int)roundf(1.164 * oY + 1.793 * oV));
+    uint8_t g = clampUint8((int)roundf(1.164 * oY - 0.213 * oU - 0.533 * oV));
+    uint8_t b = clampUint8((int)roundf(1.164 * oY + 2.112 * oU));
 
     // write RGB to d_dest
     int offset = pix * 4;

@@ -179,6 +179,7 @@ class NDI {
 
     while (true) {
       frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
+
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_video) continue;
       width = pVideoFrame.ref.xres;
       height = pVideoFrame.ref.yres;

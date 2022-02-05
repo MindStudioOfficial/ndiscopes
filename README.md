@@ -1,4 +1,4 @@
-# ndiscopes
+# NDIScopes
 
 An open source Windows application to display several diffrent Scopes for an NDI Input built with [Flutter](https://flutter.dev). 
 
@@ -20,6 +20,8 @@ The Software uses CUDA to compute the frames and scopes. A **NVIDIA GPU** is req
 ### Run in Debug-Mode
 
 ```powershell
+PS ..\ndiscopes> flutter pub get 
+
 PS ..\ndiscopes> flutter run -d windows
 ```
 
