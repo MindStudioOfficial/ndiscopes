@@ -13,6 +13,10 @@ An open source Windows application to display several diffrent Scopes for an NDI
 
 This application uses the cross-platform [Flutter](https://flutter.dev/) framework written in [Dart](https://dart.dev/).
 
+### Requirements
+
+The Software uses CUDA to compute the frames and scopes. A **NVIDIA GPU** is required to run this Software.
+
 ### Run in Debug-Mode
 
 ```powershell
