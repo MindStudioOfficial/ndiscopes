@@ -5,6 +5,8 @@ import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'dart:ui' as ui;
 
+import 'package:ndiscopes/util/colorconversion.dart';
+
 class Scopes extends StatefulWidget {
   final NDIOutputFrame? frame;
   final NDIOutputFrame? overlay;
@@ -64,7 +66,7 @@ class Scope extends StatefulWidget {
 }
 
 class _ScopeState extends State<Scope> {
-  bool expanded = true;
+  bool expanded = false;
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -245,14 +247,6 @@ class _VScopeState extends State<VScope> {
                     ),
                   ),
                 ),
-                Positioned(
-                  left: -20,
-                  top: 5,
-                  child: Image.asset(
-                    "graphics/vscope.png",
-                    color: Colors.white.withOpacity(.3),
-                  ),
-                )
               ],
             ),
           ),
@@ -262,6 +256,15 @@ class _VScopeState extends State<VScope> {
   }
 }
 
+List<Color> scopeColors = [
+  const Color.fromRGBO(210, 0, 0, 1),
+  const Color.fromRGBO(210, 0, 210, 1),
+  const Color.fromRGBO(0, 0, 210, 1),
+  const Color.fromRGBO(0, 210, 210, 1),
+  const Color.fromRGBO(0, 210, 0, 1),
+  const Color.fromRGBO(210, 210, 0, 1),
+];
+
 class VScopePainter extends CustomPainter {
   ui.Image? img;
   ui.Image? overlay;
@@ -269,8 +272,44 @@ class VScopePainter extends CustomPainter {
   VScopePainter({required this.img, this.overlay, this.opacity});
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = Paint();
     canvas.drawColor(Colors.black, BlendMode.srcATop);
+    Offset topleft = const Offset(10, 10);
+    Paint pi = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = .3
+      ..isAntiAlias = true
+      ..color = Colors.white.withOpacity(.3);
+
+    //canvas.drawCircle(const Offset(128, 128) + topleft, 128, pi);
+    canvas.drawLine(topleft + const Offset(128, 0), topleft + const Offset(128, 256), pi);
+    canvas.drawLine(topleft + const Offset(0, 128), topleft + const Offset(256, 128), pi);
+
+    canvas.translate(138, 138);
+
+    canvas.rotate(-2.164208);
+    canvas.drawLine(const Offset(0, 0), const Offset(128, 0), pi);
+    canvas.rotate(2.164208);
+
+    pi.strokeWidth = 1;
+    for (Color c in scopeColors) {
+      pi.color = c.withOpacity(.9);
+
+      canvas.rotate((uvFromRGB(pi.color) - const Offset(128, 128)).direction);
+      canvas.drawRect(
+          Offset((uvFromRGB(pi.color) - const Offset(128, 128)).distance - 5, 0 - 5) & const Size(10, 10), pi);
+      canvas.rotate(-(uvFromRGB(pi.color) - const Offset(128, 128)).direction);
+    }
+    for (Color c in scopeColors) {
+      pi.color = Color.lerp(c.withOpacity(.7), Colors.black.withOpacity(.7), .25) ?? c;
+
+      canvas.rotate((uvFromRGB(pi.color) - const Offset(128, 128)).direction);
+      canvas.drawRect(
+          Offset((uvFromRGB(pi.color) - const Offset(128, 128)).distance - 2.5, 0 - 2.5) & const Size(5, 5), pi);
+      canvas.rotate(-(uvFromRGB(pi.color) - const Offset(128, 128)).direction);
+    }
+    canvas.translate(-138, -138);
+
+    Paint p = Paint();
     if (overlay != null) {
       p.color = Colors.black.withOpacity((opacity ?? .5).clamp(0, 1));
 

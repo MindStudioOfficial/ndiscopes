@@ -204,6 +204,31 @@ EXTERNC void rgbaToWaveform(int srcWidth, int srcHeight, uint8_t *src, int wfWid
     cudaFree(d_dest);
 }
 
+
+__device__ static inline uint8_t atomicAdd2(uint8_t* address, uint8_t val) {
+    size_t long_address_modulo = (size_t) address & 3;
+    auto* base_address = (unsigned int*) ((uint8_t*) address - long_address_modulo);
+    unsigned int long_val = (unsigned int) val << (8 * long_address_modulo);
+    unsigned int long_old = atomicAdd(base_address, long_val);
+
+    if (long_address_modulo == 3) {
+        // the first 8 bits of long_val represent the char value,
+        // hence the first 8 bits of long_old represent its previous value.
+        return (uint8_t) (long_old >> 24);
+    } else {
+        // bits that represent the char value within long_val
+        unsigned int mask = 0x000000ff << (8 * long_address_modulo);
+        unsigned int masked_old = long_old & mask;
+        // isolate the bits that represent the char value within long_old, add the long_val to that,
+        // then re-isolate by excluding bits that represent the char value
+        unsigned int overflow = (masked_old + long_val) & ~mask;
+        if (overflow) {
+            atomicSub(base_address, overflow);
+        }
+        return (uint8_t) (masked_old >> 8 * long_address_modulo);
+    }
+}
+
 __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope)
 {
     int pix = blockIdx.x * blockDim.x + threadIdx.x;
@@ -251,6 +276,7 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     int destI = 4 * (oy * scopeWidth + ox);
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
     {
+        
         d_wf[destI + 1] = clampUint8(d_wf[destI + 1] + 10);
         d_wf[destI + 3] = 255;
     }
@@ -289,6 +315,7 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
         d_wfParade[destR] = clampUint8(d_wfParade[destR] + 10);
+        
         d_wfParade[destR + 3] = 255;
     }
 
@@ -303,7 +330,6 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
         d_wfParade[destB + 2] = clampUint8(d_wfParade[destB + 2] + 10);
         d_wfParade[destB + 3] = 255;
     }
-
     ox = minInt((int)round(scopeHeight * (u / (double)255)),scopeHeight-1);
     oy = minInt((int)round(scopeHeight * (1-(v /  (double)255))),scopeHeight-1);
     destI = 4 * (oy * scopeHeight + ox);
