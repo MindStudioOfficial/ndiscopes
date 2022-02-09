@@ -15,7 +15,8 @@ void main() {
   runApp(const Main());
 
   doWhenWindowReady(() {
-    const initialSize = Size(1920, 1080);
+    const initialSize = Size(1280, 720);
+    appWindow.title = "NDIScopes";
     appWindow.size = initialSize;
     appWindow.show();
   });
@@ -33,6 +34,11 @@ class _MainState extends State<Main> {
   NDIOutputFrame? overlayFrame;
   double overlayOpacity = .5;
   NDISource? selectedSource;
+
+  OverlayMode overlayMode = OverlayMode.splitVertical;
+  double splitPos = 0.5;
+  bool flipSplit = false;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -87,6 +93,13 @@ class _MainState extends State<Main> {
                                   );
                                 }
                               },
+                              onOverlayChanged: (mode, pos, flip) {
+                                setState(() {
+                                  overlayMode = mode;
+                                  splitPos = pos;
+                                  flipSplit = flip;
+                                });
+                              },
                             ),
                           ),
                           SizedBox(
@@ -113,6 +126,9 @@ class _MainState extends State<Main> {
                     child: Scopes(
                       frame: currentFrame,
                       overlay: overlayFrame,
+                      overlayMode: overlayMode,
+                      splitPos: splitPos,
+                      flipSplit: flipSplit,
                     ),
                   ),
                 ],

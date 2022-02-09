@@ -19,6 +19,7 @@ class FrameViewer extends StatefulWidget {
   final Function(int index) onSelectSource;
   final Function() onSaveFrame;
   final Function() onRemoveOverlay;
+  final Function(OverlayMode mode, double splitPos, bool flipSplit) onOverlayChanged;
   const FrameViewer({
     Key? key,
     required this.frame,
@@ -27,6 +28,7 @@ class FrameViewer extends StatefulWidget {
     this.overlayOpacity,
     required this.onSaveFrame,
     required this.onRemoveOverlay,
+    required this.onOverlayChanged,
   }) : super(key: key);
 
   @override
@@ -70,7 +72,7 @@ class _FrameViewerState extends State<FrameViewer> {
                         child: Listener(
                           onPointerMove: (event) {
                             splitPos = (splitPos + event.localDelta.dx / widget.overlay!.iRGBA.width).clamp(0, 1);
-                            setState(() {});
+                            widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                           },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(22.5),
@@ -96,7 +98,7 @@ class _FrameViewerState extends State<FrameViewer> {
                         child: Listener(
                           onPointerMove: (event) {
                             splitPos = (splitPos + event.localDelta.dy / widget.overlay!.iRGBA.height).clamp(0, 1);
-                            setState(() {});
+                            widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                           },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(22.5),
@@ -171,7 +173,8 @@ class _FrameViewerState extends State<FrameViewer> {
                         overlayMode = overlayMode == OverlayMode.splitHorizontal
                             ? OverlayMode.splitVertical
                             : OverlayMode.splitHorizontal;
-                        setState(() {});
+                        widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                        //setState(() {});
                       },
                       icon: Icon(
                         overlayMode == OverlayMode.splitHorizontal
@@ -187,7 +190,7 @@ class _FrameViewerState extends State<FrameViewer> {
                       color: Colors.white,
                       onPressed: () {
                         flipSplit = !flipSplit;
-                        setState(() {});
+                        widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                       },
                       icon: Icon(
                         overlayMode == OverlayMode.splitHorizontal
@@ -250,14 +253,12 @@ class ImagePainter extends CustomPainter {
           break;
         case OverlayMode.splitVertical:
           p.color = Colors.white;
+          Size overlaySize =
+              Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
           canvas.drawImageRect(
             overlay!,
-            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
-                Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos,
-                    overlay!.height.toDouble()),
-            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
-                Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos,
-                    overlay!.height.toDouble()),
+            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) & overlaySize,
+            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) & overlaySize,
             p,
           );
 

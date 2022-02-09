@@ -8,6 +8,36 @@ An open source Windows application to display several diffrent Scopes for an NDI
 
 ![Screenshot](blob/sc1.jpg)
 
+## Roadmap
+
+### Platform Support
+
+- [x] Windows
+- [ ] Linux
+- [ ] MacOS
+
+### Features
+
+- [x] Waveforms
+  - [x] Luma Waveform
+  - [x] RGB Waveform
+  - [x] RGB Parade
+  - [x] UV Vectorscope  
+- [ ] Reference Frame
+  - [x] Save/Load
+  - [x] Overlay on source as splitscreen
+  - [x] Overlay on scopes as background
+  - [ ] Overlay on scopes as splitscreen
+- [ ] Record and graph RGBL ratio over time
+- [ ] Draw Masks on source/reference frame
+- [ ] NDI Codec support
+  - [x] UYVY (most common)
+  - [ ] UYVA
+  - [ ] RGBA
+  - [ ] RGBX
+  - [ ] BGRA (used for still images)
+  - [ ] BGRX
+  - others are very uncommon IMO
 ## Getting Started
 
 

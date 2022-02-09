@@ -6,12 +6,24 @@ import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'dart:ui' as ui;
 
 import 'package:ndiscopes/util/colorconversion.dart';
+import 'package:ndiscopes/widgets/player.dart';
 
 class Scopes extends StatefulWidget {
   final NDIOutputFrame? frame;
   final NDIOutputFrame? overlay;
+  final OverlayMode overlayMode;
+  final double splitPos;
   final double? overlayOpacity;
-  const Scopes({Key? key, required this.frame, this.overlay, this.overlayOpacity}) : super(key: key);
+  final bool flipSplit;
+  const Scopes({
+    Key? key,
+    required this.frame,
+    this.overlay,
+    this.overlayOpacity,
+    required this.overlayMode,
+    required this.splitPos,
+    required this.flipSplit,
+  }) : super(key: key);
 
   @override
   _ScopesState createState() => _ScopesState();
@@ -29,18 +41,28 @@ class _ScopesState extends State<Scopes> {
             title: "Luma Waveform",
             overlay: widget.overlay != null ? widget.overlay!.iWF : null,
             overlayOpacity: widget.overlayOpacity,
+            flipSplit: widget.flipSplit,
+            overlayMode: widget.overlayMode,
+            splitPos: widget.splitPos,
           ),
           Scope(
             img: widget.frame != null ? widget.frame!.iWFRgb : null,
             title: "RGB Waveform",
             overlay: widget.overlay != null ? widget.overlay!.iWFRgb : null,
             overlayOpacity: widget.overlayOpacity,
+            flipSplit: widget.flipSplit,
+            overlayMode: widget.overlayMode,
+            splitPos: widget.splitPos,
           ),
           Scope(
             img: widget.frame != null ? widget.frame!.iWFParade : null,
             title: "RGB Parade",
             overlay: widget.overlay != null ? widget.overlay!.iWFParade : null,
             overlayOpacity: widget.overlayOpacity,
+            flipSplit: widget.flipSplit,
+            overlayMode: widget.overlayMode,
+            splitPos: widget.splitPos,
+            isParade: true,
           ),
           VScope(
             img: widget.frame != null ? widget.frame!.iVScope : null,
@@ -59,7 +81,21 @@ class Scope extends StatefulWidget {
   final ui.Image? img;
   final ui.Image? overlay;
   final double? overlayOpacity;
-  const Scope({Key? key, required this.img, required this.title, this.overlay, this.overlayOpacity}) : super(key: key);
+  final double splitPos;
+  final OverlayMode overlayMode;
+  final bool flipSplit;
+  final bool? isParade;
+  const Scope({
+    Key? key,
+    required this.img,
+    required this.title,
+    this.overlay,
+    this.overlayOpacity,
+    required this.flipSplit,
+    required this.overlayMode,
+    required this.splitPos,
+    this.isParade,
+  }) : super(key: key);
 
   @override
   _ScopeState createState() => _ScopeState();
@@ -118,7 +154,15 @@ class _ScopeState extends State<Scope> {
                 fit: BoxFit.contain,
                 child: ClipRect(
                   child: CustomPaint(
-                    painter: ScopePainter(img: widget.img, opacity: widget.overlayOpacity, overlay: widget.overlay),
+                    painter: ScopePainter(
+                      img: widget.img,
+                      opacity: widget.overlayOpacity,
+                      overlay: widget.overlay,
+                      flipSplit: widget.flipSplit,
+                      overlayMode: widget.overlayMode,
+                      splitPos: widget.splitPos,
+                      isParade: widget.isParade,
+                    ),
                     size: widget.img != null
                         ? Size(widget.img!.width + 20, widget.img!.height + 20)
                         : const Size(600, 275),
@@ -137,13 +181,24 @@ class ScopePainter extends CustomPainter {
   ui.Image? img;
   ui.Image? overlay;
   double? opacity;
-  ScopePainter({required this.img, this.overlay, this.opacity});
+  double splitPos;
+  OverlayMode overlayMode;
+  bool flipSplit;
+  bool? isParade;
+  ScopePainter({
+    required this.img,
+    this.overlay,
+    this.opacity,
+    required this.flipSplit,
+    required this.overlayMode,
+    required this.splitPos,
+    this.isParade,
+  });
   @override
   void paint(Canvas canvas, Size size) {
-    Paint p = Paint();
     canvas.drawColor(Colors.black, BlendMode.srcATop);
-
-    if (overlay != null) {
+    Paint p = Paint();
+    if (overlay != null && overlayMode == OverlayMode.splitHorizontal) {
       p.color = Colors.black.withOpacity((opacity ?? .2).clamp(0, 1));
       p.colorFilter =
           const ColorFilter.matrix(<double>[0, 1, 0, 0, 255, 0, 0, 1, 0, 255, 1, 0, 0, 0, 255, .2, .2, .2, 0, 0]);
@@ -152,10 +207,37 @@ class ScopePainter extends CustomPainter {
 
     if (img != null) {
       Paint p2 = Paint();
-      if (overlay != null) {
+      /*if (overlay != null) {
         p2.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
-      }
+      }*/
       canvas.drawImage(img!, const Offset(10, 10), p2);
+    }
+
+    if (overlay != null) {
+      Paint pO = Paint()..color = Colors.white;
+      pO.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 255]);
+
+      if (overlayMode == OverlayMode.splitVertical) {
+        if (isParade == null) {
+          Rect srcRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
+              Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
+          Rect dstRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) + const Offset(10, 10) &
+              Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
+          canvas.drawImageRect(
+            overlay!,
+            srcRect,
+            dstRect,
+            pO,
+          );
+        } else if (isParade!) {
+          double third = overlay!.width.toDouble() / 3;
+          Size s = Size(flipSplit ? third * (1 - splitPos) : third * splitPos, overlay!.height.toDouble());
+          for (int i = 0; i < 3; i++) {
+            Offset o = Offset(flipSplit ? i * third + third * splitPos : i * third, 0);
+            canvas.drawImageRect(overlay!, o & s, o + const Offset(10, 10) & s, pO);
+          }
+        }
+      }
     }
 
     p = Paint()..color = Colors.white.withOpacity(.3);
