@@ -23,13 +23,13 @@ An open source Windows application to display several diffrent Scopes for an NDI
   - [x] RGB Waveform
   - [x] RGB Parade
   - [x] UV Vectorscope  
-- [ ] Reference Frame
+- [X] Reference Frame
   - [x] Save/Load
   - [x] Overlay on source as splitscreen
   - [x] Overlay on scopes as background
-  - [ ] Overlay on scopes as splitscreen
-- [ ] Record and graph RGBL ratio over time
+  - [X] Overlay on scopes as splitscreen
 - [ ] Draw Masks on source/reference frame
+- [ ] Record and graph RGBL ratio over time
 - [ ] NDI Codec support
   - [x] UYVY (most common)
   - [ ] UYVA
