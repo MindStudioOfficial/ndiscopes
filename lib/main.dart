@@ -69,9 +69,13 @@ class _MainState extends State<Main> {
                               overlayOpacity: overlayOpacity,
                               onSaveFrame: () {
                                 if (selectedSource == null) return;
-                                SavedInputFrame? f = ndi.getSingleFrame(selectedSource!.source);
-                                if (f == null) return;
-                                saveInputFrame(f);
+                                ndi.getSingleFrame(
+                                  selectedSource!.source,
+                                  const Size(580, 256),
+                                  (frame) {
+                                    saveInputFrame(frame);
+                                  },
+                                );
                               },
                               onRemoveOverlay: () {
                                 overlayFrame = null;

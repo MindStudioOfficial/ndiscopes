@@ -225,26 +225,57 @@ class NDI {
     }
   }
 
-  SavedInputFrame? getSingleFrame(Pointer<NDIlib_source_t> pSource) {
+  ReceivePort? _sfReceivePort;
+  Isolate? _sfIsolate;
+  Future<void> getSingleFrame(
+      Pointer<NDIlib_source_t> pSource, Size scopeSize, Function(SavedInputFrame frame) onFrameReady) async {
+    final completer = Completer();
+    _sfReceivePort = ReceivePort();
+    _sfIsolate = await Isolate.spawn(_getSingleFrame, _FMObject(pSource.address, _sfReceivePort!.sendPort, scopeSize));
+    _sfReceivePort!.listen((data) {
+      if (data is Map<String, int>) {
+        if (data["width"] != null && data["height"] != null && data["pVideo"] != null && data["pNDIRecv"] != null) {
+          int width = data["width"]!;
+          int height = data["height"]!;
+          final pVideoFrame = Pointer.fromAddress(data["pVideo"]!).cast<NDIlib_video_frame_v2_t>();
+          final pNDIRecv = Pointer.fromAddress(data["pNDIRecv"]!).cast<Void>();
+
+          Uint8List bytes = Uint8List.fromList(pVideoFrame.ref.p_data.asTypedList(width * height * 2));
+          _ndi.NDIlib_recv_free_video_v2(pNDIRecv, pVideoFrame);
+          onFrameReady(SavedInputFrame(
+              bytes: bytes, width: width, height: height, format: NDIInputFormat.uyvy, timestamp: DateTime.now()));
+        }
+      }
+    });
+    return completer.future;
+  }
+
+  static void _getSingleFrame(_FMObject object) {
     NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
+    Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>();
     _ndi.NDIlib_recv_connect(pNDIrecv, pSource);
+
     Pointer<NDIlib_video_frame_v2_t> pVideoFrame = calloc<NDIlib_video_frame_v2_t>();
+    int width = 0;
+    int height = 0;
+
     int frame = -1;
     int i = 0;
+
     while (frame != NDIlib_frame_type_e.NDIlib_frame_type_video && i < 50) {
       i++;
       frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_video) continue;
       if (pVideoFrame.ref.FourCC != NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY) continue;
-      int width = pVideoFrame.ref.xres;
-      int height = pVideoFrame.ref.yres;
-
-      Uint8List data = Uint8List.fromList(pVideoFrame.ref.p_data.asTypedList(width * height * 2));
-      _ndi.NDIlib_recv_free_video_v2(pNDIrecv, pVideoFrame);
-      return SavedInputFrame(
-          bytes: data, width: width, height: height, format: NDIInputFormat.uyvy, timestamp: DateTime.now());
+      width = pVideoFrame.ref.xres;
+      height = pVideoFrame.ref.yres;
+      object.sendPort.send(<String, int>{
+        "width": width,
+        "height": height,
+        "pVideo": pVideoFrame.address,
+        "pNDIRecv": pNDIrecv.address,
+      });
     }
-    return null;
   }
 }
 
