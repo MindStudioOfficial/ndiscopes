@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
@@ -74,7 +75,7 @@ class _FramebrowserState extends State<Framebrowser> {
                       },
                       color: Colors.white,
                       iconSize: 20,
-                      icon: const Icon(Icons.arrow_back_sharp),
+                      icon: const Icon(FluentIcons.arrow_left_28_filled),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),

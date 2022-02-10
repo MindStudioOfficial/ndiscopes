@@ -51,8 +51,15 @@ class NDI {
         if (data is Map<String, int>) {
           if (data["pSources"] == null || data["sourceCount"] == null) return;
           int sourceCount = data["sourceCount"]!;
-          _pSources = Pointer.fromAddress(data["pSources"]!).cast<NDIlib_source_t>();
           sources = [];
+          if (sourceCount == 0) {
+            completer.complete();
+            receivePort.close();
+            iso.kill(priority: Isolate.immediate);
+            return;
+          }
+          _pSources = Pointer.fromAddress(data["pSources"]!).cast<NDIlib_source_t>();
+
           for (int i = 0; i < sourceCount; i++) {
             sources.add(NDISource(_pSources!.elementAt(i * 2)));
           }
@@ -79,6 +86,10 @@ class NDI {
     }
     if (!_ndi.NDIlib_find_wait_for_sources(pNDIfind, 10000)) {
       calloc.free(pCreateSettings);
+      object.sendPort.send(<String, int>{
+        "pSources": 0,
+        "sourceCount": 0,
+      });
       return;
     }
     sleep(const Duration(seconds: 1));

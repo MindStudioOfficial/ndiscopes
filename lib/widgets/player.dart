@@ -6,6 +6,8 @@ import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'dart:ui' as ui;
 
+import 'package:ndiscopes/widgets/customtooltip.dart';
+
 enum OverlayMode {
   splitVertical,
   splitHorizontal,
@@ -125,23 +127,26 @@ class _FrameViewerState extends State<FrameViewer> {
         ),
         Align(
           alignment: Alignment.topLeft,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: IconButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return SourceSelectDialog(
-                      onSelectSource: widget.onSelectSource,
-                    );
-                  },
-                );
-              },
-              iconSize: 25,
-              color: Colors.white,
-              icon: const Icon(
-                Icons.collections_sharp,
+          child: DelayedCustomTooltip(
+            "Select NDI Source",
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: IconButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return SourceSelectDialog(
+                        onSelectSource: widget.onSelectSource,
+                      );
+                    },
+                  );
+                },
+                iconSize: 25,
+                color: Colors.white,
+                icon: const Icon(
+                  FluentIcons.video_clip_24_filled,
+                ),
               ),
             ),
           ),
@@ -152,64 +157,76 @@ class _FrameViewerState extends State<FrameViewer> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (widget.overlay != null) ...[
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: IconButton(
-                    iconSize: 25,
-                    color: Colors.white,
-                    onPressed: () {
-                      widget.onRemoveOverlay();
-                    },
-                    icon: const Icon(FluentIcons.dismiss_24_filled),
+                DelayedCustomTooltip(
+                  "Disable Overlay",
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: IconButton(
+                      iconSize: 25,
+                      color: Colors.white,
+                      onPressed: () {
+                        widget.onRemoveOverlay();
+                      },
+                      icon: const Icon(FluentIcons.dismiss_24_filled),
+                    ),
                   ),
                 ),
                 if (overlayMode != OverlayMode.opacity) ...[
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: IconButton(
-                      iconSize: 25,
-                      color: Colors.white,
-                      onPressed: () {
-                        overlayMode = overlayMode == OverlayMode.splitHorizontal
-                            ? OverlayMode.splitVertical
-                            : OverlayMode.splitHorizontal;
-                        widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
-                        //setState(() {});
-                      },
-                      icon: Icon(
-                        overlayMode == OverlayMode.splitHorizontal
-                            ? FluentIcons.split_vertical_28_regular
-                            : FluentIcons.split_horizontal_28_regular,
+                  DelayedCustomTooltip(
+                    overlayMode == OverlayMode.splitHorizontal ? "Split Vertical" : "Split Horizontal",
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: IconButton(
+                        iconSize: 25,
+                        color: Colors.white,
+                        onPressed: () {
+                          overlayMode = overlayMode == OverlayMode.splitHorizontal
+                              ? OverlayMode.splitVertical
+                              : OverlayMode.splitHorizontal;
+                          widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                          //setState(() {});
+                        },
+                        icon: Icon(
+                          overlayMode == OverlayMode.splitHorizontal
+                              ? FluentIcons.split_vertical_28_regular
+                              : FluentIcons.split_horizontal_28_regular,
+                        ),
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: IconButton(
-                      iconSize: 25,
-                      color: Colors.white,
-                      onPressed: () {
-                        flipSplit = !flipSplit;
-                        widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
-                      },
-                      icon: Icon(
-                        overlayMode == OverlayMode.splitHorizontal
-                            ? FluentIcons.flip_vertical_24_regular
-                            : FluentIcons.flip_horizontal_24_regular,
+                  DelayedCustomTooltip(
+                    "Flip Overlay Side",
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: IconButton(
+                        iconSize: 25,
+                        color: Colors.white,
+                        onPressed: () {
+                          flipSplit = !flipSplit;
+                          widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                        },
+                        icon: Icon(
+                          overlayMode == OverlayMode.splitHorizontal
+                              ? FluentIcons.flip_vertical_24_regular
+                              : FluentIcons.flip_horizontal_24_regular,
+                        ),
                       ),
                     ),
                   ),
                 ]
               ],
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: IconButton(
-                  iconSize: 25,
-                  color: Colors.white,
-                  onPressed: () {
-                    widget.onSaveFrame();
-                  },
-                  icon: const Icon(Icons.save_sharp),
+              DelayedCustomTooltip(
+                "Save Reference Frame",
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                    iconSize: 25,
+                    color: Colors.white,
+                    onPressed: () {
+                      widget.onSaveFrame();
+                    },
+                    icon: const Icon(FluentIcons.image_add_24_filled),
+                  ),
                 ),
               ),
             ],
@@ -320,19 +337,22 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
             "Select Source",
             style: tDefault,
           ),
-          IconButton(
-            onPressed: (() {
-              loading = true;
-              setState(() {});
-              ndi.updateSoures().then((_) {
-                setState(() {
-                  loading = false;
+          DelayedCustomTooltip(
+            "Refresh",
+            child: IconButton(
+              onPressed: (() {
+                loading = true;
+                setState(() {});
+                ndi.updateSoures().then((_) {
+                  setState(() {
+                    loading = false;
+                  });
                 });
-              });
-            }),
-            color: Colors.white,
-            iconSize: 25,
-            icon: const Icon(Icons.refresh_sharp),
+              }),
+              color: Colors.white,
+              iconSize: 25,
+              icon: const Icon(Icons.refresh_sharp),
+            ),
           ),
         ],
       ),
@@ -346,6 +366,13 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
                 color: Colors.white,
                 strokeWidth: 2,
               ),
+            ),
+          ),
+        if (!loading && ndi.sources.isEmpty)
+          Center(
+            child: Text(
+              "No Sources Found",
+              style: tAccent,
             ),
           ),
         SizedBox(

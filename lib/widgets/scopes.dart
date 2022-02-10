@@ -102,41 +102,57 @@ class Scope extends StatefulWidget {
 }
 
 class _ScopeState extends State<Scope> {
-  bool expanded = false;
+  bool expanded = true;
+  bool hover = false;
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GestureDetector(
-          onTap: () {
+        MouseRegion(
+          onEnter: (event) {
             setState(() {
-              expanded = !expanded;
+              hover = true;
             });
           },
-          child: Container(
-            height: 30,
-            color: cScopeTitleBackground,
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Icon(
-                  expanded ? Icons.expand_more_sharp : Icons.expand_less_sharp,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                    child: Text(
-                      widget.title,
-                      style: tSmall,
+          onExit: (event) {
+            setState(() {
+              hover = false;
+            });
+          },
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                expanded = !expanded;
+              });
+            },
+            child: Container(
+              height: 30,
+              color: hover ? cScopeTitleBackgroundHover : cScopeTitleBackground,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(
+                    width: 4,
+                  ),
+                  Icon(
+                    expanded ? Icons.expand_more_sharp : Icons.expand_less_sharp,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                      child: Text(
+                        widget.title,
+                        style: tSmall,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -267,40 +283,56 @@ class VScope extends StatefulWidget {
 
 class _VScopeState extends State<VScope> {
   bool expanded = true;
+  bool hover = false;
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GestureDetector(
-          onTap: () {
+        MouseRegion(
+          onEnter: (event) {
             setState(() {
-              expanded = !expanded;
+              hover = true;
             });
           },
-          child: Container(
-            height: 30,
-            color: cScopeTitleBackground,
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Icon(
-                  expanded ? Icons.expand_more_sharp : Icons.expand_less_sharp,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                    child: Text(
-                      widget.title,
-                      style: tSmall,
+          onExit: (event) {
+            setState(() {
+              hover = false;
+            });
+          },
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                expanded = !expanded;
+              });
+            },
+            child: Container(
+              height: 30,
+              color: hover ? cScopeTitleBackgroundHover : cScopeTitleBackground,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(
+                    width: 4,
+                  ),
+                  Icon(
+                    expanded ? Icons.expand_more_sharp : Icons.expand_less_sharp,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                      child: Text(
+                        widget.title,
+                        style: tSmall,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
