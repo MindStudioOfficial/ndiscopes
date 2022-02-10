@@ -38,6 +38,11 @@ An open source Windows application to display several diffrent Scopes for an NDI
   - [ ] BGRA (used for still images)
   - [ ] BGRX
   - others are very uncommon IMO
+
+## Download
+
+Download the latest build under [Releases](https://github.com/MindStudioOfficial/ndiscopes/releases).
+
 ## Getting Started
 
 
