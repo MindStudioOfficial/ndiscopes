@@ -4,6 +4,7 @@ import 'package:ffi/ffi.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/config.dart';
+import 'package:ndiscopes/models/buttonstyles.dart';
 import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
@@ -67,7 +68,38 @@ class _MainState extends State<Main> {
     pixconvertCUDA.getDeviceProperties(major, minor);
     // ignore: avoid_print
     print("GPU version ${major.value}.${minor.value}");
-    if (major.value < appConfig.minMajorCC) {
+    if (major.value == 0) {
+      Future.delayed(const Duration(seconds: 1), () {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return SimpleDialog(
+              backgroundColor: cDialogBackground,
+              elevation: 0,
+              title: Text(
+                "Failed to check GPU version.",
+                style: tDefault,
+              ),
+              children: [
+                TextButton(
+                  style: bTextDefault,
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      "OK",
+                      style: tSmall,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      });
+    } else if (major.value < appConfig.minMajorCC) {
       Future.delayed(const Duration(seconds: 1), () {
         showDialog(
           context: context,
@@ -81,18 +113,7 @@ class _MainState extends State<Main> {
               ),
               children: [
                 TextButton(
-                  style: ButtonStyle(
-                    shape: MaterialStateProperty.all(
-                      const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                    ),
-                    backgroundColor: MaterialStateProperty.resolveWith(
-                      (states) {
-                        if (states.contains(MaterialState.hovered)) return const Color.fromRGBO(8, 8, 8, 1);
-                        return const Color.fromRGBO(24, 24, 24, 1);
-                      },
-                    ),
-                    overlayColor: MaterialStateProperty.all(Colors.transparent),
-                  ),
+                  style: bTextDefault,
                   onPressed: () {
                     Navigator.pop(context);
                   },

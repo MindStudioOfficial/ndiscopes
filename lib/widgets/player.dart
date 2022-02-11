@@ -318,9 +318,11 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
   void initState() {
     super.initState();
     ndi.updateSoures().then((_) {
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
     });
   }
 
