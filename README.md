@@ -39,6 +39,18 @@ An open source Windows application to display several diffrent Scopes for an NDI
   - [ ] BGRX
   - others are very uncommon IMO
 
+### GPU Support
+- NVIDIA
+  - [x] CC 8.x **Ampere** RTX 30 Series, RTX A Series,
+  - [x] CC 7.x **Volta/Turing** RTX 20 Series, GTX 16 Series, RTX Quadro Series, TITAN RTX, TITAN V
+  - [x] CC 6.x **Pascal** GTX 10 Series, Titan X, Quadro
+  - [x] CC 5.x **Maxwell** GTX 750 - GTX 980 Ti
+  - [x] CC >=3.5 **Kepler** GT 640 - GTX 780 Ti, TITAN Z **NEEDS TESTING!!!**
+  - [ ] CC <3.2 not supported by CUDA 11.x
+- [ ] AMD
+- [ ] other
+  
+
 ## Download
 
 Download the latest build under [Releases](https://github.com/MindStudioOfficial/ndiscopes/releases).

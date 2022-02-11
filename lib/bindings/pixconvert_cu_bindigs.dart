@@ -103,4 +103,18 @@ class PixconvertCUDA {
   late final _uyvyToScopes = _uyvyToScopesPtr.asFunction<
       void Function(int, int, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, int, int, ffi.Pointer<ffi.Uint8>,
           ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>)>();
+
+  void getDeviceProperties(
+    ffi.Pointer<ffi.Int32> major,
+    ffi.Pointer<ffi.Int32> minor,
+  ) {
+    return _getDeviceProperties(major, minor);
+  }
+
+  late final _getDevicePropertiesPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Int32>, ffi.Pointer<ffi.Int32>)>>(
+          "getDeviceProperties");
+
+  late final _getDeviceProperties =
+      _getDevicePropertiesPtr.asFunction<void Function(ffi.Pointer<ffi.Int32>, ffi.Pointer<ffi.Int32>)>();
 }

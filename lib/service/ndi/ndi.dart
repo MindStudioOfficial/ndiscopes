@@ -11,7 +11,7 @@ import 'dart:convert';
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
 
 NDIffi _ndi = NDIffi(DynamicLibrary.open("bin/Processing.NDI.Lib.x64.dll"));
-PixconvertCUDA _pixconvertCUDA = PixconvertCUDA(DynamicLibrary.open("bin/pixconvert_cu.dll"));
+PixconvertCUDA pixconvertCUDA = PixconvertCUDA(DynamicLibrary.open("bin/pixconvert_cu.dll"));
 
 class NDI {
   /// A class wrapping around the NDI FFI bindings.
@@ -178,6 +178,12 @@ class NDI {
   }
 
   static void _getFrames(_FMObject object) {
+    /*Pointer<NDIlib_recv_create_v3_t> pCreateSettings = calloc.call<NDIlib_recv_create_v3_t>(1);
+    pCreateSettings.ref.color_format = NDIlib_recv_color_format_e.NDIlib_recv_color_format_UYVY_RGBA;
+    pCreateSettings.ref.bandwidth = NDIlib_recv_bandwidth_e.NDIlib_recv_bandwidth_highest;
+    pCreateSettings.ref.source_to_connect_to = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>()[0];
+    pCreateSettings.ref.p_ndi_recv_name = "NDIScopes".toNativeUtf8().cast<Int8>();
+    pCreateSettings.ref.allow_video_fields = 0;*/
     NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
     Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA);
     _ndi.NDIlib_recv_connect(pNDIrecv, pSource);
@@ -205,7 +211,7 @@ class NDI {
 
       switch (pVideoFrame.ref.FourCC) {
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY:
-          _pixconvertCUDA.uyvyToScopes(
+          pixconvertCUDA.uyvyToScopes(
             width,
             height,
             pVideoFrame.ref.p_data,
@@ -367,8 +373,7 @@ class SavedInputFrame {
       Pointer<Uint8> pWFParade = calloc.call<Uint8>(width * height * 4);
       Pointer<Uint8> pVScope = calloc.call<Uint8>(width * height * 4);
 
-      _pixconvertCUDA.uyvyToScopes(
-          width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope);
+      pixconvertCUDA.uyvyToScopes(width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope);
 
       ui.decodeImageFromPixels(pRGBA.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888, (iRGBA) {
         calloc.free(pRGBA);

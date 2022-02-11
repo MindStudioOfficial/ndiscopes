@@ -384,6 +384,13 @@ EXTERNC void uyvyToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *de
     cudaFree(d_vScope);
 }
 
+EXTERNC void getDeviceProperties(int *major, int *minor) {
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp,0);
+    major[0] = deviceProp.major;
+    minor[0] = deviceProp.minor;
+}
+
 int main()
 {
     int width = 1920;

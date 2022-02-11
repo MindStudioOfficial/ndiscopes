@@ -48,3 +48,4 @@ app.*.map.json
 
 bin/src/initcomp.bat
 .VSCodeCounter
+bin/src/compile.txt
