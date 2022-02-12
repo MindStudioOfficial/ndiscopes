@@ -35,7 +35,7 @@ An open source Windows application to display several diffrent Scopes for an NDI
   - [ ] UYVA
   - [ ] RGBA
   - [ ] RGBX
-  - [ ] BGRA (used for still images)
+  - [x] BGRA (used for still images)
   - [ ] BGRX
   - others are very uncommon IMO
 

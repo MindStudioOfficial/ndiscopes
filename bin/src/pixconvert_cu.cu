@@ -28,8 +28,10 @@ __device__ uint8_t clampUint8(int v)
     return (uint8_t)v;
 }
 
-__device__ int minInt(int a, int b) {
-    if(a>b) return b;
+__device__ int minInt(int a, int b)
+{
+    if (a > b)
+        return b;
     return a;
 }
 
@@ -204,7 +206,7 @@ EXTERNC void rgbaToWaveform(int srcWidth, int srcHeight, uint8_t *src, int wfWid
     cudaFree(d_dest);
 }
 
-
+/*
 __device__ static inline uint8_t atomicAdd2(uint8_t* address, uint8_t val) {
     size_t long_address_modulo = (size_t) address & 3;
     auto* base_address = (unsigned int*) ((uint8_t*) address - long_address_modulo);
@@ -228,7 +230,7 @@ __device__ static inline uint8_t atomicAdd2(uint8_t* address, uint8_t val) {
         return (uint8_t) (masked_old >> 8 * long_address_modulo);
     }
 }
-
+*/
 __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope)
 {
     int pix = blockIdx.x * blockDim.x + threadIdx.x;
@@ -270,21 +272,21 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
 
     // make wF
     int x = pix % srcWidth;
-    int ox = minInt((int)round(scopeWidth * (x / (double)srcWidth)),scopeWidth-1);
-    int oy = minInt((int)round(scopeHeight * (1 - (y / (double)255))),scopeHeight-1);
+    int ox = minInt((int)round(scopeWidth * (x / (double)srcWidth)), scopeWidth - 1);
+    int oy = minInt((int)round(scopeHeight * (1 - (y / (double)255))), scopeHeight - 1);
 
     int destI = 4 * (oy * scopeWidth + ox);
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
     {
-        
+
         d_wf[destI + 1] = clampUint8(d_wf[destI + 1] + 10);
         d_wf[destI + 3] = 255;
     }
 
     // make wFRGB
-    int or = minInt((int)round(scopeHeight * (1 - (r / (double)255))),scopeHeight-1);
-    int og = minInt((int)round(scopeHeight * (1 - (g / (double)255))),scopeHeight-1);
-    int ob = minInt((int)round(scopeHeight * (1 - (b / (double)255))),scopeHeight-1);
+    int or = minInt((int)round(scopeHeight * (1 - (r / (double)255))), scopeHeight - 1);
+    int og = minInt((int)round(scopeHeight * (1 - (g / (double)255))), scopeHeight - 1);
+    int ob = minInt((int)round(scopeHeight * (1 - (b / (double)255))), scopeHeight - 1);
 
     int destR = 4 * (or *scopeWidth + ox);
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
@@ -315,7 +317,7 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
         d_wfParade[destR] = clampUint8(d_wfParade[destR] + 10);
-        
+
         d_wfParade[destR + 3] = 255;
     }
 
@@ -330,10 +332,10 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
         d_wfParade[destB + 2] = clampUint8(d_wfParade[destB + 2] + 10);
         d_wfParade[destB + 3] = 255;
     }
-    ox = minInt((int)round(scopeHeight * (u / (double)255)),scopeHeight-1);
-    oy = minInt((int)round(scopeHeight * (1-(v /  (double)255))),scopeHeight-1);
+    ox = minInt((int)round(scopeHeight * (u / (double)255)), scopeHeight - 1);
+    oy = minInt((int)round(scopeHeight * (1 - (v / (double)255))), scopeHeight - 1);
     destI = 4 * (oy * scopeHeight + ox);
-    if (destI >= 0 && destI < (scopeHeight * scopeHeight*4))
+    if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
         d_vScope[destI + 1] = clampUint8(d_vScope[destI + 1] + 10);
         d_vScope[destI + 3] = 255;
@@ -384,13 +386,148 @@ EXTERNC void uyvyToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *de
     cudaFree(d_vScope);
 }
 
-EXTERNC void getDeviceProperties(int *major, int *minor) {
+EXTERNC void getDeviceProperties(int *major, int *minor)
+{
     cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp,0);
+    cudaGetDeviceProperties(&deviceProp, 0);
     major[0] = deviceProp.major;
     minor[0] = deviceProp.minor;
 }
 
+__global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope)
+{
+    int pix = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pix >= pixcount)
+        return;
+    int pixb = pix * 4;
+
+    uint8_t b, g, r, a;
+    b = d_src[pixb];
+    g = d_src[pixb + 1];
+    r = d_src[pixb + 2];
+    a = d_src[pixb + 3];
+
+    float y, u, v;
+    y = 16 + (r * 0.183 + g * 0.614 + b * 0.062);
+    u = 128 + (r * -0.101 + g * -0.339 + b * 0.439);
+    v = 128 + (r * 0.439 + g * -0.399 + b * -0.040);
+
+    d_dest[pixb] = r;
+    d_dest[pixb + 1] = g;
+    d_dest[pixb + 2] = b;
+    d_dest[pixb + 3] = a;
+
+    int x = pix % srcWidth;
+    int ox = minInt((int)round(scopeWidth * (x / (float)srcWidth)), scopeWidth - 1);
+    int oy = minInt((int)roundf(scopeHeight * (1 - (y / (float)255))), scopeHeight - 1);
+
+    int destI = 4*(oy*scopeWidth+ox);
+    if(destI>=0 && destI<(scopeWidth*scopeHeight*4)-3) {
+        d_wf[destI+1] = clampUint8(d_wf[destI+1]+10);
+        d_wf[destI+3] = 255;
+    }
+
+    // make wFRGB
+    int or = minInt((int)round(scopeHeight * (1 - (r / (float)255))), scopeHeight - 1);
+    int og = minInt((int)round(scopeHeight * (1 - (g / (float)255))), scopeHeight - 1);
+    int ob = minInt((int)round(scopeHeight * (1 - (b / (float)255))), scopeHeight - 1);
+
+    int destR = 4 * (or *scopeWidth + ox);
+    if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
+    {
+        d_wfRgb[destR] = clampUint8(d_wfRgb[destR] + 10);
+        d_wfRgb[destR + 3] = 255;
+    }
+    int destG = 4 * (og * scopeWidth + ox);
+    if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
+    {
+        d_wfRgb[destG + 1] = clampUint8(d_wfRgb[destG + 1] + 10);
+        d_wfRgb[destG + 3] = 255;
+    }
+    int destB = 4 * (ob * scopeWidth + ox);
+    if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
+    {
+        d_wfRgb[destB + 2] = clampUint8(d_wfRgb[destB + 2] + 10);
+        d_wfRgb[destB + 3] = 255;
+    }
+
+    double third = (scopeWidth / (float)3);
+    ox = (int)round(third * (x / (float)srcWidth));
+
+    destR = 4 * (or *scopeWidth + ox);
+    destG = 4 * (og * scopeWidth + (ox + (int)floor(third)));
+    destB = 4 * (ob * scopeWidth + (ox + 2 * (int)floor(third)));
+
+    if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
+    {
+        d_wfParade[destR] = clampUint8(d_wfParade[destR] + 10);
+
+        d_wfParade[destR + 3] = 255;
+    }
+
+    if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
+    {
+        d_wfParade[destG + 1] = clampUint8(d_wfParade[destG + 1] + 10);
+        d_wfParade[destG + 3] = 255;
+    }
+
+    if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
+    {
+        d_wfParade[destB + 2] = clampUint8(d_wfParade[destB + 2] + 10);
+        d_wfParade[destB + 3] = 255;
+    }
+    ox = minInt((int)roundf(scopeHeight * (u / (float)255)), scopeHeight - 1);
+    oy = minInt((int)roundf(scopeHeight * (1 - (v / (float)255))), scopeHeight - 1);
+    destI = 4 * (oy * scopeHeight + ox);
+    if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
+    {
+        d_vScope[destI + 1] = clampUint8(d_vScope[destI + 1] + 10);
+        d_vScope[destI + 3] = 255;
+    }
+}
+
+EXTERNC void bgraToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *dest, int scopeWidth, int scopeHeight, uint8_t *wf, uint8_t *wfRgb, uint8_t *wfParade, uint8_t *vScope)
+{
+    int pixcount = srcWidth * srcHeight;
+    int srcSize = 4 * pixcount;
+    int scopePixcount = scopeWidth * scopeHeight;
+    int scopeSize = 4 * scopePixcount;
+    int vscopeSize = 4 * scopeHeight * scopeHeight;
+
+    uint8_t *d_src;
+    uint8_t *d_dest;
+    uint8_t *d_wf;
+    uint8_t *d_wfRgb;
+    uint8_t *d_wfParade;
+    uint8_t *d_vScope;
+
+    cudaMalloc(&d_src, srcSize);
+    cudaMalloc(&d_dest, srcSize);
+
+    cudaMalloc(&d_wf, scopeSize);
+    cudaMalloc(&d_wfRgb, scopeSize);
+    cudaMalloc(&d_wfParade, scopeSize);
+    cudaMalloc(&d_vScope, vscopeSize);
+
+    cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice);
+
+    int blockCount = (int)ceil(pixcount / (double)THREADS);
+    kernelBGRAScopes<<<blockCount, THREADS>>>(srcWidth, srcHeight, scopeWidth, scopeHeight, pixcount, d_src, d_dest, d_wf, d_wfRgb, d_wfParade, d_vScope);
+    cudaDeviceSynchronize();
+
+    cudaMemcpy(dest, d_dest, srcSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(wf, d_wf, scopeSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(wfRgb, d_wfRgb, scopeSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(wfParade, d_wfParade, scopeSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(vScope, d_vScope, vscopeSize, cudaMemcpyDeviceToHost);
+
+    cudaFree(d_src);
+    cudaFree(d_dest);
+    cudaFree(d_wf);
+    cudaFree(d_wfRgb);
+    cudaFree(d_wfParade);
+    cudaFree(d_vScope);
+}
 int main()
 {
     int width = 1920;

@@ -8,6 +8,6 @@ class AppConfig {
   AppConfig._internal();
 
   String get minGPUDriver => "511.23";
-  int get minMajorCC => 5;
-  int get minMinorCC => 2;
+  int get minMajorCC => 3;
+  int get minMinorCC => 5;
 }

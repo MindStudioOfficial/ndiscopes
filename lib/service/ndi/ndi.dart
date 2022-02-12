@@ -224,7 +224,22 @@ class NDI {
             pVScope,
           );
           break;
+        case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_BGRA:
+          pixconvertCUDA.bgraToScopes(
+            width,
+            height,
+            pVideoFrame.ref.p_data,
+            pRGBA,
+            object.scopeSize.width.toInt(),
+            object.scopeSize.height.toInt(),
+            pWF,
+            pWFRgb,
+            pWFParade,
+            pVScope,
+          );
+          break;
         default:
+          // ignore: avoid_print
           print("unsupported format");
       }
       _ndi.NDIlib_recv_free_video_v2(pNDIrecv, pVideoFrame);
@@ -243,24 +258,37 @@ class NDI {
   }
 
   ReceivePort? _sfReceivePort;
-  Isolate? _sfIsolate;
   Future<void> getSingleFrame(
       Pointer<NDIlib_source_t> pSource, Size scopeSize, Function(SavedInputFrame frame) onFrameReady) async {
     final completer = Completer();
     _sfReceivePort = ReceivePort();
-    _sfIsolate = await Isolate.spawn(_getSingleFrame, _FMObject(pSource.address, _sfReceivePort!.sendPort, scopeSize));
+    await Isolate.spawn(_getSingleFrame, _FMObject(pSource.address, _sfReceivePort!.sendPort, scopeSize));
     _sfReceivePort!.listen((data) {
       if (data is Map<String, int>) {
         if (data["width"] != null && data["height"] != null && data["pVideo"] != null && data["pNDIRecv"] != null) {
           int width = data["width"]!;
           int height = data["height"]!;
+          NDIInputFormat format = NDIInputFormat.values[data["format"]!];
           final pVideoFrame = Pointer.fromAddress(data["pVideo"]!).cast<NDIlib_video_frame_v2_t>();
           final pNDIRecv = Pointer.fromAddress(data["pNDIRecv"]!).cast<Void>();
 
-          Uint8List bytes = Uint8List.fromList(pVideoFrame.ref.p_data.asTypedList(width * height * 2));
+          int bytesPerPixel = 0;
+          switch (format) {
+            case NDIInputFormat.bgra:
+              bytesPerPixel = 4;
+              break;
+            case NDIInputFormat.uyvy:
+              bytesPerPixel = 2;
+              break;
+            default:
+              bytesPerPixel = 4;
+              break;
+          }
+
+          Uint8List bytes = Uint8List.fromList(pVideoFrame.ref.p_data.asTypedList(width * height * bytesPerPixel));
           _ndi.NDIlib_recv_free_video_v2(pNDIRecv, pVideoFrame);
-          onFrameReady(SavedInputFrame(
-              bytes: bytes, width: width, height: height, format: NDIInputFormat.uyvy, timestamp: DateTime.now()));
+          onFrameReady(
+              SavedInputFrame(bytes: bytes, width: width, height: height, format: format, timestamp: DateTime.now()));
         }
       }
     });
@@ -278,19 +306,32 @@ class NDI {
 
     int frame = -1;
     int i = 0;
+    NDIInputFormat format = NDIInputFormat.uyvy;
 
     while (frame != NDIlib_frame_type_e.NDIlib_frame_type_video && i < 50) {
       i++;
       frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_video) continue;
-      if (pVideoFrame.ref.FourCC != NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY) continue;
+      //if (pVideoFrame.ref.FourCC != NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY) continue;
       width = pVideoFrame.ref.xres;
       height = pVideoFrame.ref.yres;
+      switch (pVideoFrame.ref.FourCC) {
+        case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY:
+          format = NDIInputFormat.uyvy;
+          break;
+        case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_BGRA:
+          format = NDIInputFormat.bgra;
+          break;
+        default:
+          // ignore: avoid_print
+          print("unsupported format");
+      }
       object.sendPort.send(<String, int>{
         "width": width,
         "height": height,
         "pVideo": pVideoFrame.address,
         "pNDIRecv": pNDIrecv.address,
+        "format": format.index,
       });
     }
   }
@@ -362,46 +403,56 @@ class SavedInputFrame {
 
   Future<NDIOutputFrame?> convertToScopes(int scopeWidth, int scopeHeight) {
     final c = Completer<NDIOutputFrame?>();
-    if (format == NDIInputFormat.uyvy) {
-      Pointer<Uint8> pSrc = calloc.call<Uint8>(width * height * 2);
-      for (int i = 0; i < bytes.length; i++) {
-        pSrc[i] = bytes[i];
-      }
-      Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
-      Pointer<Uint8> pWF = calloc.call<Uint8>(width * height * 4);
-      Pointer<Uint8> pWFRgb = calloc.call<Uint8>(width * height * 4);
-      Pointer<Uint8> pWFParade = calloc.call<Uint8>(width * height * 4);
-      Pointer<Uint8> pVScope = calloc.call<Uint8>(width * height * 4);
 
-      pixconvertCUDA.uyvyToScopes(width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope);
+    Pointer<Uint8> pSrc = calloc.call<Uint8>(width * height * 4);
+    for (int i = 0; i < bytes.length; i++) {
+      pSrc[i] = bytes[i];
+    }
+    Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
+    Pointer<Uint8> pWF = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
+    Pointer<Uint8> pWFRgb = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
+    Pointer<Uint8> pWFParade = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
+    Pointer<Uint8> pVScope = calloc.call<Uint8>(scopeHeight * scopeHeight * 4);
 
-      ui.decodeImageFromPixels(pRGBA.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888, (iRGBA) {
-        calloc.free(pRGBA);
+    switch (format) {
+      case NDIInputFormat.uyvy:
+        pixconvertCUDA.uyvyToScopes(
+            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope);
+        break;
+      case NDIInputFormat.bgra:
+        pixconvertCUDA.bgraToScopes(
+            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope);
+        break;
+      default:
+        c.complete(null);
+        return c.future;
+    }
+
+    ui.decodeImageFromPixels(pRGBA.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888, (iRGBA) {
+      calloc.free(pRGBA);
+      ui.decodeImageFromPixels(
+          pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
+        calloc.free(pWF);
         ui.decodeImageFromPixels(
-            pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
-          calloc.free(pWF);
+            pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
+            (iWFRgb) {
+          calloc.free(pWFRgb);
           ui.decodeImageFromPixels(
-              pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-              (iWFRgb) {
-            calloc.free(pWFRgb);
+              pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
+              (iWFParade) {
+            calloc.free(pWFParade);
             ui.decodeImageFromPixels(
-                pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-                (iWFParade) {
-              calloc.free(pWFParade);
-              ui.decodeImageFromPixels(
-                  pVScope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight, scopeHeight, ui.PixelFormat.rgba8888,
-                  (iVScope) {
-                calloc.free(pVScope);
-                c.complete(
-                    NDIOutputFrame(iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade, iVScope: iVScope));
-              });
+                pVScope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight, scopeHeight, ui.PixelFormat.rgba8888,
+                (iVScope) {
+              calloc.free(pVScope);
+              c.complete(
+                  NDIOutputFrame(iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade, iVScope: iVScope));
             });
           });
         });
       });
-    } else {
-      c.complete(null);
-    }
+    });
+
     return c.future;
   }
 
