@@ -229,9 +229,44 @@ __device__ static inline uint8_t atomicAdd2(uint8_t* address, uint8_t val) {
         }
         return (uint8_t) (masked_old >> 8 * long_address_modulo);
     }
+}*/
+
+__device__ static inline uint8_t atomicCAS8(uint8_t *address, uint8_t expected, uint8_t desired)
+{
+    size_t long_address_modulo = (size_t)address & 3;
+    auto *base_address = (unsigned int *)((uint8_t *)address - long_address_modulo);
+    unsigned int selectors[] = {0x3214, 0x3240, 0x3410, 0x4210};
+
+    unsigned int sel = selectors[long_address_modulo];
+    unsigned int long_old, long_assumed, long_val, replacement;
+    uint8_t old;
+
+    long_val = (unsigned int)desired;
+    long_old = *base_address;
+    do
+    {
+        long_assumed = long_old;
+        replacement = __byte_perm(long_old, long_val, sel);
+        long_old = atomicCAS(base_address, long_assumed, replacement);
+        old = (uint8_t)((long_old >> (long_address_modulo * 8)) & 0x000000ff);
+    } while (expected == old && long_assumed != long_old);
+
+    return old;
 }
-*/
-__global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope)
+
+__device__ static inline uint8_t atomicAddClamp(uint8_t *address, uint8_t val)
+{
+    uint8_t old = *address;
+    uint8_t assumed;
+    do
+    {
+        assumed = old;
+        old = atomicCAS8(address, assumed, clampUint8((int)val + (int)assumed));
+    } while (assumed > old);
+    return old;
+}
+
+__global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope, uint8_t bright)
 {
     int pix = blockIdx.x * blockDim.x + threadIdx.x;
     if (pix >= pixcount)
@@ -279,7 +314,7 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
     {
 
-        d_wf[destI + 1] = clampUint8(d_wf[destI + 1] + 10);
+        atomicAddClamp(d_wf + destI + 1, bright);
         d_wf[destI + 3] = 255;
     }
 
@@ -291,19 +326,19 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     int destR = 4 * (or *scopeWidth + ox);
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
-        d_wfRgb[destR] = clampUint8(d_wfRgb[destR] + 10);
+        atomicAddClamp(d_wfRgb + destR, bright);
         d_wfRgb[destR + 3] = 255;
     }
     int destG = 4 * (og * scopeWidth + ox);
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
-        d_wfRgb[destG + 1] = clampUint8(d_wfRgb[destG + 1] + 10);
+        atomicAddClamp(d_wfRgb + destG + 1, bright);
         d_wfRgb[destG + 3] = 255;
     }
     int destB = 4 * (ob * scopeWidth + ox);
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
-        d_wfRgb[destB + 2] = clampUint8(d_wfRgb[destB + 2] + 10);
+        atomicAddClamp(d_wfRgb + destB + 2, bright);
         d_wfRgb[destB + 3] = 255;
     }
 
@@ -316,20 +351,22 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
 
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
-        d_wfParade[destR] = clampUint8(d_wfParade[destR] + 10);
-
+        // d_wfParade[destR] = clampUint8(d_wfParade[destR] + 10);
+        atomicAddClamp(d_wfParade + destR, bright);
         d_wfParade[destR + 3] = 255;
     }
 
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
-        d_wfParade[destG + 1] = clampUint8(d_wfParade[destG + 1] + 10);
+        // d_wfParade[destG + 1] = clampUint8(d_wfParade[destG + 1] + 10);
+        atomicAddClamp(d_wfParade + destG + 1, bright);
         d_wfParade[destG + 3] = 255;
     }
 
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
-        d_wfParade[destB + 2] = clampUint8(d_wfParade[destB + 2] + 10);
+        // d_wfParade[destB + 2] = clampUint8(d_wfParade[destB + 2] + 10);
+        atomicAddClamp(d_wfParade + destB + 2, bright);
         d_wfParade[destB + 3] = 255;
     }
     ox = minInt((int)round(scopeHeight * (u / (double)255)), scopeHeight - 1);
@@ -337,7 +374,8 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     destI = 4 * (oy * scopeHeight + ox);
     if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
-        d_vScope[destI + 1] = clampUint8(d_vScope[destI + 1] + 10);
+        // d_vScope[destI + 1] = clampUint8(d_vScope[destI + 1] + 10);
+        atomicAddClamp(d_vScope + destI + 1, bright);
         d_vScope[destI + 3] = 255;
     }
 }
@@ -358,6 +396,8 @@ EXTERNC void uyvyToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *de
     uint8_t *d_wfParade;
     uint8_t *d_vScope;
 
+    uint8_t bright = 1 + 4 * (1080 / srcHeight)*(1080 / srcHeight);
+
     cudaMalloc(&d_src, srcSize);
     cudaMalloc(&d_dest, destSize);
 
@@ -369,7 +409,7 @@ EXTERNC void uyvyToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *de
     cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice);
 
     int blockCount = (int)ceil(pixcount / (double)THREADS);
-    kernelUyvyScopes<<<blockCount, THREADS>>>(srcWidth, srcHeight, scopeWidth, scopeHeight, pixcount, d_src, d_dest, d_wf, d_wfRgb, d_wfParade, d_vScope);
+    kernelUyvyScopes<<<blockCount, THREADS>>>(srcWidth, srcHeight, scopeWidth, scopeHeight, pixcount, d_src, d_dest, d_wf, d_wfRgb, d_wfParade, d_vScope, bright);
     cudaDeviceSynchronize();
 
     cudaMemcpy(dest, d_dest, destSize, cudaMemcpyDeviceToHost);
@@ -394,7 +434,7 @@ EXTERNC void getDeviceProperties(int *major, int *minor)
     minor[0] = deviceProp.minor;
 }
 
-__global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope)
+__global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope, uint8_t bright)
 {
     int pix = blockIdx.x * blockDim.x + threadIdx.x;
     if (pix >= pixcount)
@@ -421,10 +461,11 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     int ox = minInt((int)round(scopeWidth * (x / (float)srcWidth)), scopeWidth - 1);
     int oy = minInt((int)roundf(scopeHeight * (1 - (y / (float)255))), scopeHeight - 1);
 
-    int destI = 4*(oy*scopeWidth+ox);
-    if(destI>=0 && destI<(scopeWidth*scopeHeight*4)-3) {
-        d_wf[destI+1] = clampUint8(d_wf[destI+1]+10);
-        d_wf[destI+3] = 255;
+    int destI = 4 * (oy * scopeWidth + ox);
+    if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
+    {
+        atomicAddClamp(d_wf + destI + 1, 2);
+        d_wf[destI + 3] = 255;
     }
 
     // make wFRGB
@@ -435,19 +476,19 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     int destR = 4 * (or *scopeWidth + ox);
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
-        d_wfRgb[destR] = clampUint8(d_wfRgb[destR] + 10);
+        atomicAddClamp(d_wfRgb + destR, bright);
         d_wfRgb[destR + 3] = 255;
     }
     int destG = 4 * (og * scopeWidth + ox);
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
-        d_wfRgb[destG + 1] = clampUint8(d_wfRgb[destG + 1] + 10);
+        atomicAddClamp(d_wfRgb + destG + 1, bright);
         d_wfRgb[destG + 3] = 255;
     }
     int destB = 4 * (ob * scopeWidth + ox);
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
-        d_wfRgb[destB + 2] = clampUint8(d_wfRgb[destB + 2] + 10);
+        atomicAddClamp(d_wfRgb + destB + 2, bright);
         d_wfRgb[destB + 3] = 255;
     }
 
@@ -460,20 +501,20 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
 
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
-        d_wfParade[destR] = clampUint8(d_wfParade[destR] + 10);
+        atomicAddClamp(d_wfParade + destR, bright);
 
         d_wfParade[destR + 3] = 255;
     }
 
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
-        d_wfParade[destG + 1] = clampUint8(d_wfParade[destG + 1] + 10);
+        atomicAddClamp(d_wfParade + destG + 1, bright);
         d_wfParade[destG + 3] = 255;
     }
 
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
-        d_wfParade[destB + 2] = clampUint8(d_wfParade[destB + 2] + 10);
+        atomicAddClamp(d_wfParade + destB + 2, bright);
         d_wfParade[destB + 3] = 255;
     }
     ox = minInt((int)roundf(scopeHeight * (u / (float)255)), scopeHeight - 1);
@@ -481,7 +522,7 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     destI = 4 * (oy * scopeHeight + ox);
     if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
-        d_vScope[destI + 1] = clampUint8(d_vScope[destI + 1] + 10);
+        atomicAddClamp(d_vScope + destI + 1, bright);
         d_vScope[destI + 3] = 255;
     }
 }
@@ -501,6 +542,8 @@ EXTERNC void bgraToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *de
     uint8_t *d_wfParade;
     uint8_t *d_vScope;
 
+    uint8_t bright = 1 + 4 * (1080 / srcHeight) * (1080 / srcHeight);
+
     cudaMalloc(&d_src, srcSize);
     cudaMalloc(&d_dest, srcSize);
 
@@ -512,7 +555,7 @@ EXTERNC void bgraToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *de
     cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice);
 
     int blockCount = (int)ceil(pixcount / (double)THREADS);
-    kernelBGRAScopes<<<blockCount, THREADS>>>(srcWidth, srcHeight, scopeWidth, scopeHeight, pixcount, d_src, d_dest, d_wf, d_wfRgb, d_wfParade, d_vScope);
+    kernelBGRAScopes<<<blockCount, THREADS>>>(srcWidth, srcHeight, scopeWidth, scopeHeight, pixcount, d_src, d_dest, d_wf, d_wfRgb, d_wfParade, d_vScope, bright);
     cudaDeviceSynchronize();
 
     cudaMemcpy(dest, d_dest, srcSize, cudaMemcpyDeviceToHost);
