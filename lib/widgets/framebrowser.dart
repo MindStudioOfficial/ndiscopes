@@ -98,13 +98,14 @@ class _FramebrowserState extends State<Framebrowser> {
                       if (fse is Directory) {
                         return Padding(
                           padding: const EdgeInsets.all(8),
-                          child: GestureDetector(
+                          child: InkWell(
+                            hoverColor: cDirHover,
                             onTap: () {
                               currentDir = fse;
                               updateDirContent();
                               setState(() {});
                             },
-                            child: Container(
+                            child: Ink(
                               color: cDirBackground,
                               width: 96,
                               height: 96,
@@ -137,7 +138,8 @@ class _FramebrowserState extends State<Framebrowser> {
                       if (fse is File && path.extension(fse.path) == ".ndis") {
                         return Padding(
                           padding: const EdgeInsets.all(8),
-                          child: GestureDetector(
+                          child: InkWell(
+                            hoverColor: cDirHover,
                             onTap: () {
                               SavedInputFrame.fromJSON(
                                 jsonDecode(
@@ -149,7 +151,7 @@ class _FramebrowserState extends State<Framebrowser> {
                                 },
                               );
                             },
-                            child: Container(
+                            child: Ink(
                               color: cDirBackground,
                               width: 96,
                               height: 96,

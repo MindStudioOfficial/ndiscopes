@@ -9,3 +9,4 @@ Color cScopeTitleBackgroundHover = const Color.fromRGBO(16, 16, 16, 1);
 Color cDecorationBorder = const Color.fromRGBO(24, 24, 24, 1);
 Color cFrameBrowserHeader = const Color.fromRGBO(20, 20, 20, 1);
 Color cDirBackground = const Color.fromRGBO(22, 22, 22, 1);
+Color cDirHover = const Color.fromRGBO(28, 28, 28, 1);
