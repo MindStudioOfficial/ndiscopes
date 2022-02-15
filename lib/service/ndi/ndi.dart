@@ -107,13 +107,31 @@ class NDI {
 
   ReceivePort? _fReceivePort;
   Isolate? _fIsolate;
+  SendPort? _fIsoSendport;
+
+  void updateMask(Rect mask, bool active) {
+    if (_fIsoSendport != null) {
+      _fIsoSendport!.send({
+        "mTop": mask.top,
+        "mLeft": mask.left,
+        "mWidth": mask.width,
+        "mHeight": mask.height,
+        "mActive": active,
+      });
+    }
+  }
 
   /// A stream yielding the NDI Frames converted to an ui.Image.
   Future<void> getFrames(
-      Pointer<NDIlib_source_t> source, Size scopeSize, Function(NDIOutputFrame frame) onFrame) async {
+    Pointer<NDIlib_source_t> source,
+    Size scopeSize,
+    Function(NDIOutputFrame frame) onFrame,
+    Rect mask,
+    bool maskActive,
+  ) async {
     final completer = Completer();
     _fReceivePort = ReceivePort();
-    _fIsolate = await Isolate.spawn(_getFrames, _FMObject(source.address, _fReceivePort!.sendPort, scopeSize));
+
     _fReceivePort!.listen(
       (data) {
         if (data is Map<String, int>) {
@@ -161,11 +179,18 @@ class NDI {
             });
           }
         }
+        if (data is SendPort) {
+          _fIsoSendport = data;
+        }
       },
       onDone: () {
         completer.complete();
       },
     );
+
+    _fIsolate = await Isolate.spawn(
+        _getFrames, _FMObject(source.address, _fReceivePort!.sendPort, scopeSize, mask, maskActive));
+
     return completer.future;
   }
 
@@ -177,7 +202,30 @@ class NDI {
     _fReceivePort = null;
   }
 
-  static void _getFrames(_FMObject object) {
+  static void _getFrames(_FMObject object) async {
+    ReceivePort rP = ReceivePort();
+    Rect mask = object.mask;
+    bool maskActive = object.maskActive;
+
+    object.sendPort.send(rP.sendPort);
+
+    rP.listen(
+      (message) {
+        if (message is Map<String, dynamic>) {
+          if (message["mTop"] != null &&
+              message["mLeft"] != null &&
+              message["mWidth"] != null &&
+              message["mHeight"] != null) {
+            mask = Rect.fromLTWH(message["mLeft"]!, message["mTop"]!, message["mWidth"]!, message["mHeight"]);
+          }
+          if (message["mActive"] != null) {
+            maskActive = message["mActive"]!;
+          }
+        }
+      },
+      onDone: () {},
+    );
+
     /*Pointer<NDIlib_recv_create_v3_t> pCreateSettings = calloc.call<NDIlib_recv_create_v3_t>(1);
     pCreateSettings.ref.color_format = NDIlib_recv_color_format_e.NDIlib_recv_color_format_UYVY_RGBA;
     pCreateSettings.ref.bandwidth = NDIlib_recv_bandwidth_e.NDIlib_recv_bandwidth_highest;
@@ -195,6 +243,7 @@ class NDI {
     int frame = -1;
 
     while (true) {
+      await Future.delayed(Duration.zero);
       frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
 
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_video) continue;
@@ -211,6 +260,9 @@ class NDI {
 
       switch (pVideoFrame.ref.FourCC) {
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY:
+          if (maskActive) {
+            pixconvertCUDA.rectMaskFrame(Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 1);
+          }
           pixconvertCUDA.uyvyToScopes(
             width,
             height,
@@ -225,6 +277,9 @@ class NDI {
           );
           break;
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_BGRA:
+          if (maskActive) {
+            pixconvertCUDA.rectMaskFrame(Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 2);
+          }
           pixconvertCUDA.bgraToScopes(
             width,
             height,
@@ -258,11 +313,12 @@ class NDI {
   }
 
   ReceivePort? _sfReceivePort;
-  Future<void> getSingleFrame(
-      Pointer<NDIlib_source_t> pSource, Size scopeSize, Function(SavedInputFrame frame) onFrameReady) async {
+  Future<void> getSingleFrame(Pointer<NDIlib_source_t> pSource, Size scopeSize,
+      Function(SavedInputFrame frame) onFrameReady, Rect mask, bool maskActive) async {
     final completer = Completer();
     _sfReceivePort = ReceivePort();
-    await Isolate.spawn(_getSingleFrame, _FMObject(pSource.address, _sfReceivePort!.sendPort, scopeSize));
+    await Isolate.spawn(
+        _getSingleFrame, _FMObject(pSource.address, _sfReceivePort!.sendPort, scopeSize, mask, maskActive));
     _sfReceivePort!.listen((data) {
       if (data is Map<String, int>) {
         if (data["width"] != null && data["height"] != null && data["pVideo"] != null && data["pNDIRecv"] != null) {
@@ -347,7 +403,9 @@ class _FMObject {
   int pSourceA;
   SendPort sendPort;
   Size scopeSize;
-  _FMObject(this.pSourceA, this.sendPort, this.scopeSize);
+  Rect mask;
+  bool maskActive;
+  _FMObject(this.pSourceA, this.sendPort, this.scopeSize, this.mask, this.maskActive);
 }
 
 /// A class wrapping around the internal [NDIlib_source_t] type.

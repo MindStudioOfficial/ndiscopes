@@ -396,7 +396,7 @@ EXTERNC void uyvyToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *de
     uint8_t *d_wfParade;
     uint8_t *d_vScope;
 
-    uint8_t bright = 1 + 4 * (1080 / srcHeight)*(1080 / srcHeight);
+    uint8_t bright = 1 + 4 * (1080 / srcHeight) * (1080 / srcHeight);
 
     cudaMalloc(&d_src, srcSize);
     cudaMalloc(&d_dest, destSize);
@@ -571,6 +571,61 @@ EXTERNC void bgraToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *de
     cudaFree(d_wfParade);
     cudaFree(d_vScope);
 }
+
+__global__ void kernelRectMaskFrame(int fWidth, int fHeight, int mLeft, int mTop, int mWidth, int mHeight, uint8_t *d_frame, int stride, int format)
+{
+    int pixcount = fWidth * fHeight;
+    int pix = blockIdx.x * blockDim.x + threadIdx.x;
+    if (pix >= pixcount)
+        return;
+    int x = pix % fWidth;
+    int y = (int)floor(pix / (double)fWidth);
+    if (x < mLeft || x > (mLeft + mWidth) || y < mTop || y > (mTop + mHeight))
+    {
+        if (format == 2) //BGRA
+        {
+            for (int i = 0; i < stride; i++)
+            {
+                d_frame[pix * stride + i] = 0;
+            }
+        }
+        else if (format == 1) // UYVY
+        {
+            d_frame[pix*stride+0] = 128;
+            d_frame[pix*stride+1] = 0;
+        }
+    }
+}
+
+EXTERNC void rectMaskFrame(int fWidth, int fHeight, int mLeft, int mTop, int mWidth, int mHeight, uint8_t *frame, int format)
+{
+    int stride;
+    switch (format)
+    {
+    case 1: // UYVY
+        stride = 2;
+        break;
+    case 2: // BGRA
+        stride = 4;
+        break;
+    default:
+        stride = 0;
+        break;
+    }
+    int pixcount = fWidth * fHeight;
+    int fSize = pixcount * stride;
+    uint8_t *d_frame;
+    cudaMalloc(&d_frame, fSize);
+    cudaMemcpy(d_frame, frame, fSize, cudaMemcpyHostToDevice);
+
+    int blockCount = (int)ceil(pixcount / (double)THREADS);
+
+    kernelRectMaskFrame<<<blockCount, THREADS>>>(fWidth, fHeight, mLeft, mTop, mWidth, mHeight, d_frame, stride, format);
+    cudaDeviceSynchronize();
+    cudaMemcpy(frame, d_frame, fSize, cudaMemcpyDeviceToHost);
+    cudaFree(d_frame);
+}
+
 int main()
 {
     int width = 1920;

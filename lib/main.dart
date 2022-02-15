@@ -56,6 +56,9 @@ class _MainState extends State<Main> {
   double splitPos = 0.5;
   bool flipSplit = false;
 
+  Rect mask = Rect.zero;
+  bool maskActive = false;
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +157,12 @@ class _MainState extends State<Main> {
                     children: [
                       Expanded(
                         child: FrameViewer(
+                          onMaskUpdate: (m, active) {
+                            maskActive = active;
+                            mask = m;
+                            ndi.updateMask(mask, maskActive);
+                            setState(() {});
+                          },
                           frame: currentFrame,
                           overlay: overlayFrame,
                           overlayOpacity: overlayOpacity,
@@ -165,6 +174,8 @@ class _MainState extends State<Main> {
                               (frame) {
                                 saveInputFrame(frame);
                               },
+                              mask,
+                              maskActive,
                             );
                           },
                           onRemoveOverlay: () {
@@ -184,6 +195,8 @@ class _MainState extends State<Main> {
                                 (frame) => setState(
                                   () => currentFrame = frame,
                                 ),
+                                mask,
+                                maskActive,
                               );
                             }
                           },

@@ -22,6 +22,7 @@ class FrameViewer extends StatefulWidget {
   final Function() onSaveFrame;
   final Function() onRemoveOverlay;
   final Function(OverlayMode mode, double splitPos, bool flipSplit) onOverlayChanged;
+  final Function(Rect mask, bool active) onMaskUpdate;
   const FrameViewer({
     Key? key,
     required this.frame,
@@ -31,6 +32,7 @@ class FrameViewer extends StatefulWidget {
     required this.onSaveFrame,
     required this.onRemoveOverlay,
     required this.onOverlayChanged,
+    required this.onMaskUpdate,
   }) : super(key: key);
 
   @override
@@ -41,6 +43,26 @@ class _FrameViewerState extends State<FrameViewer> {
   OverlayMode overlayMode = OverlayMode.splitVertical;
   double splitPos = 0.5;
   bool flipSplit = false;
+
+  bool maskActive = false;
+
+  late Rect mask;
+
+  @override
+  void initState() {
+    super.initState();
+    mask = defaultMask();
+  }
+
+  Rect defaultMask() {
+    Size frameSize = widget.frame != null
+        ? Size(widget.frame!.iRGBA.width.toDouble(), widget.frame!.iRGBA.height.toDouble())
+        : const Size(1920, 1080);
+    Size maskSize = frameSize / 3;
+    Offset maskOffset = Offset(frameSize.width / 3, frameSize.height / 3);
+    return maskOffset & maskSize;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -53,6 +75,7 @@ class _FrameViewerState extends State<FrameViewer> {
               child: ClipRect(
                 child: Stack(
                   children: [
+                    // * NDI SOURCE IMAGE + Overlay
                     CustomPaint(
                       painter: ImagePainter(
                         img: widget.frame != null ? widget.frame!.iRGBA : null,
@@ -67,6 +90,20 @@ class _FrameViewerState extends State<FrameViewer> {
                         widget.frame != null ? widget.frame!.iRGBA.height.toDouble() : 1080,
                       ),
                     ),
+                    // * Mask Overlay
+                    if (maskActive)
+                      Mask(
+                        frameSize: Size(
+                          widget.frame != null ? widget.frame!.iRGBA.width.toDouble() : 1920,
+                          widget.frame != null ? widget.frame!.iRGBA.height.toDouble() : 1080,
+                        ),
+                        onMaskUpdated: (m) {
+                          mask = m;
+                          widget.onMaskUpdate(m, maskActive);
+                        },
+                        mask: mask,
+                      ),
+                    // * Overlay sliders
                     if (widget.overlay != null && overlayMode == OverlayMode.splitVertical)
                       Positioned(
                         left: widget.overlay!.iRGBA.width * splitPos - 22.5,
@@ -125,6 +162,7 @@ class _FrameViewerState extends State<FrameViewer> {
             ),
           ),
         ),
+        // * Source Select Button
         Align(
           alignment: Alignment.topLeft,
           child: DelayedCustomTooltip(
@@ -151,6 +189,7 @@ class _FrameViewerState extends State<FrameViewer> {
             ),
           ),
         ),
+        // * OVERLAY BUTTONS
         Align(
           alignment: Alignment.bottomRight,
           child: Row(
@@ -231,7 +270,51 @@ class _FrameViewerState extends State<FrameViewer> {
               ),
             ],
           ),
-        )
+        ),
+        // * MASK BUTTONS
+        Align(
+          alignment: Alignment.bottomLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DelayedCustomTooltip(
+                "Toogle Mask",
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton(
+                    color: maskActive ? Colors.blue : Colors.white,
+                    iconSize: 25,
+                    icon: const Icon(FluentIcons.crop_24_filled),
+                    onPressed: () {
+                      maskActive = !maskActive;
+                      widget.onMaskUpdate(mask, maskActive);
+                    },
+                  ),
+                ),
+              ),
+              if (maskActive)
+                DelayedCustomTooltip(
+                  "Reset Mask",
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: IconButton(
+                      onPressed: () {
+                        setState(() {
+                          mask = defaultMask();
+                        });
+                        widget.onMaskUpdate(defaultMask(), maskActive);
+                      },
+                      color: Colors.white,
+                      iconSize: 25,
+                      icon: const Icon(
+                        FluentIcons.arrow_reset_24_filled,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -406,5 +489,155 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
         )
       ],
     );
+  }
+}
+
+class Mask extends StatefulWidget {
+  final Size frameSize;
+  final Function(Rect mask) onMaskUpdated;
+  Rect mask;
+  Mask({
+    Key? key,
+    required this.onMaskUpdated,
+    required this.frameSize,
+    required this.mask,
+  }) : super(key: key);
+
+  @override
+  State<Mask> createState() => _MaskState();
+}
+
+class _MaskState extends State<Mask> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        CustomPaint(
+          size: widget.frameSize,
+          painter: MaskPainter(mask: widget.mask),
+        ),
+        Positioned(
+          top: widget.mask.top,
+          left: widget.mask.left,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.move,
+            child: Listener(
+              onPointerMove: (event) {
+                Rect newMask = widget.mask.shift(event.localDelta);
+                newMask = Offset(
+                      newMask.topLeft.dx.clamp(0, widget.frameSize.width - newMask.width),
+                      newMask.topLeft.dy.clamp(0, widget.frameSize.height - newMask.height),
+                    ) &
+                    newMask.size;
+
+                setState(() {
+                  widget.mask = newMask;
+                });
+                widget.onMaskUpdated(newMask);
+              },
+              child: Container(
+                width: widget.mask.width,
+                height: widget.mask.height,
+                decoration: BoxDecoration(border: Border.all(color: Colors.white, width: 2)),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: widget.mask.topLeft.dy - 15,
+          left: widget.mask.topLeft.dx - 15,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.resizeUpLeftDownRight,
+            child: Listener(
+              onPointerMove: (event) {
+                Size newSize = (widget.mask.size + -(event.localDelta));
+                Offset newPos = (widget.mask.topLeft + event.localDelta);
+
+                newPos = Offset(
+                  newPos.dx.clamp(0, widget.frameSize.width),
+                  newPos.dy.clamp(0, widget.frameSize.height),
+                );
+                newSize = Size(
+                  newSize.width.clamp(0, widget.frameSize.width - newPos.dx),
+                  newSize.height.clamp(0, widget.frameSize.height - newPos.dy),
+                );
+                setState(() {
+                  widget.mask = newPos & newSize;
+                });
+                widget.onMaskUpdated(newPos & newSize);
+              },
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 2),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: widget.mask.bottomRight.dy - 15,
+          left: widget.mask.bottomRight.dx - 15,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.resizeUpLeftDownRight,
+            child: Listener(
+              onPointerMove: (event) {
+                Size newSize = (widget.mask.size + event.localDelta);
+
+                newSize = Size(
+                  newSize.width.clamp(0, widget.frameSize.width - widget.mask.topLeft.dx),
+                  newSize.height.clamp(0, widget.frameSize.height - widget.mask.topLeft.dy),
+                );
+
+                setState(() {
+                  widget.mask = widget.mask.topLeft & newSize;
+                });
+                widget.onMaskUpdated(widget.mask.topLeft & newSize);
+              },
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.black, width: 2),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class MaskPainter extends CustomPainter {
+  final Rect mask;
+  const MaskPainter({required this.mask});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint p = Paint()..color = Colors.black.withOpacity(.7);
+    canvas.drawPath(
+      Path.combine(
+        PathOperation.difference,
+        Path()..addRect(Offset.zero & size),
+        Path()..addRect(mask),
+      ),
+      p,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
   }
 }

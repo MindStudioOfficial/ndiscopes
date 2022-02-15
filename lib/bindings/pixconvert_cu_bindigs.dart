@@ -5,6 +5,8 @@
 
 import 'dart:ffi' as ffi;
 
+import 'package:flutter/material.dart';
+
 class PixconvertCUDA {
   /// Holds the symbol lookup function.
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) _lookup;
@@ -151,4 +153,45 @@ class PixconvertCUDA {
 
   late final _getDeviceProperties =
       _getDevicePropertiesPtr.asFunction<void Function(ffi.Pointer<ffi.Int32>, ffi.Pointer<ffi.Int32>)>();
+
+  //void rectMaskFrame(int fWidth, int fHeight, int mLeft, int mTop, int mWidth, int mHeight, uint8_t *frame, int format)
+
+  /// format: 1 = UYVY | 2 = BGRA
+  void rectMaskFrame(Size frameSize, Rect mask, ffi.Pointer<ffi.Uint8> frame, int format) {
+    return _rectMaskFrame(
+      frameSize.width.toInt(),
+      frameSize.height.toInt(),
+      mask.left.toInt(),
+      mask.top.toInt(),
+      mask.width.toInt(),
+      mask.height.toInt(),
+      frame,
+      format,
+    );
+  }
+
+  late final _rectMaskFramePtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int32,
+  )>>("rectMaskFrame");
+
+  late final _rectMaskFrame = _rectMaskFramePtr.asFunction<
+      void Function(
+    int fWidth,
+    int fHeight,
+    int mLeft,
+    int mTop,
+    int mWidth,
+    int mHeight,
+    ffi.Pointer<ffi.Uint8> frame,
+    int format,
+  )>();
 }
