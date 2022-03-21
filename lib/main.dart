@@ -25,7 +25,7 @@ void main() {
           const MaterialScrollBehavior().copyWith(dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch}),
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Colors.grey.shade900,
+        backgroundColor: cAppBackground,
         body: const Main(),
       ),
     ),
@@ -227,7 +227,7 @@ class _MainState extends State<Main> {
                 ),
               ),
               Container(
-                color: Colors.black,
+                color: cAppBackground,
                 height: constraints.maxHeight - appWindow.titleBarHeight - 2,
                 width: 600,
                 child: Scopes(

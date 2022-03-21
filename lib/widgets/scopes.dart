@@ -33,44 +33,47 @@ class _ScopesState extends State<Scopes> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Scope(
-            img: widget.frame != null ? widget.frame!.iWF : null,
-            title: "Luma Waveform",
-            overlay: widget.overlay != null ? widget.overlay!.iWF : null,
-            overlayOpacity: widget.overlayOpacity,
-            flipSplit: widget.flipSplit,
-            overlayMode: widget.overlayMode,
-            splitPos: widget.splitPos,
-          ),
-          Scope(
-            img: widget.frame != null ? widget.frame!.iWFRgb : null,
-            title: "RGB Waveform",
-            overlay: widget.overlay != null ? widget.overlay!.iWFRgb : null,
-            overlayOpacity: widget.overlayOpacity,
-            flipSplit: widget.flipSplit,
-            overlayMode: widget.overlayMode,
-            splitPos: widget.splitPos,
-          ),
-          Scope(
-            img: widget.frame != null ? widget.frame!.iWFParade : null,
-            title: "RGB Parade",
-            overlay: widget.overlay != null ? widget.overlay!.iWFParade : null,
-            overlayOpacity: widget.overlayOpacity,
-            flipSplit: widget.flipSplit,
-            overlayMode: widget.overlayMode,
-            splitPos: widget.splitPos,
-            isParade: true,
-          ),
-          VScope(
-            img: widget.frame != null ? widget.frame!.iVScope : null,
-            title: "Vectorscope",
-            overlay: widget.overlay != null ? widget.overlay!.iVScope : null,
-            overlayOpacity: widget.overlayOpacity,
-          ),
-        ],
+      child: Container(
+        color: Colors.black,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Scope(
+              img: widget.frame != null ? widget.frame!.iWF : null,
+              title: "Luma Waveform",
+              overlay: widget.overlay != null ? widget.overlay!.iWF : null,
+              overlayOpacity: widget.overlayOpacity,
+              flipSplit: widget.flipSplit,
+              overlayMode: widget.overlayMode,
+              splitPos: widget.splitPos,
+            ),
+            Scope(
+              img: widget.frame != null ? widget.frame!.iWFRgb : null,
+              title: "RGB Waveform",
+              overlay: widget.overlay != null ? widget.overlay!.iWFRgb : null,
+              overlayOpacity: widget.overlayOpacity,
+              flipSplit: widget.flipSplit,
+              overlayMode: widget.overlayMode,
+              splitPos: widget.splitPos,
+            ),
+            Scope(
+              img: widget.frame != null ? widget.frame!.iWFParade : null,
+              title: "RGB Parade",
+              overlay: widget.overlay != null ? widget.overlay!.iWFParade : null,
+              overlayOpacity: widget.overlayOpacity,
+              flipSplit: widget.flipSplit,
+              overlayMode: widget.overlayMode,
+              splitPos: widget.splitPos,
+              isParade: true,
+            ),
+            VScope(
+              img: widget.frame != null ? widget.frame!.iVScope : null,
+              title: "Vectorscope",
+              overlay: widget.overlay != null ? widget.overlay!.iVScope : null,
+              overlayOpacity: widget.overlayOpacity,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -110,6 +113,7 @@ class _ScopeState extends State<Scope> {
       mainAxisSize: MainAxisSize.min,
       children: [
         MouseRegion(
+          cursor: SystemMouseCursors.click,
           onEnter: (event) {
             setState(() {
               hover = true;
@@ -128,7 +132,8 @@ class _ScopeState extends State<Scope> {
             },
             child: Container(
               height: 30,
-              color: hover ? cScopeTitleBackgroundHover : cScopeTitleBackground,
+              //color: hover ? cScopeTitleBackgroundHover : cScopeTitleBackground,
+              decoration: hover ? dHoverGradient : dGradient,
               child: Row(
                 mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -157,7 +162,7 @@ class _ScopeState extends State<Scope> {
           ),
         ),
         AnimatedContainer(
-          decoration: dBorderDecoration,
+          decoration: dBorder,
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOutQuad,
           height: expanded ? 296 : 0,
@@ -290,6 +295,7 @@ class _VScopeState extends State<VScope> {
       mainAxisSize: MainAxisSize.min,
       children: [
         MouseRegion(
+          cursor: SystemMouseCursors.click,
           onEnter: (event) {
             setState(() {
               hover = true;
@@ -308,7 +314,8 @@ class _VScopeState extends State<VScope> {
             },
             child: Container(
               height: 30,
-              color: hover ? cScopeTitleBackgroundHover : cScopeTitleBackground,
+              //color: hover ? cScopeTitleBackgroundHover : cScopeTitleBackground,
+              decoration: hover ? dHoverGradient : dGradient,
               child: Row(
                 mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -337,7 +344,7 @@ class _VScopeState extends State<VScope> {
           ),
         ),
         AnimatedContainer(
-          decoration: dBorderDecoration,
+          decoration: dBorder,
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOutQuad,
           height: expanded ? 600 : 0,

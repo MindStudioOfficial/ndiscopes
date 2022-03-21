@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
+import 'package:ndiscopes/models/colors.dart';
 
 final bc = WindowButtonColors(
   iconNormal: Colors.white,
@@ -19,7 +20,7 @@ class WindowTitleBar extends StatelessWidget {
     return Container(
       width: MediaQuery.of(context).size.width,
       height: 32.0,
-      color: const Color.fromARGB(255, 14, 14, 14),
+      color: cWindowTitleBar,
       child: MoveWindow(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,

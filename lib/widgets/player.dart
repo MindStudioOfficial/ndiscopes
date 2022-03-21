@@ -444,12 +444,15 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
       children: [
         if (loading)
           const Center(
-            child: SizedBox(
-              width: 15,
-              height: 15,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
+            child: Padding(
+              padding: EdgeInsets.all(8.0),
+              child: SizedBox(
+                width: 15,
+                height: 15,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
               ),
             ),
           ),
@@ -477,7 +480,7 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
                     ),
                   ),
                   color: cSourceCard,
-                  shape: Border.all(),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                 ),
                 onTap: () {
                   widget.onSelectSource(index);

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/colors.dart';
+import 'package:ndiscopes/models/decorations.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
@@ -99,14 +100,15 @@ class _FramebrowserState extends State<Framebrowser> {
                         return Padding(
                           padding: const EdgeInsets.all(8),
                           child: InkWell(
-                            hoverColor: cDirHover,
+                            //hoverColor: cDirHover,
                             onTap: () {
                               currentDir = fse;
                               updateDirContent();
                               setState(() {});
                             },
                             child: Ink(
-                              color: cDirBackground,
+                              //color: cDirBackground,
+                              decoration: dAccentGradient,
                               width: 96,
                               height: 96,
                               child: Center(
@@ -139,7 +141,7 @@ class _FramebrowserState extends State<Framebrowser> {
                         return Padding(
                           padding: const EdgeInsets.all(8),
                           child: InkWell(
-                            hoverColor: cDirHover,
+                            //hoverColor: cDirHover,
                             onTap: () {
                               SavedInputFrame.fromJSON(
                                 jsonDecode(
@@ -152,7 +154,8 @@ class _FramebrowserState extends State<Framebrowser> {
                               );
                             },
                             child: Ink(
-                              color: cDirBackground,
+                              //color: cDirBackground,
+                              decoration: dAccentGradient,
                               width: 96,
                               height: 96,
                               child: Center(
