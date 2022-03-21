@@ -10,6 +10,7 @@ import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'dart:ui' as ui;
 
 class Framebrowser extends StatefulWidget {
   final Function(NDIOutputFrame frame) onselectFrame;
@@ -92,106 +93,171 @@ class _FramebrowserState extends State<Framebrowser> {
                 width: constraints.maxWidth,
                 height: constraints.maxHeight - 40,
                 child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      FileSystemEntity fse = dirContents[index];
-                      if (fse is Directory) {
-                        return Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: InkWell(
-                            //hoverColor: cDirHover,
-                            onTap: () {
-                              currentDir = fse;
-                              updateDirContent();
-                              setState(() {});
-                            },
-                            child: Ink(
-                              //color: cDirBackground,
-                              decoration: dAccentGradient,
-                              width: 96,
-                              height: 96,
-                              child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.folder_sharp,
-                                      color: Colors.white,
-                                      size: 35,
+                  scrollDirection: Axis.horizontal,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    FileSystemEntity fse = dirContents[index];
+                    if (fse is Directory) {
+                      return Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: InkWell(
+                          //hoverColor: cDirHover,
+                          onTap: () {
+                            currentDir = fse;
+                            updateDirContent();
+                            setState(() {});
+                          },
+                          child: Ink(
+                            //color: cDirBackground,
+                            decoration: dAccentGradient,
+                            width: 96,
+                            height: 96,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.folder_sharp,
+                                    color: Colors.white,
+                                    size: 35,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Text(
+                                      path.basename(fse.path),
+                                      style: tSmall,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      child: Text(
-                                        path.basename(fse.path),
-                                        style: tSmall,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    )
-                                  ],
-                                ),
+                                  )
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      }
-                      if (fse is File && path.extension(fse.path) == ".ndis") {
-                        return Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: InkWell(
-                            //hoverColor: cDirHover,
-                            onTap: () {
-                              SavedInputFrame.fromJSON(
-                                jsonDecode(
-                                  fse.readAsStringSync(),
-                                ),
-                              ).convertToScopes(580, 256).then(
-                                (frame) {
-                                  if (frame != null) widget.onselectFrame(frame);
-                                },
-                              );
-                            },
-                            child: Ink(
-                              //color: cDirBackground,
-                              decoration: dAccentGradient,
-                              width: 96,
-                              height: 96,
-                              child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.image_sharp,
-                                      color: Colors.white,
-                                      size: 35,
+                        ),
+                      );
+                    }
+                    if (fse is File && path.extension(fse.path) == ".ndis") {
+                      return Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: InkWell(
+                          //hoverColor: cDirHover,
+                          onTap: () {
+                            SavedInputFrame.fromJSON(
+                              jsonDecode(
+                                fse.readAsStringSync(),
+                              ),
+                            ).convertToScopes(580, 256).then(
+                              (frame) {
+                                if (frame != null) widget.onselectFrame(frame);
+                              },
+                            );
+                          },
+                          child: Ink(
+                            //color: cDirBackground,
+                            decoration: dAccentGradient,
+                            width: 96,
+                            height: 96,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.max,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: NDIFrameThumnail(file: fse),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Text(
+                                      path.basenameWithoutExtension(fse.path).split("_").join("\n"),
+                                      style: tSmall,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      child: Text(
-                                        path.basenameWithoutExtension(fse.path).split("_").join("\n"),
-                                        style: tSmall,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      }
-                      return Container();
-                    },
-                    itemCount: dirContents.length),
+                        ),
+                      );
+                    }
+                    return Container();
+                  },
+                  itemCount: dirContents.length,
+                ),
               ),
             ]
           ],
         );
       },
     );
+  }
+}
+
+class NDIFrameThumnail extends StatefulWidget {
+  final File file;
+  const NDIFrameThumnail({
+    Key? key,
+    required this.file,
+  }) : super(key: key);
+
+  @override
+  State<NDIFrameThumnail> createState() => _NDIFrameThumnailState();
+}
+
+class _NDIFrameThumnailState extends State<NDIFrameThumnail> {
+  late SavedInputFrame frame;
+  @override
+  void initState() {
+    super.initState();
+    frame = SavedInputFrame.fromJSON(jsonDecode(widget.file.readAsStringSync()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      return FutureBuilder<ui.Image?>(
+        future: frame.thumbnailImage(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return SizedBox(
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: CustomPaint(
+                  size: const Size(160, 90),
+                  painter: ThumbnailPainter(img: snapshot.data!),
+                ),
+              ),
+            );
+          } else {
+            return const Icon(
+              Icons.image_sharp,
+              color: Colors.white,
+              size: 35,
+            );
+          }
+        },
+      );
+    });
+  }
+}
+
+class ThumbnailPainter extends CustomPainter {
+  final ui.Image img;
+  ThumbnailPainter({required this.img});
+  @override
+  void paint(Canvas canvas, Size size) {
+    //canvas.drawPaint(Paint()..color = Colors.black);
+    canvas.drawImage(img, Offset.zero, Paint());
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }

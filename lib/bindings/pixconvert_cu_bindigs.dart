@@ -194,4 +194,36 @@ class PixconvertCUDA {
     ffi.Pointer<ffi.Uint8> frame,
     int format,
   )>();
+
+  void thumbnailFromUyvy(
+    ffi.Pointer<ffi.Uint8> src,
+    int srcWidth,
+    int srcHeight,
+    ffi.Pointer<ffi.Uint8> tn,
+    int tnWidth,
+    int tnHeight,
+  ) {
+    return _thumbnailFromUyvy(src, srcWidth, srcHeight, tn, tnWidth, tnHeight);
+  }
+
+  late final _thumbnailFromUyvyPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int32,
+    ffi.Int32,
+  )>>("thumbnailFromUyvy");
+
+  late final _thumbnailFromUyvy = _thumbnailFromUyvyPtr.asFunction<
+      void Function(
+    ffi.Pointer<ffi.Uint8> src,
+    int srcWidth,
+    int srcHeight,
+    ffi.Pointer<ffi.Uint8> tn,
+    int tnWidth,
+    int tnHeight,
+  )>();
 }

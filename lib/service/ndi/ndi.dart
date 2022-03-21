@@ -455,17 +455,55 @@ class SavedInputFrame {
   int width;
   int height;
   DateTime timestamp;
+  Uint8List? thumbnail;
 
-  SavedInputFrame(
-      {required this.bytes, required this.width, required this.height, required this.format, required this.timestamp});
+  SavedInputFrame({
+    required this.bytes,
+    required this.width,
+    required this.height,
+    required this.format,
+    required this.timestamp,
+    this.thumbnail,
+  });
+  Future<ui.Image?> thumbnailImage() {
+    final c = Completer<ui.Image?>();
+    if (format != NDIInputFormat.uyvy) {
+      c.complete(null);
+      return c.future;
+    }
+    if (thumbnail == null) {
+      Pointer<Uint8> pSrc = calloc.call<Uint8>(bytes.length);
+      pSrc.asTypedList(bytes.length).setAll(0, bytes);
+      Pointer<Uint8> pTn = calloc.call<Uint8>(160 * 90 * 4);
+      pixconvertCUDA.thumbnailFromUyvy(pSrc, width, height, pTn, 160, 90);
+      ui.decodeImageFromPixels(
+        pTn.asTypedList(160 * 90 * 4),
+        160,
+        90,
+        ui.PixelFormat.rgba8888,
+        (result) {
+          thumbnail = Uint8List.fromList(pTn.asTypedList(160 * 90 * 4));
+          calloc.free(pSrc);
+          calloc.free(pTn);
+          c.complete(result);
+        },
+      );
+    } else {
+      ui.decodeImageFromPixels(thumbnail!, 160, 90, ui.PixelFormat.rgba8888, (result) {
+        c.complete(result);
+      });
+    }
+    return c.future;
+  }
 
   Future<NDIOutputFrame?> convertToScopes(int scopeWidth, int scopeHeight) {
     final c = Completer<NDIOutputFrame?>();
 
-    Pointer<Uint8> pSrc = calloc.call<Uint8>(width * height * 4);
-    for (int i = 0; i < bytes.length; i++) {
+    Pointer<Uint8> pSrc = calloc.call<Uint8>(bytes.length);
+    /*for (int i = 0; i < bytes.length; i++) {
       pSrc[i] = bytes[i];
-    }
+    }*/
+    pSrc.asTypedList(bytes.length).setAll(0, bytes);
     Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
     Pointer<Uint8> pWF = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
     Pointer<Uint8> pWFRgb = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
@@ -521,6 +559,7 @@ class SavedInputFrame {
       'height': height,
       'bytes': base64.encode(bytes),
       'format': format.index,
+      'thumbnail': thumbnail != null ? base64.encode(thumbnail!) : null,
     };
   }
 
@@ -531,6 +570,7 @@ class SavedInputFrame {
       height: json['height'] ?? 0,
       format: NDIInputFormat.values[json['format'] ?? 0],
       timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] ?? 0),
+      thumbnail: json['thumbnail'] != null ? base64.decode(json['thumbnail']) : null,
     );
   }
 }

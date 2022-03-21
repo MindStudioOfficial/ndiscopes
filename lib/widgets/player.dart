@@ -495,6 +495,7 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
   }
 }
 
+// ignore: must_be_immutable
 class Mask extends StatefulWidget {
   final Size frameSize;
   final Function(Rect mask) onMaskUpdated;

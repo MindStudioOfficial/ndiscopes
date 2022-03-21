@@ -28,6 +28,7 @@ An open source Windows application to display several diffrent Scopes for an NDI
   - [x] Overlay on source as splitscreen
   - [x] Overlay on scopes as background
   - [x] Overlay on scopes as splitscreen
+  - [x] Show thumbnails in frame browse (only uyvy)
 - [x] Draw Masks on source/reference frame
 - [ ] Record and graph RGBL ratio over time
 - [ ] NDI Codec support

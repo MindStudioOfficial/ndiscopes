@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/decorations.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'dart:ui' as ui;
-
 import 'package:ndiscopes/util/colorconversion.dart';
 import 'package:ndiscopes/widgets/player.dart';
 

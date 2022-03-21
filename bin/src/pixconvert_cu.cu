@@ -582,7 +582,7 @@ __global__ void kernelRectMaskFrame(int fWidth, int fHeight, int mLeft, int mTop
     int y = (int)floor(pix / (double)fWidth);
     if (x < mLeft || x > (mLeft + mWidth) || y < mTop || y > (mTop + mHeight))
     {
-        if (format == 2) //BGRA
+        if (format == 2) // BGRA
         {
             for (int i = 0; i < stride; i++)
             {
@@ -591,8 +591,8 @@ __global__ void kernelRectMaskFrame(int fWidth, int fHeight, int mLeft, int mTop
         }
         else if (format == 1) // UYVY
         {
-            d_frame[pix*stride+0] = 128;
-            d_frame[pix*stride+1] = 0;
+            d_frame[pix * stride + 0] = 128;
+            d_frame[pix * stride + 1] = 0;
         }
     }
 }
@@ -624,6 +624,89 @@ EXTERNC void rectMaskFrame(int fWidth, int fHeight, int mLeft, int mTop, int mWi
     cudaDeviceSynchronize();
     cudaMemcpy(frame, d_frame, fSize, cudaMemcpyDeviceToHost);
     cudaFree(d_frame);
+}
+
+__global__ void kernelThumbnailFromUyvy(uint8_t *d_src, int srcWidth, int srcHeight, uint8_t *d_tn, int tnWidth, int tnHeight)
+{
+    // calculate amount of pixels of destination
+    int pixcount = tnWidth * tnHeight;
+    // calculate index of current pixel in destination
+    int pix = blockIdx.x * blockDim.x + threadIdx.x;
+    // end if we are out of bounds
+    if (pix >= pixcount)
+        return;
+    // get values of corresponding src pixel
+    int x = pix % tnWidth;
+    int y = (int)floor(pix / (double)tnWidth);
+    int srcX = minInt((int)round(srcWidth * (x / (double)tnWidth)), srcWidth - 1);
+    int srcY = minInt((int)round(srcHeight * (y / (double)tnHeight)), srcHeight - 1);
+
+    // get pixel and byte index in ssource image
+    int srcPix = srcX + srcY * srcWidth;
+    int srcByte = srcPix * 2;
+
+    // get YUV values at corresponding pixel
+    int Y, U, V;
+    Y = d_src[srcByte + 1] - 16;
+    if (srcPix % 2 == 0)
+    {
+        U = d_src[srcByte];
+        V = d_src[srcByte + 2];
+    }
+    else
+    {
+        V = d_src[srcByte];
+        U = d_src[srcByte - 2];
+    }
+    U -= 128;
+    V -= 128;
+
+    //calculate RGB values from HDTV Conversion Matrix
+    uint8_t r = clampUint8((int)roundf(1.164 * Y + 1.596 * V));
+    uint8_t g = clampUint8((int)roundf(1.164 * Y - 0.392 * U - 0.813 * V));
+    uint8_t b = clampUint8((int)roundf(1.164 * Y + 2.017 * U));
+
+    //write RGBA data to destination
+    int destByte = pix * 4;
+    d_tn[destByte] = r;
+    d_tn[destByte + 1] = g;
+    d_tn[destByte + 2] = b;
+    d_tn[destByte + 3] = 255;
+}
+
+EXTERNC void thumbnailFromUyvy(uint8_t *src, int srcWidth, int srcHeight, uint8_t *tn, int tnWidth, int tnHeight)
+{
+    // calculate the amount of pixels in the destination
+    int tnPixcount = tnWidth * tnHeight;
+    // calculate number of bytes for destination
+    // tn will be in RGBA format, 4 bytes per pixel
+    int tnSize = tnPixcount * 4;
+    printf("%d\n",tnSize);
+    // calculate the amount of pixels in source image
+    int srcPixcount = srcWidth * srcHeight;
+    // calculate the number of bytes for source
+    // src is in uyvy format, 2 bytes per pixel
+    int srcSize = srcPixcount * 2;
+    printf("%d\n",srcSize);
+    // create memory on GPU
+    uint8_t *d_src;
+    cudaMalloc(&d_src, srcSize);
+    uint8_t *d_tn;
+    cudaMalloc(&d_tn, tnSize);
+    // copy source to GPU
+    
+    cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice);
+    // calculate the amount of blocks needed for blocks * threads/block = tnPixcount
+    int blockCount = (int)ceil(tnPixcount / (double)THREADS);
+    // call kernel for each thumbnail pixel
+    kernelThumbnailFromUyvy<<<blockCount, THREADS>>>(d_src, srcWidth, srcHeight, d_tn, tnWidth, tnHeight);
+    // wait for all threads to finish
+    cudaDeviceSynchronize();
+    // copy back data from GPU
+    cudaMemcpy(tn, d_tn, tnSize, cudaMemcpyDeviceToHost);
+    // free GPU memory
+    cudaFree(d_src);
+    cudaFree(d_tn);
 }
 
 int main()
