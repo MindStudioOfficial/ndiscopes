@@ -681,13 +681,13 @@ EXTERNC void thumbnailFromUyvy(uint8_t *src, int srcWidth, int srcHeight, uint8_
     // calculate number of bytes for destination
     // tn will be in RGBA format, 4 bytes per pixel
     int tnSize = tnPixcount * 4;
-    printf("%d\n",tnSize);
+    //printf("%d\n",tnSize);
     // calculate the amount of pixels in source image
     int srcPixcount = srcWidth * srcHeight;
     // calculate the number of bytes for source
     // src is in uyvy format, 2 bytes per pixel
     int srcSize = srcPixcount * 2;
-    printf("%d\n",srcSize);
+    //printf("%d\n",srcSize);
     // create memory on GPU
     uint8_t *d_src;
     cudaMalloc(&d_src, srcSize);

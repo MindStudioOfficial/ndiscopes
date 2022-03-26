@@ -6,8 +6,9 @@ An open source Windows application to display several diffrent Scopes for an NDI
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/MindStudioOfficial/ndiscopes?style=flat-square)
 ![GitHub contributors](https://img.shields.io/github/contributors/MindStudioOfficial/ndiscopes?style=flat-square)
 
-![Screenshot](blob/sc1.jpg)
-
+![Screenshot](blob/sc2.jpg)
+![Scopes](blob/sc_scopes1.jpg)
+![Vectorscope](blob/sc_scopes2.jpg)
 ## Roadmap
 
 ### Platform Support

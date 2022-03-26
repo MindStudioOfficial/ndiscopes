@@ -18,6 +18,7 @@ late NDI ndi;
 final appConfig = AppConfig();
 
 void main() {
+  Paint.enableDithering = true;
   ndi = NDI();
   runApp(
     MaterialApp(
