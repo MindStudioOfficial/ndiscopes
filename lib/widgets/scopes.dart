@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:ndiscopes/util/colorconversion.dart';
 import 'package:ndiscopes/widgets/player.dart';
 
+/*
 class Scopes extends StatefulWidget {
   final NDIOutputFrame? frame;
   final NDIOutputFrame? overlay;
@@ -25,9 +26,25 @@ class Scopes extends StatefulWidget {
 
   @override
   _ScopesState createState() => _ScopesState();
-}
+}*/
 
-class _ScopesState extends State<Scopes> {
+class Scopes extends StatelessWidget {
+  final NDIOutputFrame? frame;
+  final NDIOutputFrame? overlay;
+  final OverlayMode overlayMode;
+  final double splitPos;
+  final double? overlayOpacity;
+  final bool flipSplit;
+  const Scopes({
+    Key? key,
+    required this.frame,
+    this.overlay,
+    this.overlayOpacity,
+    required this.overlayMode,
+    required this.splitPos,
+    required this.flipSplit,
+  }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -37,38 +54,38 @@ class _ScopesState extends State<Scopes> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Scope(
-              img: widget.frame != null ? widget.frame!.iWF : null,
+              img: frame?.iWF,
               title: "Luma Waveform",
-              overlay: widget.overlay != null ? widget.overlay!.iWF : null,
-              overlayOpacity: widget.overlayOpacity,
-              flipSplit: widget.flipSplit,
-              overlayMode: widget.overlayMode,
-              splitPos: widget.splitPos,
+              overlay: overlay != null ? overlay!.iWF : null,
+              overlayOpacity: overlayOpacity,
+              flipSplit: flipSplit,
+              overlayMode: overlayMode,
+              splitPos: splitPos,
             ),
             Scope(
-              img: widget.frame != null ? widget.frame!.iWFRgb : null,
+              img: frame?.iWFRgb,
               title: "RGB Waveform",
-              overlay: widget.overlay != null ? widget.overlay!.iWFRgb : null,
-              overlayOpacity: widget.overlayOpacity,
-              flipSplit: widget.flipSplit,
-              overlayMode: widget.overlayMode,
-              splitPos: widget.splitPos,
+              overlay: overlay != null ? overlay!.iWFRgb : null,
+              overlayOpacity: overlayOpacity,
+              flipSplit: flipSplit,
+              overlayMode: overlayMode,
+              splitPos: splitPos,
             ),
             Scope(
-              img: widget.frame != null ? widget.frame!.iWFParade : null,
+              img: frame?.iWFParade,
               title: "RGB Parade",
-              overlay: widget.overlay != null ? widget.overlay!.iWFParade : null,
-              overlayOpacity: widget.overlayOpacity,
-              flipSplit: widget.flipSplit,
-              overlayMode: widget.overlayMode,
-              splitPos: widget.splitPos,
+              overlay: overlay != null ? overlay!.iWFParade : null,
+              overlayOpacity: overlayOpacity,
+              flipSplit: flipSplit,
+              overlayMode: overlayMode,
+              splitPos: splitPos,
               isParade: true,
             ),
             VScope(
-              img: widget.frame != null ? widget.frame!.iVScope : null,
+              img: frame?.iVScope,
               title: "Vectorscope",
-              overlay: widget.overlay != null ? widget.overlay!.iVScope : null,
-              overlayOpacity: widget.overlayOpacity,
+              overlay: overlay != null ? overlay!.iVScope : null,
+              overlayOpacity: overlayOpacity,
             ),
           ],
         ),
@@ -449,5 +466,109 @@ class VScopePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
+  }
+}
+
+class ScopeV2 extends StatelessWidget {
+  final String title;
+  final ui.Image? img;
+  final ui.Image? ovl;
+  final double overlayOpacity;
+  final bool flipSplit;
+  final OverlayMode overlayMode;
+  final double splitPos;
+  final bool isParade;
+  const ScopeV2({
+    Key? key,
+    required this.flipSplit,
+    required this.img,
+    required this.isParade,
+    required this.overlayMode,
+    required this.overlayOpacity,
+    required this.ovl,
+    required this.splitPos,
+    required this.title,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 600 / 306,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Text(
+                title,
+                style: tSmall,
+              ),
+            ),
+            ClipRect(
+              child: CustomPaint(
+                painter: ScopePainter(
+                  img: img,
+                  opacity: overlayOpacity,
+                  overlay: ovl,
+                  flipSplit: flipSplit,
+                  overlayMode: overlayMode,
+                  splitPos: splitPos,
+                  isParade: isParade,
+                ),
+                size: img != null
+                    ? Size(
+                        img!.width + 20,
+                        img!.height + 20,
+                      )
+                    : const Size(600, 275),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class VscopeV2 extends StatelessWidget {
+  final ui.Image? img;
+  final ui.Image? ovl;
+  final String title;
+  final double overlayOpacity;
+  const VscopeV2({
+    Key? key,
+    required this.img,
+    required this.ovl,
+    required this.title,
+    required this.overlayOpacity,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Text(
+            title,
+            style: tSmall,
+          ),
+        ),
+        AspectRatio(
+          aspectRatio: 1,
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: ClipRect(
+              child: CustomPaint(
+                painter: VScopePainter(img: img, opacity: overlayOpacity, overlay: ovl),
+                size: img != null ? Size(img!.width + 20, img!.height + 20) : const Size(276, 276),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

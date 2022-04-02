@@ -13,6 +13,7 @@ import 'package:ndiscopes/widgets/framebrowser.dart';
 import 'package:ndiscopes/widgets/player.dart';
 import 'package:ndiscopes/widgets/scopes.dart';
 import 'package:ndiscopes/widgets/window.dart';
+import 'dart:ui' as ui;
 
 late NDI ndi;
 final appConfig = AppConfig();
@@ -59,7 +60,7 @@ class _MainState extends State<Main> {
 
   Rect mask = Rect.zero;
   bool maskActive = false;
-
+  bool refOpen = false;
   @override
   void initState() {
     super.initState();
@@ -138,7 +139,7 @@ class _MainState extends State<Main> {
     calloc.free(major);
     calloc.free(minor);
   }
-
+  /*
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
@@ -241,6 +242,170 @@ class _MainState extends State<Main> {
               ),
             ],
           ),
+        ],
+      );
+    });
+    
+  }
+  */
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      return Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          WindowTitleBar(
+            sourceName: selectedSource?.name ?? "No Source",
+          ),
+          //top part
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Flexible(
+                  flex: 2,
+                  child: FrameViewer(
+                    onMaskUpdate: (m, active) {
+                      maskActive = active;
+                      mask = m;
+                      ndi.updateMask(mask, maskActive);
+                      setState(() {});
+                    },
+                    frame: currentFrame,
+                    overlay: overlayFrame,
+                    overlayOpacity: overlayOpacity,
+                    onSaveFrame: () {
+                      if (selectedSource == null) return;
+                      ndi.getSingleFrame(
+                        selectedSource!.source,
+                        const Size(580, 256),
+                        (frame) {
+                          saveInputFrame(frame);
+                        },
+                        mask,
+                        maskActive,
+                      );
+                    },
+                    onRemoveOverlay: () {
+                      overlayFrame = null;
+                      setState(() {});
+                    },
+                    onSelectSource: (index) {
+                      final pS = ndi.getSourceAt(index);
+
+                      if (pS != null) {
+                        ndi.stopGetFrames();
+                        selectedSource = NDISource(pS);
+                        setState(() {});
+                        ndi.getFrames(
+                          selectedSource!.source,
+                          const Size(580, 256),
+                          (frame) => setState(
+                            () => currentFrame = frame,
+                          ),
+                          mask,
+                          maskActive,
+                        );
+                      }
+                    },
+                    onOverlayChanged: (mode, pos, flip) {
+                      setState(() {
+                        overlayMode = mode;
+                        splitPos = pos;
+                        flipSplit = flip;
+                      });
+                    },
+                  ),
+                ),
+                Flexible(
+                  flex: 1,
+                  child: Container(
+                    color: Colors.black,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        VscopeV2(
+                          img: currentFrame?.iVScope,
+                          overlayOpacity: overlayOpacity,
+                          ovl: overlayFrame?.iVScope,
+                          title: "UV Vectorscope",
+                        ),
+                        Divider(
+                          height: 2,
+                          thickness: 2,
+                          color: cPrimary,
+                          endIndent: 0,
+                          indent: 0,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          //bottom part
+          Container(
+            color: Colors.black,
+            child: IntrinsicHeight(
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Flexible(
+                    child: ScopeV2(
+                      title: "Luma Waveform",
+                      flipSplit: flipSplit,
+                      img: currentFrame?.iWF,
+                      overlayMode: overlayMode,
+                      overlayOpacity: overlayOpacity,
+                      ovl: overlayFrame?.iWF,
+                      splitPos: splitPos,
+                      isParade: false,
+                    ),
+                  ),
+                  VerticalDivider(
+                    width: 2,
+                    color: cPrimary,
+                    thickness: 2,
+                    endIndent: 0,
+                    indent: 0,
+                  ),
+                  Flexible(
+                    child: ScopeV2(
+                      title: "RGB Waveform",
+                      flipSplit: flipSplit,
+                      img: currentFrame?.iWFRgb,
+                      overlayMode: overlayMode,
+                      overlayOpacity: overlayOpacity,
+                      ovl: overlayFrame?.iWFRgb,
+                      splitPos: splitPos,
+                      isParade: false,
+                    ),
+                  ),
+                  VerticalDivider(
+                    width: 2,
+                    color: cPrimary,
+                    thickness: 2,
+                    endIndent: 0,
+                    indent: 0,
+                  ),
+                  Flexible(
+                    child: ScopeV2(
+                      title: "RGB Parade",
+                      flipSplit: flipSplit,
+                      img: currentFrame?.iWFParade,
+                      overlayMode: overlayMode,
+                      overlayOpacity: overlayOpacity,
+                      ovl: overlayFrame?.iWFParade,
+                      splitPos: splitPos,
+                      isParade: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
         ],
       );
     });

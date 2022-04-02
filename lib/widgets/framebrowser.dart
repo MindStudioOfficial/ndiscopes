@@ -261,3 +261,17 @@ class ThumbnailPainter extends CustomPainter {
     return true;
   }
 }
+
+class FrameBrowserV2 extends StatefulWidget {
+  const FrameBrowserV2({Key? key}) : super(key: key);
+
+  @override
+  State<FrameBrowserV2> createState() => _FrameBrowserV2State();
+}
+
+class _FrameBrowserV2State extends State<FrameBrowserV2> {
+  @override
+  Widget build(BuildContext context) {
+    return Container();
+  }
+}
