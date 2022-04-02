@@ -23,6 +23,7 @@ class FrameViewer extends StatefulWidget {
   final Function() onRemoveOverlay;
   final Function(OverlayMode mode, double splitPos, bool flipSplit) onOverlayChanged;
   final Function(Rect mask, bool active) onMaskUpdate;
+  final Function() onToggleFrameBrowser;
   const FrameViewer({
     Key? key,
     required this.frame,
@@ -33,6 +34,7 @@ class FrameViewer extends StatefulWidget {
     required this.onRemoveOverlay,
     required this.onOverlayChanged,
     required this.onMaskUpdate,
+    required this.onToggleFrameBrowser,
   }) : super(key: key);
 
   @override
@@ -157,6 +159,25 @@ class _FrameViewerState extends State<FrameViewer> {
                         ),
                       ),
                   ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.topRight,
+          child: DelayedCustomTooltip(
+            "Select Reference Frame",
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: IconButton(
+                onPressed: () {
+                  widget.onToggleFrameBrowser();
+                },
+                iconSize: 25,
+                color: Colors.white,
+                icon: const Icon(
+                  FluentIcons.image_28_filled,
                 ),
               ),
             ),

@@ -13,7 +13,6 @@ import 'package:ndiscopes/widgets/framebrowser.dart';
 import 'package:ndiscopes/widgets/player.dart';
 import 'package:ndiscopes/widgets/scopes.dart';
 import 'package:ndiscopes/widgets/window.dart';
-import 'dart:ui' as ui;
 
 late NDI ndi;
 final appConfig = AppConfig();
@@ -265,57 +264,87 @@ class _MainState extends State<Main> {
               children: [
                 Flexible(
                   flex: 2,
-                  child: FrameViewer(
-                    onMaskUpdate: (m, active) {
-                      maskActive = active;
-                      mask = m;
-                      ndi.updateMask(mask, maskActive);
-                      setState(() {});
-                    },
-                    frame: currentFrame,
-                    overlay: overlayFrame,
-                    overlayOpacity: overlayOpacity,
-                    onSaveFrame: () {
-                      if (selectedSource == null) return;
-                      ndi.getSingleFrame(
-                        selectedSource!.source,
-                        const Size(580, 256),
-                        (frame) {
-                          saveInputFrame(frame);
-                        },
-                        mask,
-                        maskActive,
-                      );
-                    },
-                    onRemoveOverlay: () {
-                      overlayFrame = null;
-                      setState(() {});
-                    },
-                    onSelectSource: (index) {
-                      final pS = ndi.getSourceAt(index);
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      Expanded(
+                        child: FrameViewer(
+                          onMaskUpdate: (m, active) {
+                            maskActive = active;
+                            mask = m;
+                            ndi.updateMask(mask, maskActive);
+                            setState(() {});
+                          },
+                          frame: currentFrame,
+                          overlay: overlayFrame,
+                          overlayOpacity: overlayOpacity,
+                          onSaveFrame: () {
+                            if (selectedSource == null) return;
+                            ndi.getSingleFrame(
+                              selectedSource!.source,
+                              const Size(580, 256),
+                              (frame) {
+                                saveInputFrame(frame);
+                              },
+                              mask,
+                              maskActive,
+                            );
+                          },
+                          onRemoveOverlay: () {
+                            overlayFrame = null;
+                            setState(() {});
+                          },
+                          onSelectSource: (index) {
+                            final pS = ndi.getSourceAt(index);
 
-                      if (pS != null) {
-                        ndi.stopGetFrames();
-                        selectedSource = NDISource(pS);
-                        setState(() {});
-                        ndi.getFrames(
-                          selectedSource!.source,
-                          const Size(580, 256),
-                          (frame) => setState(
-                            () => currentFrame = frame,
+                            if (pS != null) {
+                              ndi.stopGetFrames();
+                              selectedSource = NDISource(pS);
+                              setState(() {});
+                              ndi.getFrames(
+                                selectedSource!.source,
+                                const Size(580, 256),
+                                (frame) => setState(
+                                  () => currentFrame = frame,
+                                ),
+                                mask,
+                                maskActive,
+                              );
+                            }
+                          },
+                          onOverlayChanged: (mode, pos, flip) {
+                            setState(() {
+                              overlayMode = mode;
+                              splitPos = pos;
+                              flipSplit = flip;
+                            });
+                          },
+                          onToggleFrameBrowser: () {
+                            setState(() {
+                              refOpen = !refOpen;
+                            });
+                          },
+                        ),
+                      ),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: refOpen ? 175 : 0,
+                        curve: Curves.easeInOutQuad,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const NeverScrollableScrollPhysics(),
+                          child: SizedBox(
+                            width: 175,
+                            child: FrameBrowserV2(
+                              onSelectFrame: (frame) {
+                                overlayFrame = frame;
+                                setState(() {});
+                              },
+                            ),
                           ),
-                          mask,
-                          maskActive,
-                        );
-                      }
-                    },
-                    onOverlayChanged: (mode, pos, flip) {
-                      setState(() {
-                        overlayMode = mode;
-                        splitPos = pos;
-                        flipSplit = flip;
-                      });
-                    },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Flexible(
@@ -373,6 +402,7 @@ class _MainState extends State<Main> {
                   ),
                   Flexible(
                     child: ScopeV2(
+                      key: ValueKey([currentFrame, overlayFrame]),
                       title: "RGB Waveform",
                       flipSplit: flipSplit,
                       img: currentFrame?.iWFRgb,

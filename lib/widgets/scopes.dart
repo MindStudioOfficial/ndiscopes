@@ -214,14 +214,14 @@ class _ScopeState extends State<Scope> {
 }
 
 class ScopePainter extends CustomPainter {
-  ui.Image? img;
-  ui.Image? overlay;
-  double? opacity;
-  double splitPos;
-  OverlayMode overlayMode;
-  bool flipSplit;
-  bool? isParade;
-  ScopePainter({
+  final ui.Image? img;
+  final ui.Image? overlay;
+  final double? opacity;
+  final double splitPos;
+  final OverlayMode overlayMode;
+  final bool flipSplit;
+  final bool? isParade;
+  const ScopePainter({
     required this.img,
     this.overlay,
     this.opacity,
@@ -254,7 +254,7 @@ class ScopePainter extends CustomPainter {
       pO.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 255]);
 
       if (overlayMode == OverlayMode.splitVertical) {
-        if (isParade == null) {
+        if (isParade == null || isParade == false) {
           Rect srcRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
               Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
           Rect dstRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) + const Offset(10, 10) &
@@ -469,7 +469,7 @@ class VScopePainter extends CustomPainter {
   }
 }
 
-class ScopeV2 extends StatelessWidget {
+class ScopeV2 extends StatefulWidget {
   final String title;
   final ui.Image? img;
   final ui.Image? ovl;
@@ -485,11 +485,16 @@ class ScopeV2 extends StatelessWidget {
     required this.isParade,
     required this.overlayMode,
     required this.overlayOpacity,
-    required this.ovl,
+    this.ovl,
     required this.splitPos,
     required this.title,
   }) : super(key: key);
 
+  @override
+  State<ScopeV2> createState() => _ScopeV2State();
+}
+
+class _ScopeV2State extends State<ScopeV2> {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
@@ -502,25 +507,25 @@ class ScopeV2 extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(4.0),
               child: Text(
-                title,
+                widget.title,
                 style: tSmall,
               ),
             ),
             ClipRect(
               child: CustomPaint(
                 painter: ScopePainter(
-                  img: img,
-                  opacity: overlayOpacity,
-                  overlay: ovl,
-                  flipSplit: flipSplit,
-                  overlayMode: overlayMode,
-                  splitPos: splitPos,
-                  isParade: isParade,
+                  img: widget.img,
+                  opacity: widget.overlayOpacity,
+                  overlay: widget.ovl,
+                  flipSplit: widget.flipSplit,
+                  overlayMode: widget.overlayMode,
+                  splitPos: widget.splitPos,
+                  isParade: widget.isParade,
                 ),
-                size: img != null
+                size: widget.img != null
                     ? Size(
-                        img!.width + 20,
-                        img!.height + 20,
+                        widget.img!.width + 20,
+                        widget.img!.height + 20,
                       )
                     : const Size(600, 275),
               ),
@@ -548,6 +553,7 @@ class VscopeV2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
           padding: const EdgeInsets.all(4.0),

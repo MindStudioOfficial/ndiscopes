@@ -263,15 +263,125 @@ class ThumbnailPainter extends CustomPainter {
 }
 
 class FrameBrowserV2 extends StatefulWidget {
-  const FrameBrowserV2({Key? key}) : super(key: key);
+  final Function(NDIOutputFrame frame) onSelectFrame;
+  const FrameBrowserV2({Key? key, required this.onSelectFrame}) : super(key: key);
 
   @override
   State<FrameBrowserV2> createState() => _FrameBrowserV2State();
 }
 
 class _FrameBrowserV2State extends State<FrameBrowserV2> {
+  Directory? currentDir;
+  late Directory appDir;
+
+  @override
+  void initState() {
+    super.initState();
+    init();
+  }
+
+  List<FileSystemEntity> appDirContents = [];
+  List<Directory> appDirDirectorys = [];
+  List<FileSystemEntity> currentDirContents = [];
+
+  init() async {
+    final docDir = await getApplicationDocumentsDirectory();
+    appDir = Directory(docDir.path + "/NDIScopes");
+    updateAppDir();
+
+    appDir.watch(recursive: true).listen((event) {
+      updateAppDir();
+      updateCurrentDir();
+    });
+    currentDir = appDirDirectorys.last;
+    updateCurrentDir();
+  }
+
+  updateAppDir() {
+    if (!appDir.existsSync()) appDir.createSync();
+    appDirContents = appDir.listSync(followLinks: false, recursive: false);
+    appDirDirectorys = appDirContents.whereType<Directory>().toList();
+    appDirDirectorys.sort(
+      (a, b) => int.parse(path.basename(a.path)).compareTo(
+        int.parse(path.basename(b.path)),
+      ),
+    );
+  }
+
+  updateCurrentDir() async {
+    if (currentDir == null) return;
+    currentDirContents = currentDir!.listSync(recursive: false, followLinks: false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Container(
+      color: cPrimary,
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          if (appDirDirectorys.isNotEmpty && currentDir != null)
+            DropdownButton<Directory>(
+              value: appDirDirectorys.contains(currentDir) ? currentDir : appDirDirectorys.last,
+              items: appDirDirectorys
+                  .map<DropdownMenuItem<Directory>>(
+                    (d) => DropdownMenuItem<Directory>(
+                      key: ValueKey(d),
+                      value: d,
+                      child: Text(
+                        path.basename(d.path),
+                        style: tSmall,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (d) {
+                if (d != null) currentDir = d;
+                updateCurrentDir();
+                setState(() {});
+              },
+              dropdownColor: cPrimary,
+            ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: currentDirContents.length,
+              itemBuilder: (context, index) {
+                final fse = currentDirContents[index];
+                if (fse is File && path.extension(fse.path) == ".ndis") {
+                  return Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: InkWell(
+                      onTap: () {
+                        SavedInputFrame.fromJSON(
+                          jsonDecode(
+                            fse.readAsStringSync(),
+                          ),
+                        ).convertToScopes(580, 256).then(
+                          (frame) {
+                            if (frame != null) widget.onSelectFrame(frame);
+                          },
+                        );
+                      },
+                      child: Ink(
+                        width: 96,
+                        height: 96,
+                        child: Center(
+                          child: NDIFrameThumnail(
+                            file: fse,
+                            key: ValueKey(fse),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                } else {
+                  return Container();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
