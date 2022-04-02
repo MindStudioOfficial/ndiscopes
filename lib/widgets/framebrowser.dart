@@ -8,6 +8,7 @@ import 'package:ndiscopes/models/decorations.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
+import 'package:ndiscopes/widgets/customtooltip.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui' as ui;
@@ -348,27 +349,30 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
               itemBuilder: (context, index) {
                 final fse = currentDirContents[index];
                 if (fse is File && path.extension(fse.path) == ".ndis") {
-                  return Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: InkWell(
-                      onTap: () {
-                        SavedInputFrame.fromJSON(
-                          jsonDecode(
-                            fse.readAsStringSync(),
-                          ),
-                        ).convertToScopes(580, 256).then(
-                          (frame) {
-                            if (frame != null) widget.onSelectFrame(frame);
-                          },
-                        );
-                      },
-                      child: Ink(
-                        width: 96,
-                        height: 96,
-                        child: Center(
-                          child: NDIFrameThumnail(
-                            file: fse,
-                            key: ValueKey(fse),
+                  return DelayedCustomTooltip(
+                    path.basename(fse.path),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: InkWell(
+                        onTap: () {
+                          SavedInputFrame.fromJSON(
+                            jsonDecode(
+                              fse.readAsStringSync(),
+                            ),
+                          ).convertToScopes(580, 256).then(
+                            (frame) {
+                              if (frame != null) widget.onSelectFrame(frame);
+                            },
+                          );
+                        },
+                        child: Ink(
+                          width: 96,
+                          height: 96,
+                          child: Center(
+                            child: NDIFrameThumnail(
+                              file: fse,
+                              key: ValueKey(fse),
+                            ),
                           ),
                         ),
                       ),
