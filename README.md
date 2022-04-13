@@ -8,6 +8,11 @@ An open source Windows application to display several diffrent scopes/waveforms 
 
 ![Screenshot](blob/sc3.jpg)
 
+## Requirements
+
+The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is required to run this software. See *GPU Support* to see exaxtly what GPUs are supported.
+
+
 ## Roadmap
 
 ### Platform Support
@@ -31,14 +36,16 @@ An open source Windows application to display several diffrent scopes/waveforms 
   - [x] Show thumbnails in frame browse (only uyvy)
 - [x] Draw Masks on source/reference frame
 - [ ] Record and graph RGBL ratio over time
-- [ ] NDI Codec support
-  - [x] UYVY (most common)
+- NDI Codec support
+  - **This software now requests the frames to be in UYVY or BGRA format to maximize compatibility.**
+  - [x] UYVY (most common, fastest)
   - [ ] UYVA
   - [ ] RGBA
   - [ ] RGBX
-  - [x] BGRA (used for still images)
+  - [x] BGRA (stills and alpha)
   - [ ] BGRX
   - others are very uncommon IMO
+  
 
 ### GPU Support
 - NVIDIA
@@ -46,7 +53,7 @@ An open source Windows application to display several diffrent scopes/waveforms 
   - [x] CC 7.x **Volta/Turing** RTX 20 Series, GTX 16 Series, RTX Quadro Series, TITAN RTX, TITAN V
   - [x] CC 6.x **Pascal** GTX 10 Series, Titan X, Quadro
   - [x] CC 5.x **Maxwell** GTX 750 - GTX 980 Ti
-  - [x] CC >=3.5 **Kepler** GT 640 - GTX 780 Ti, TITAN Z **NEEDS TESTING!!!**
+  - [x] CC >=3.5 **Kepler** GT 640 - GTX 780 Ti, TITAN Z 
   - [ ] CC <3.2 not supported by CUDA 11.x
 - [ ] AMD
 - [ ] other
@@ -58,12 +65,13 @@ Download the latest build under [Releases](https://github.com/MindStudioOfficial
 
 ## Getting Started
 
+For licensing reasons I am not able to provide the **SDK Files** directly. You have to source them yourself from [here](https://www.ndi.tv/sdk/#download).
+
+The `.dll` file from the SDK goes into the bin folder once you have downloaded it.
 
 This application uses the cross-platform [Flutter](https://flutter.dev/) framework written in [Dart](https://dart.dev/).
 
-### Requirements
-
-The Software uses CUDA to compute the frames and scopes. A **NVIDIA GPU** is required to run this Software.
+Upon building flutter puts the bin folder containing the necessary libraries in an assets folder which is incorrect. You will have to manually move the bin folder back to the root of the release folder once built.
 
 ### Run in Debug-Mode
 
