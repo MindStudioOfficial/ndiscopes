@@ -49,3 +49,5 @@ app.*.map.json
 bin/src/initcomp.bat
 .VSCodeCounter
 bin/src/compile.bat
+
+bin/Processing.NDI.Lib.x64.dll

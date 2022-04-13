@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
-import 'package:ndiscopes/bindings/ndi_ffi_bindigs.dart';
+import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -281,14 +281,16 @@ class NDI {
       onDone: () {},
     );
 
-    //! tried to create settings but always resulted in the app crashing so using nullptr for now
+    // Yey this got fixed by updating the NDI SDK to the most recent version
 
-    /*Pointer<NDIlib_recv_create_v3_t> pCreateSettings = calloc.call<NDIlib_recv_create_v3_t>(1);
-    pCreateSettings.ref.color_format = NDIlib_recv_color_format_e.NDIlib_recv_color_format_UYVY_RGBA;
+    // create the receiver settings
+    Pointer<NDIlib_recv_create_v3_t> pCreateSettings = calloc.call<NDIlib_recv_create_v3_t>(1);
+    // request a certain preferred color format
+    pCreateSettings.ref.color_format = NDIlib_recv_color_format_e.NDIlib_recv_color_format_UYVY_BGRA;
     pCreateSettings.ref.bandwidth = NDIlib_recv_bandwidth_e.NDIlib_recv_bandwidth_highest;
     pCreateSettings.ref.source_to_connect_to = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>()[0];
     pCreateSettings.ref.p_ndi_recv_name = "NDIScopes".toNativeUtf8().cast<Int8>();
-    pCreateSettings.ref.allow_video_fields = 0;*/
+    pCreateSettings.ref.allow_video_fields = 0;
 
     // create the receiver instance
     NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
@@ -412,7 +414,7 @@ class NDI {
           int height = data["height"]!;
           NDIInputFormat format = NDIInputFormat.values[data["format"]!];
           final pVideoFrame = Pointer.fromAddress(data["pVideo"]!).cast<NDIlib_video_frame_v2_t>();
-          final pNDIRecv = Pointer.fromAddress(data["pNDIRecv"]!).cast<Void>();
+          final pNDIRecv = Pointer.fromAddress(data["pNDIRecv"]!).cast<NDIlib_recv_instance_type>();
 
           int bytesPerPixel = 0;
           switch (format) {
