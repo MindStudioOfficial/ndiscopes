@@ -70,6 +70,7 @@ flutter:
       # - graphics/
       - bin/Processing.NDI.Lib.x64.dll
       - bin/pixconvert_cu.dll
+      - license.md
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

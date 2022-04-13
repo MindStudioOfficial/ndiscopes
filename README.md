@@ -1,6 +1,6 @@
 # NDIScopes
 
-An open source Windows application to display several diffrent Scopes for an NDI Input built with [Flutter](https://flutter.dev). 
+An open source Windows application to display several diffrent scopes/waveforms for an NDI® input built with [Flutter](https://flutter.dev). 
 
 ![GitHub all releases](https://img.shields.io/github/downloads/MindStudioOfficial/ndiscopes/total?style=flat-square)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/MindStudioOfficial/ndiscopes?style=flat-square)
@@ -87,3 +87,7 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter, view our
 [online documentation](https://flutter.dev/docs), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+### License
+
+[License Agreement](license.md)
