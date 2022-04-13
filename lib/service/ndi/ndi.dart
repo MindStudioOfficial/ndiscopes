@@ -426,16 +426,24 @@ class NDISource {
   }
 }
 
+/// A class storing all [ui.Image]s required to paint the frame and all the scopes
+///
 class NDIOutputFrame {
   ui.Image iRGBA;
   ui.Image iWF;
   ui.Image iWFRgb;
   ui.Image iWFParade;
   ui.Image iVScope;
-  NDIOutputFrame(
-      {required this.iRGBA, required this.iWF, required this.iWFRgb, required this.iWFParade, required this.iVScope});
+  NDIOutputFrame({
+    required this.iRGBA,
+    required this.iWF,
+    required this.iWFRgb,
+    required this.iWFParade,
+    required this.iVScope,
+  });
 }
 
+/// Enumarator to distinguish between different formats that incoming or outgoing NDI frames might appear in
 enum NDIInputFormat {
   uyvy,
   uyva,
@@ -449,6 +457,11 @@ enum NDIInputFormat {
   yv12,
 }
 
+/// A class that represents a frame that can be stored as a file or read from a file (.ndis)
+///
+/// It contains the raw [bytes] of the frame provided from the NDI SDK in the specified [format]
+///
+/// It also stores the [width] and [height] of the frame to reconstruct it from a 1D list of bytes.
 class SavedInputFrame {
   NDIInputFormat format;
   Uint8List bytes;
@@ -465,6 +478,10 @@ class SavedInputFrame {
     required this.timestamp,
     this.thumbnail,
   });
+
+  /// Renders a thumbnail image from the bytes of the frame if it's in UYVY format and stores it in the [thumbnail] property
+  ///
+  /// If [thumbnail] is already present it will not be rendered again and just returned as a [ui.Image].
   Future<ui.Image?> thumbnailImage() {
     final c = Completer<ui.Image?>();
     if (format != NDIInputFormat.uyvy) {
