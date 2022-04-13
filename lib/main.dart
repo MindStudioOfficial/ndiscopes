@@ -319,9 +319,9 @@ class _MainState extends State<Main> {
                               flipSplit = flip;
                             });
                           },
-                          onToggleFrameBrowser: () {
+                          onToggleFrameBrowser: (open) {
                             setState(() {
-                              refOpen = !refOpen;
+                              refOpen = open;
                             });
                           },
                         ),
