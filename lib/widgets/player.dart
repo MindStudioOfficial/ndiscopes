@@ -14,6 +14,8 @@ enum OverlayMode {
   opacity,
 }
 
+/// Displays the incoming NDI frames aswell as a selected overlay
+/// and all necessary buttons for source selection reference frame controls and mask controls
 class FrameViewer extends StatefulWidget {
   final NDIOutputFrame? frame;
   final NDIOutputFrame? overlay;
@@ -46,18 +48,18 @@ class _FrameViewerState extends State<FrameViewer> {
   OverlayMode overlayMode = OverlayMode.splitVertical;
   double splitPos = 0.5;
   bool flipSplit = false;
-
   bool maskActive = false;
   bool frameBrowserOpen = false;
-
   late Rect mask;
 
   @override
   void initState() {
     super.initState();
+    // initiate mask with default value
     mask = defaultMask();
   }
 
+  // construct default rectangle for mask
   Rect defaultMask() {
     Size frameSize = widget.frame != null
         ? Size(widget.frame!.iRGBA.width.toDouble(), widget.frame!.iRGBA.height.toDouble())
@@ -73,20 +75,24 @@ class _FrameViewerState extends State<FrameViewer> {
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        //* button sidebar
         Column(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            //* select source button
             DelayedCustomTooltip(
               "Select NDI Source",
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: IconButton(
                   onPressed: () {
+                    // pop-up dialog for selecting a source
                     showDialog(
                       context: context,
                       builder: (context) {
                         return SourceSelectDialog(
+                          // pass the selected source to parent widget
                           onSelectSource: widget.onSelectSource,
                         );
                       },
@@ -100,11 +106,14 @@ class _FrameViewerState extends State<FrameViewer> {
                 ),
               ),
             ),
+            //* colored container for all reference frame related buttons
             Container(
+              // changes color when reference frame is selected
               color: widget.overlay != null ? cAccent : cPrimary,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  //* select reference frames
                   DelayedCustomTooltip(
                     "Select Reference Frame",
                     child: Padding(
@@ -122,6 +131,7 @@ class _FrameViewerState extends State<FrameViewer> {
                       ),
                     ),
                   ),
+                  //* disable overlay button
                   if (widget.overlay != null) ...[
                     DelayedCustomTooltip(
                       "Disable Overlay",
@@ -138,6 +148,7 @@ class _FrameViewerState extends State<FrameViewer> {
                       ),
                     ),
                     if (overlayMode != OverlayMode.opacity) ...[
+                      //* split mode toggle button
                       DelayedCustomTooltip(
                         overlayMode == OverlayMode.splitHorizontal ? "Split Vertical" : "Split Horizontal",
                         child: Padding(
@@ -160,6 +171,7 @@ class _FrameViewerState extends State<FrameViewer> {
                           ),
                         ),
                       ),
+                      //* flip overlay toogle button
                       DelayedCustomTooltip(
                         "Flip Overlay Side",
                         child: Padding(
@@ -181,6 +193,7 @@ class _FrameViewerState extends State<FrameViewer> {
                       ),
                     ]
                   ],
+                  //* save reference frame button
                   DelayedCustomTooltip(
                     "Save Reference Frame",
                     child: Padding(
@@ -198,9 +211,11 @@ class _FrameViewerState extends State<FrameViewer> {
                 ],
               ),
             ),
+            //* mask related buttons
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                //* toogle mask button
                 DelayedCustomTooltip(
                   "Toogle Mask",
                   child: Padding(
@@ -216,6 +231,7 @@ class _FrameViewerState extends State<FrameViewer> {
                     ),
                   ),
                 ),
+                //* reset mask button
                 if (maskActive)
                   DelayedCustomTooltip(
                     "Reset Mask",
@@ -240,6 +256,7 @@ class _FrameViewerState extends State<FrameViewer> {
             ),
           ],
         ),
+        //* frame viewer
         Expanded(
           child: AspectRatio(
             aspectRatio: 16 / 9,
@@ -248,7 +265,7 @@ class _FrameViewerState extends State<FrameViewer> {
               child: ClipRect(
                 child: Stack(
                   children: [
-                    // * NDI SOURCE IMAGE + Overlay
+                    //* NDI SOURCE IMAGE + Overlay
                     CustomPaint(
                       painter: ImagePainter(
                         img: widget.frame != null ? widget.frame!.iRGBA : null,
@@ -263,7 +280,7 @@ class _FrameViewerState extends State<FrameViewer> {
                         widget.frame != null ? widget.frame!.iRGBA.height.toDouble() : 1080,
                       ),
                     ),
-                    // * Mask Overlay
+                    //* Mask Overlay
                     if (maskActive)
                       Mask(
                         frameSize: Size(
@@ -276,7 +293,7 @@ class _FrameViewerState extends State<FrameViewer> {
                         },
                         mask: mask,
                       ),
-                    // * Overlay sliders
+                    //* Overlay slider vertical
                     if (widget.overlay != null && overlayMode == OverlayMode.splitVertical)
                       Positioned(
                         left: widget.overlay!.iRGBA.width * splitPos - 22.5,
@@ -303,6 +320,7 @@ class _FrameViewerState extends State<FrameViewer> {
                           ),
                         ),
                       ),
+                    //* Overlay slider horizontal
                     if (widget.overlay != null && overlayMode == OverlayMode.splitHorizontal)
                       Positioned(
                         left: widget.overlay!.iRGBA.width / 2 - 22.5,
@@ -340,6 +358,8 @@ class _FrameViewerState extends State<FrameViewer> {
   }
 }
 
+/// Paints the [img] and optional [overlay] on top.
+
 class ImagePainter extends CustomPainter {
   ui.Image? img;
   ui.Image? overlay;
@@ -362,6 +382,8 @@ class ImagePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     Paint p = Paint()..blendMode = bm ?? BlendMode.srcOver;
     p.colorFilter = const ColorFilter.matrix(
+      //* make alpha only dependant on input alpha
+      //* default seems to be to expect a premultiplied image
       <double>[
         // r g b a o
         1, 0, 0, 0, 0, // r
@@ -370,17 +392,25 @@ class ImagePainter extends CustomPainter {
         0, 0, 0, 1, 0, // a
       ],
     );
-    canvas.drawColor(Colors.black, BlendMode.srcOver);
-
-    if (img != null) {
+    // fill background with black if no image
+    // ClipRect is necessary around this painter because this doesn't respect canvas boundaries
+    if (img == null) {
+      canvas.drawColor(Colors.black, BlendMode.srcOver);
+    }
+    // paint the image if available
+    else {
+      //TODO: optional checkerboard behind frame with alpha
       canvas.drawImage(img!, Offset.zero, p);
     }
+    // paints the overlay image if available
     if (overlay != null) {
       switch (overlayMode) {
+        //! not used but still here just in case
         case OverlayMode.opacity:
           p.color = Colors.black.withOpacity(opacity ?? .5);
           canvas.drawImage(overlay!, Offset.zero, p);
           break;
+        // splits the overlay image vertically based on split position and flip
         case OverlayMode.splitVertical:
           p.color = Colors.white;
           Size overlaySize =
@@ -391,8 +421,8 @@ class ImagePainter extends CustomPainter {
             Offset(flipSplit ? overlay!.width * splitPos : 0, 0) & overlaySize,
             p,
           );
-
           break;
+        // splits the overlay image horizontally based on split position and flip
         case OverlayMode.splitHorizontal:
           p.color = Colors.white;
           canvas.drawImageRect(
@@ -417,6 +447,10 @@ class ImagePainter extends CustomPainter {
   }
 }
 
+/// the pop-up dialog shown when the select source button is pressed
+///
+/// callback returns the index of the selected source
+/// updates the list of sources via ndi api
 class SourceSelectDialog extends StatefulWidget {
   final Function(int index) onSelectSource;
   const SourceSelectDialog({Key? key, required this.onSelectSource}) : super(key: key);
@@ -427,9 +461,14 @@ class SourceSelectDialog extends StatefulWidget {
 
 class _SourceSelectDialogState extends State<SourceSelectDialog> {
   bool loading = true;
+
   @override
   void initState() {
     super.initState();
+    updateSources();
+  }
+
+  updateSources() {
     ndi.updateSoures().then((_) {
       if (mounted) {
         setState(() {
@@ -452,17 +491,15 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
             "Select Source",
             style: tDefault,
           ),
+          //* refresh button
           DelayedCustomTooltip(
             "Refresh",
             child: IconButton(
               onPressed: (() {
-                loading = true;
-                setState(() {});
-                ndi.updateSoures().then((_) {
-                  setState(() {
-                    loading = false;
-                  });
+                setState(() {
+                  loading = true;
                 });
+                updateSources();
               }),
               color: Colors.white,
               iconSize: 25,
@@ -472,7 +509,9 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
         ],
       ),
       children: [
+        // display the loading indicator if loading
         if (loading)
+          // necessary center because CircularProgressIndicator behaves weirdly if not in this arrangement of widgets
           const Center(
             child: Padding(
               padding: EdgeInsets.all(8.0),
@@ -493,6 +532,7 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
               style: tAccent,
             ),
           ),
+        //* List of source names
         SizedBox(
           height: 300,
           width: 300,
@@ -525,11 +565,16 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
   }
 }
 
+/// displays the mask with control points
 // ignore: must_be_immutable
 class Mask extends StatefulWidget {
   final Size frameSize;
   final Function(Rect mask) onMaskUpdated;
+
+  // mask can be changed from inside the widget and outside
+  // not optimal
   Rect mask;
+
   Mask({
     Key? key,
     required this.onMaskUpdated,
@@ -551,29 +596,35 @@ class _MaskState extends State<Mask> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        //* paints the outside of the mask slightly black
         CustomPaint(
           size: widget.frameSize,
           painter: MaskPainter(mask: widget.mask),
         ),
+        //* the actual rectangle with white borders that can be moved around
         Positioned(
           top: widget.mask.top,
           left: widget.mask.left,
           child: MouseRegion(
             cursor: SystemMouseCursors.move,
             child: Listener(
+              //* listen for move events
               onPointerMove: (event) {
                 Rect newMask = widget.mask.shift(event.localDelta);
+                //* move the mask but not outside the frame
                 newMask = Offset(
                       newMask.topLeft.dx.clamp(0, widget.frameSize.width - newMask.width),
                       newMask.topLeft.dy.clamp(0, widget.frameSize.height - newMask.height),
                     ) &
                     newMask.size;
-
+                //* update the mask locally
                 setState(() {
                   widget.mask = newMask;
                 });
+                //* send the mask to the api to mask the actual frames
                 widget.onMaskUpdated(newMask);
               },
+              //* the actual white border of the mask rectangle
               child: Container(
                 width: widget.mask.width,
                 height: widget.mask.height,
@@ -582,12 +633,14 @@ class _MaskState extends State<Mask> {
             ),
           ),
         ),
+        //* top left resize control
         Positioned(
           top: widget.mask.topLeft.dy - 15,
           left: widget.mask.topLeft.dx - 15,
           child: MouseRegion(
             cursor: SystemMouseCursors.resizeUpLeftDownRight,
             child: Listener(
+              //* listen for move events
               onPointerMove: (event) {
                 Size newSize = (widget.mask.size + -(event.localDelta));
                 Offset newPos = (widget.mask.topLeft + event.localDelta);
@@ -617,12 +670,14 @@ class _MaskState extends State<Mask> {
             ),
           ),
         ),
+        //* bottom right resize control
         Positioned(
           top: widget.mask.bottomRight.dy - 15,
           left: widget.mask.bottomRight.dx - 15,
           child: MouseRegion(
             cursor: SystemMouseCursors.resizeUpLeftDownRight,
             child: Listener(
+              //* listen for move events
               onPointerMove: (event) {
                 Size newSize = (widget.mask.size + event.localDelta);
 
@@ -653,6 +708,9 @@ class _MaskState extends State<Mask> {
   }
 }
 
+/// Paints a rectangle cutout corresponding to the mask rect
+///
+/// overlays everything outside the mask with 70% black
 class MaskPainter extends CustomPainter {
   final Rect mask;
   const MaskPainter({required this.mask});
@@ -661,6 +719,7 @@ class MaskPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     Paint p = Paint()..color = Colors.black.withOpacity(.7);
     canvas.drawPath(
+      // make a large rectangle with a small rectangle cut out
       Path.combine(
         PathOperation.difference,
         Path()..addRect(Offset.zero & size),
