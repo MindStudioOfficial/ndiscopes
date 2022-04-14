@@ -24,6 +24,7 @@ class FrameViewer extends StatefulWidget {
   final Function(OverlayMode mode, double splitPos, bool flipSplit) onOverlayChanged;
   final Function(Rect mask, bool active) onMaskUpdate;
   final Function(bool open) onToggleFrameBrowser;
+
   const FrameViewer({
     Key? key,
     required this.frame,
@@ -70,6 +71,7 @@ class _FrameViewerState extends State<FrameViewer> {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           mainAxisSize: MainAxisSize.max,
@@ -359,7 +361,17 @@ class ImagePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     Paint p = Paint()..blendMode = bm ?? BlendMode.srcOver;
+    p.colorFilter = const ColorFilter.matrix(
+      <double>[
+        // r g b a o
+        1, 0, 0, 0, 0, // r
+        0, 1, 0, 0, 0, // g
+        0, 0, 1, 0, 0, // b
+        0, 0, 0, 1, 0, // a
+      ],
+    );
     canvas.drawColor(Colors.black, BlendMode.srcOver);
+
     if (img != null) {
       canvas.drawImage(img!, Offset.zero, p);
     }

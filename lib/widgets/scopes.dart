@@ -6,28 +6,7 @@ import 'dart:ui' as ui;
 import 'package:ndiscopes/util/colorconversion.dart';
 import 'package:ndiscopes/widgets/player.dart';
 
-/*
-class Scopes extends StatefulWidget {
-  final NDIOutputFrame? frame;
-  final NDIOutputFrame? overlay;
-  final OverlayMode overlayMode;
-  final double splitPos;
-  final double? overlayOpacity;
-  final bool flipSplit;
-  const Scopes({
-    Key? key,
-    required this.frame,
-    this.overlay,
-    this.overlayOpacity,
-    required this.overlayMode,
-    required this.splitPos,
-    required this.flipSplit,
-  }) : super(key: key);
-
-  @override
-  _ScopesState createState() => _ScopesState();
-}*/
-
+//! no longer used
 class Scopes extends StatelessWidget {
   final NDIOutputFrame? frame;
   final NDIOutputFrame? overlay;
@@ -94,6 +73,7 @@ class Scopes extends StatelessWidget {
   }
 }
 
+//! no longer used
 class Scope extends StatefulWidget {
   final String title;
   final ui.Image? img;
@@ -119,6 +99,7 @@ class Scope extends StatefulWidget {
   _ScopeState createState() => _ScopeState();
 }
 
+//! no longer used
 class _ScopeState extends State<Scope> {
   bool expanded = true;
   bool hover = false;
@@ -213,6 +194,11 @@ class _ScopeState extends State<Scope> {
   }
 }
 
+/// paints a scope provided in [img]
+///
+/// overlays another scope [overlay] spliting it at [splitPos]
+/// flips the sides if [flipSplit] is true
+/// paints the overlay in thirds if [isParade] is true
 class ScopePainter extends CustomPainter {
   final ui.Image? img;
   final ui.Image? overlay;
@@ -221,6 +207,7 @@ class ScopePainter extends CustomPainter {
   final OverlayMode overlayMode;
   final bool flipSplit;
   final bool? isParade;
+
   const ScopePainter({
     required this.img,
     this.overlay,
@@ -230,52 +217,78 @@ class ScopePainter extends CustomPainter {
     required this.splitPos,
     this.isParade,
   });
+
   @override
   void paint(Canvas canvas, Size size) {
+    // fills the background with black
+    // doesn't account for canvas borders
+    // surrounding this painter with cliprect is necessary
     canvas.drawColor(Colors.black, BlendMode.srcATop);
     Paint p = Paint();
+
+    // if split horizontal put overlay with opacity in background
     if (overlay != null && overlayMode == OverlayMode.splitHorizontal) {
+      // set opacity of the overlay
       p.color = Colors.black.withOpacity((opacity ?? .2).clamp(0, 1));
-      p.colorFilter =
-          const ColorFilter.matrix(<double>[0, 1, 0, 0, 255, 0, 0, 1, 0, 255, 1, 0, 0, 0, 255, .2, .2, .2, 0, 0]);
+
+      p.colorFilter = const ColorFilter.matrix(
+        // transform color of the background image
+        // make alpha dependant of 3o% R 30% G 30% B 10% A
+        // make color white
+        <double>[
+          // r g b a offset
+          0, 0, 0, 0, 255, // r
+          0, 0, 0, 0, 255, // g
+          0, 0, 0, 0, 255, // b
+          .3, .3, .3, .1, 0, // a
+        ],
+      );
       canvas.drawImage(overlay!, const Offset(10, 10), p);
     }
+    // paint the scope image
+    if (img != null) canvas.drawImage(img!, const Offset(10, 10), Paint());
 
-    if (img != null) {
-      Paint p2 = Paint();
-      /*if (overlay != null) {
-        p2.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
-      }*/
-      canvas.drawImage(img!, const Offset(10, 10), p2);
-    }
+    // paint the vertically split overlay on top of the image
+    if (overlay != null && overlayMode == OverlayMode.splitVertical) {
+      Paint pO = Paint();
+      // transform the color
+      // makes alpha 100% to hide the image behind it to make split visible
+      pO.colorFilter = const ColorFilter.matrix(
+        <double>[
+          // input
+          // r g b a offset
+          1, 0, 0, 0, 0, // r   |
+          0, 1, 0, 0, 0, // g   | output
+          0, 0, 1, 0, 0, // b   |
+          0, 0, 0, 1, 255, // a |
+        ],
+      );
 
-    if (overlay != null) {
-      Paint pO = Paint()..color = Colors.white;
-      pO.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 255]);
-
-      if (overlayMode == OverlayMode.splitVertical) {
-        if (isParade == null || isParade == false) {
-          Rect srcRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
-              Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
-          Rect dstRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) + const Offset(10, 10) &
-              Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
-          canvas.drawImageRect(
-            overlay!,
-            srcRect,
-            dstRect,
-            pO,
-          );
-        } else if (isParade!) {
-          double third = overlay!.width.toDouble() / 3;
-          Size s = Size(flipSplit ? third * (1 - splitPos) : third * splitPos, overlay!.height.toDouble());
-          for (int i = 0; i < 3; i++) {
-            Offset o = Offset(flipSplit ? i * third + third * splitPos : i * third, 0);
-            canvas.drawImageRect(overlay!, o & s, o + const Offset(10, 10) & s, pO);
-          }
+      // paint the overlay in a rectangle based on the split position and flipSplit
+      if (isParade == null || !isParade!) {
+        Rect srcRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
+            Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
+        Rect dstRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) + const Offset(10, 10) &
+            Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
+        canvas.drawImageRect(
+          overlay!,
+          srcRect,
+          dstRect,
+          pO,
+        );
+        // if parade paint the overlay in thirds
+      } else if (isParade!) {
+        // draws three parts of the image next to each other all split at splitPos/3
+        double third = overlay!.width.toDouble() / 3;
+        Size s = Size(flipSplit ? third * (1 - splitPos) : third * splitPos, overlay!.height.toDouble());
+        for (int i = 0; i < 3; i++) {
+          Offset o = Offset(flipSplit ? i * third + third * splitPos : i * third, 0);
+          canvas.drawImageRect(overlay!, o & s, o + const Offset(10, 10) & s, pO);
         }
       }
     }
 
+    // draw horizontal level lines in increments of 32
     p = Paint()..color = Colors.white.withOpacity(.3);
     for (int i = 0; i <= 8; i++) {
       double y = i * (img != null ? img!.height : 256) / 8;
@@ -290,6 +303,7 @@ class ScopePainter extends CustomPainter {
   }
 }
 
+//! no longer used
 class VScope extends StatefulWidget {
   final String title;
   final ui.Image? img;
@@ -301,6 +315,7 @@ class VScope extends StatefulWidget {
   _VScopeState createState() => _VScopeState();
 }
 
+//! no longer used
 class _VScopeState extends State<VScope> {
   bool expanded = true;
   bool hover = false;
@@ -392,6 +407,9 @@ class _VScopeState extends State<VScope> {
   }
 }
 
+/// the colors at which to draw the squares on the vectorscope
+///
+/// once at 100% and once at 75% saturation
 List<Color> scopeColors = [
   const Color.fromRGBO(210, 0, 0, 1),
   const Color.fromRGBO(210, 0, 210, 1),
@@ -401,63 +419,100 @@ List<Color> scopeColors = [
   const Color.fromRGBO(210, 210, 0, 1),
 ];
 
+/// The painter that draws the vectorscope [img] and [overlay] to gether with the colored squares and lines
 class VScopePainter extends CustomPainter {
   ui.Image? img;
   ui.Image? overlay;
   double? opacity;
+
   VScopePainter({required this.img, this.overlay, this.opacity});
+
   @override
   void paint(Canvas canvas, Size size) {
+    // fills the background with black
+    // doesn't account for canvas borders
+    // surrounding this painter with cliprect is necessary
     canvas.drawColor(Colors.black, BlendMode.srcATop);
+
+    // save the topleft corner because it gets used very often
     Offset topleft = const Offset(10, 10);
-    Paint pi = Paint()
+
+    Paint pLine = Paint()
+      // only draw the outlines with 30% opacity and 0.5px width
       ..style = PaintingStyle.stroke
-      ..strokeWidth = .3
+      ..strokeWidth = .5
       ..isAntiAlias = true
       ..color = Colors.white.withOpacity(.3);
-
-    //canvas.drawCircle(const Offset(128, 128) + topleft, 128, pi);
-    canvas.drawLine(topleft + const Offset(128, 0), topleft + const Offset(128, 256), pi);
-    canvas.drawLine(topleft + const Offset(0, 128), topleft + const Offset(256, 128), pi);
-
+    // draw the
+    canvas.drawLine(topleft + const Offset(128, 0), topleft + const Offset(128, 256), pLine);
+    canvas.drawLine(topleft + const Offset(0, 128), topleft + const Offset(256, 128), pLine);
+    // move to the center
     canvas.translate(138, 138);
-
+    // rotate -34° around the center
     canvas.rotate(-2.164208);
-    canvas.drawLine(const Offset(0, 0), const Offset(128, 0), pi);
+    // draw the skintone line at -34° -90°
+    canvas.drawLine(const Offset(0, 0), const Offset(128, 0), pLine);
+    // rotate back
     canvas.rotate(2.164208);
-
-    pi.strokeWidth = 1;
+    // reuse the paint for the colored rectangles
+    pLine.strokeWidth = 1;
+    // draw a rectangle for every color in scopeColors at its uv coordinate
     for (Color c in scopeColors) {
-      pi.color = c.withOpacity(.9);
-
-      canvas.rotate((uvFromRGB(pi.color) - const Offset(128, 128)).direction);
+      // color at 100% saturation
+      pLine.color = c.withOpacity(.9);
+      // rotate to the vector of the uv coordiante so that the resulting rectangle gets also rotated
+      canvas.rotate((uvFromRGB(pLine.color) - const Offset(128, 128)).direction);
+      // draw the rectangle for the color
       canvas.drawRect(
-          Offset((uvFromRGB(pi.color) - const Offset(128, 128)).distance - 5, 0 - 5) & const Size(10, 10), pi);
-      canvas.rotate(-(uvFromRGB(pi.color) - const Offset(128, 128)).direction);
-    }
-    for (Color c in scopeColors) {
-      pi.color = Color.lerp(c.withOpacity(.7), Colors.black.withOpacity(.7), .25) ?? c;
-
-      canvas.rotate((uvFromRGB(pi.color) - const Offset(128, 128)).direction);
+        Offset((uvFromRGB(pLine.color) - const Offset(128, 128)).distance - 5, 0 - 5) & const Size(10, 10),
+        pLine,
+      );
+      // interpolate between black and the color at 1-0.25 = 75% saturation
+      pLine.color = Color.lerp(c.withOpacity(.7), Colors.black.withOpacity(.7), .25) ?? c;
+      // draw the rectangle for the color at 75% saturation
       canvas.drawRect(
-          Offset((uvFromRGB(pi.color) - const Offset(128, 128)).distance - 2.5, 0 - 2.5) & const Size(5, 5), pi);
-      canvas.rotate(-(uvFromRGB(pi.color) - const Offset(128, 128)).direction);
+        Offset((uvFromRGB(pLine.color) - const Offset(128, 128)).distance - 2.5, 0 - 2.5) & const Size(5, 5),
+        pLine,
+      );
+      // rotate back
+      canvas.rotate(-(uvFromRGB(pLine.color) - const Offset(128, 128)).direction);
     }
+    // move back to 0,0
     canvas.translate(-138, -138);
 
+    // paint the overlay behind the image
     Paint p = Paint();
     if (overlay != null) {
       p.color = Colors.black.withOpacity((opacity ?? .5).clamp(0, 1));
-
-      p.colorFilter =
-          const ColorFilter.matrix(<double>[0, 0, 0, 0, 255, 0, .1, 0, 0, 0, 0, 0, 0, 0, 255, 0, 1, 0, 0, 0]);
+      // transform the color to pink from green
+      // alpha from green channel
+      // r and b at 100%
+      p.colorFilter = const ColorFilter.matrix(
+        <double>[
+          // r g b a offset
+          0, 0, 0, 0, 255, // r
+          0, .1, 0, 0, 0, // g
+          0, 0, 0, 0, 255, // b
+          0, 1, 0, 0, 0, // a
+        ],
+      );
       canvas.drawImage(overlay!, const Offset(10, 10), p);
     }
 
     if (img != null) {
       Paint p2 = Paint();
       if (overlay != null) {
-        p2.colorFilter = const ColorFilter.matrix(<double>[1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
+        // transform image color if overlay is present
+        // alpha from green channel
+        p2.colorFilter = const ColorFilter.matrix(
+          <double>[
+            // r g b a offset
+            1, 0, 0, 0, 0, // r
+            0, 1, 0, 0, 0, // g
+            0, 0, 1, 0, 0, // b
+            0, 1, 0, 0, 0, // a
+          ],
+        );
       }
       canvas.drawImage(img!, const Offset(10, 10), p2);
     }

@@ -351,21 +351,35 @@ class _MainState extends State<Main> {
                   flex: 1,
                   child: Container(
                     color: Colors.black,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
                       children: [
-                        VscopeV2(
-                          img: currentFrame?.iVScope,
-                          overlayOpacity: overlayOpacity,
-                          ovl: overlayFrame?.iVScope,
-                          title: "UV Vectorscope",
-                        ),
-                        Divider(
-                          height: 2,
+                        VerticalDivider(
+                          width: 2,
                           thickness: 2,
                           color: cPrimary,
                           endIndent: 0,
                           indent: 0,
+                        ),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              VscopeV2(
+                                img: currentFrame?.iVScope,
+                                overlayOpacity: overlayOpacity,
+                                ovl: overlayFrame?.iVScope,
+                                title: "UV Vectorscope",
+                              ),
+                              Divider(
+                                height: 2,
+                                thickness: 2,
+                                color: cPrimary,
+                                endIndent: 0,
+                                indent: 0,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
