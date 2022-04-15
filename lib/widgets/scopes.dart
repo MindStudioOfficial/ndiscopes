@@ -224,7 +224,9 @@ class ScopePainter extends CustomPainter {
     // doesn't account for canvas borders
     // surrounding this painter with cliprect is necessary
     canvas.drawColor(Colors.black, BlendMode.srcATop);
-    Paint p = Paint();
+    Paint p = Paint()
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high;
 
     // if split horizontal put overlay with opacity in background
     if (overlay != null && overlayMode == OverlayMode.splitHorizontal) {
@@ -247,7 +249,9 @@ class ScopePainter extends CustomPainter {
     }
     // paint the scope image
     if (img != null) {
-      Paint pI = Paint();
+      Paint pI = Paint()
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high;
       pI.colorFilter = const ColorFilter.matrix(
         <double>[
           1, 0, 0, 0, 0, // r
@@ -261,7 +265,9 @@ class ScopePainter extends CustomPainter {
 
     // paint the vertically split overlay on top of the image
     if (overlay != null && overlayMode == OverlayMode.splitVertical) {
-      Paint pO = Paint();
+      Paint pO = Paint()
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high;
       // transform the color
       // makes alpha 100% to hide the image behind it to make split visible
       pO.colorFilter = const ColorFilter.matrix(
@@ -305,7 +311,7 @@ class ScopePainter extends CustomPainter {
     for (int i = 0; i <= 8; i++) {
       double y = i * (img != null ? img!.height : 256) / 8;
 
-      canvas.drawLine(Offset(10, y + 10), Offset(img != null ? img!.width + 10 : 580, y + 10), p);
+      canvas.drawLine(Offset(10, y + 10), Offset(img != null ? img!.width + 10 : 590, y + 10), p);
     }
   }
 
@@ -493,7 +499,9 @@ class VScopePainter extends CustomPainter {
     canvas.translate(-138, -138);
 
     // paint the overlay behind the image
-    Paint p = Paint();
+    Paint p = Paint()
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high;
     if (overlay != null) {
       p.color = Colors.black.withOpacity((opacity ?? .5).clamp(0, 1));
       // transform the color to pink from green
@@ -512,20 +520,22 @@ class VScopePainter extends CustomPainter {
     }
 
     if (img != null) {
-      Paint p2 = Paint();
-      if (overlay != null) {
-        // transform image color if overlay is present
-        // alpha from green channel
-        p2.colorFilter = const ColorFilter.matrix(
-          <double>[
-            // r g b a offset
-            1, 0, 0, 0, 0, // r
-            0, 1, 0, 0, 0, // g
-            0, 0, 1, 0, 0, // b
-            0, 1, 0, 0, 0, // a
-          ],
-        );
-      }
+      Paint p2 = Paint()
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.high;
+
+      // transform image color
+      // alpha from alpha
+      p2.colorFilter = const ColorFilter.matrix(
+        <double>[
+          // r g b a offset
+          1, 0, 0, 0, 0, // r
+          0, 1, 0, 0, 0, // g
+          0, 0, 1, 0, 0, // b
+          0, 0, 0, 1, 0, // a
+        ],
+      );
+
       canvas.drawImage(img!, const Offset(10, 10), p2);
     }
   }
