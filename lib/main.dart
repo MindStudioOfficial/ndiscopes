@@ -3,7 +3,6 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:ndiscopes/config.dart';
 import 'package:ndiscopes/models/buttonstyles.dart';
 import 'package:ndiscopes/models/colors.dart';
@@ -51,7 +50,7 @@ class Main extends StatefulWidget {
 class _MainState extends State<Main> {
   NDIOutputFrame? currentFrame;
   NDIOutputFrame? overlayFrame;
-  double overlayOpacity = .5;
+  double overlayOpacity = 1;
   NDISource? selectedSource;
 
   OverlayMode overlayMode = OverlayMode.splitVertical;
@@ -259,7 +258,6 @@ class _MainState extends State<Main> {
       portraitLayout = aspect < 1.3;
       int scopesCountX = portraitLayout ? 2 : 3;
       double width = constraints.maxWidth - scopesCountX * 2;
-      double sHeight = (width / scopesCountX) * 306 / 600;
       return Column(
         mainAxisSize: MainAxisSize.max,
         children: [

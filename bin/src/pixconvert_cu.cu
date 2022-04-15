@@ -436,36 +436,46 @@ EXTERNC void getDeviceProperties(int *major, int *minor)
 
 __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope, uint8_t bright)
 {
+    // get 1D pixel index
     int pix = blockIdx.x * blockDim.x + threadIdx.x;
     if (pix >= pixcount)
         return;
+    // get 1D byte index
     int pixb = pix * 4;
 
+    // get r g b a values of this pixel
     uint8_t b, g, r, a;
     b = d_src[pixb];
     g = d_src[pixb + 1];
     r = d_src[pixb + 2];
     a = d_src[pixb + 3];
 
+    // calculate y u v values for this pixel
     float y, u, v;
     y = 16 + (r * 0.183 + g * 0.614 + b * 0.062);
     u = 128 + (r * -0.101 + g * -0.339 + b * 0.439);
     v = 128 + (r * 0.439 + g * -0.399 + b * -0.040);
 
+    // copy pixel to image pixel
     d_dest[pixb] = r;
     d_dest[pixb + 1] = g;
     d_dest[pixb + 2] = b;
     d_dest[pixb + 3] = a;
 
+    // get x position in source image
     int x = pix % srcWidth;
+    // map x position to x position in destination scope
     int ox = minInt((int)round(scopeWidth * (x / (float)srcWidth)), scopeWidth - 1);
+    // calculate y position from luminance (y)
     int oy = minInt((int)roundf(scopeHeight * (1 - (y / (float)255))), scopeHeight - 1);
 
     int destI = 4 * (oy * scopeWidth + ox);
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
     {
-        atomicAddClamp(d_wf + destI + 1, 2);
-        d_wf[destI + 3] = 255;
+        // add brightness to the green byte of waveform
+        atomicAddClamp(d_wf + destI + 1, bright);
+        // set alpha of that pixel to source alpha
+        d_wf[destI + 3] = a;
     }
 
     // make wFRGB
@@ -477,19 +487,19 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
         atomicAddClamp(d_wfRgb + destR, bright);
-        d_wfRgb[destR + 3] = 255;
+        d_wfRgb[destR + 3] = a;
     }
     int destG = 4 * (og * scopeWidth + ox);
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
         atomicAddClamp(d_wfRgb + destG + 1, bright);
-        d_wfRgb[destG + 3] = 255;
+        d_wfRgb[destG + 3] = a;
     }
     int destB = 4 * (ob * scopeWidth + ox);
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
         atomicAddClamp(d_wfRgb + destB + 2, bright);
-        d_wfRgb[destB + 3] = 255;
+        d_wfRgb[destB + 3] = a;
     }
 
     double third = (scopeWidth / (float)3);
@@ -502,20 +512,19 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
         atomicAddClamp(d_wfParade + destR, bright);
-
-        d_wfParade[destR + 3] = 255;
+        d_wfParade[destR + 3] = a;
     }
 
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
         atomicAddClamp(d_wfParade + destG + 1, bright);
-        d_wfParade[destG + 3] = 255;
+        d_wfParade[destG + 3] = a;
     }
 
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
         atomicAddClamp(d_wfParade + destB + 2, bright);
-        d_wfParade[destB + 3] = 255;
+        d_wfParade[destB + 3] = a;
     }
     ox = minInt((int)roundf(scopeHeight * (u / (float)255)), scopeHeight - 1);
     oy = minInt((int)roundf(scopeHeight * (1 - (v / (float)255))), scopeHeight - 1);
@@ -523,7 +532,7 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
         atomicAddClamp(d_vScope + destI + 1, bright);
-        d_vScope[destI + 3] = 255;
+        d_vScope[destI + 3] = a;
     }
 }
 

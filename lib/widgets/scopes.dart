@@ -229,7 +229,7 @@ class ScopePainter extends CustomPainter {
     // if split horizontal put overlay with opacity in background
     if (overlay != null && overlayMode == OverlayMode.splitHorizontal) {
       // set opacity of the overlay
-      p.color = Colors.black.withOpacity((opacity ?? .2).clamp(0, 1));
+      p.color = Colors.black.withOpacity((opacity ?? 1).clamp(0, 1));
 
       p.colorFilter = const ColorFilter.matrix(
         // transform color of the background image
@@ -237,16 +237,27 @@ class ScopePainter extends CustomPainter {
         // make color white
         <double>[
           // r g b a offset
-          0, 0, 0, 0, 255, // r
-          0, 0, 0, 0, 255, // g
-          0, 0, 0, 0, 255, // b
-          .3, .3, .3, .1, 0, // a
+          .33, .33, .33, 0, 0, // r
+          .33, .33, .33, 0, 0, // g
+          .33, .33, .33, 0, 0, // b
+          0, 0, 0, 1, 0, // a
         ],
       );
       canvas.drawImage(overlay!, const Offset(10, 10), p);
     }
     // paint the scope image
-    if (img != null) canvas.drawImage(img!, const Offset(10, 10), Paint());
+    if (img != null) {
+      Paint pI = Paint();
+      pI.colorFilter = const ColorFilter.matrix(
+        <double>[
+          1, 0, 0, 0, 0, // r
+          0, 1, 0, 0, 0, // g
+          0, 0, 1, 0, 0, // b
+          0, 0, 0, 1, 0, // a
+        ],
+      );
+      canvas.drawImage(img!, const Offset(10, 10), pI);
+    }
 
     // paint the vertically split overlay on top of the image
     if (overlay != null && overlayMode == OverlayMode.splitVertical) {
@@ -260,7 +271,7 @@ class ScopePainter extends CustomPainter {
           1, 0, 0, 0, 0, // r   |
           0, 1, 0, 0, 0, // g   | output
           0, 0, 1, 0, 0, // b   |
-          0, 0, 0, 1, 255, // a |
+          0, 0, 0, 1, 0, // a |
         ],
       );
 
@@ -270,6 +281,7 @@ class ScopePainter extends CustomPainter {
             Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
         Rect dstRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) + const Offset(10, 10) &
             Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
+        canvas.drawRect(dstRect, Paint()..color = Colors.black);
         canvas.drawImageRect(
           overlay!,
           srcRect,
