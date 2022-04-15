@@ -3,6 +3,7 @@ import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:ndiscopes/config.dart';
 import 'package:ndiscopes/models/buttonstyles.dart';
 import 'package:ndiscopes/models/colors.dart';
@@ -60,6 +61,9 @@ class _MainState extends State<Main> {
   Rect mask = Rect.zero;
   bool maskActive = false;
   bool refOpen = false;
+
+  bool portraitLayout = false;
+
   @override
   void initState() {
     super.initState();
@@ -251,13 +255,18 @@ class _MainState extends State<Main> {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
+      double aspect = constraints.maxWidth / constraints.maxHeight;
+      portraitLayout = aspect < 1.3;
+      int scopesCountX = portraitLayout ? 2 : 3;
+      double width = constraints.maxWidth - scopesCountX * 2;
+      double sHeight = (width / scopesCountX) * 306 / 600;
       return Column(
         mainAxisSize: MainAxisSize.max,
         children: [
           WindowTitleBar(
             sourceName: selectedSource?.name ?? "No Source",
           ),
-          //top part
+          //* top part
           Expanded(
             child: Row(
               mainAxisSize: MainAxisSize.max,
@@ -347,55 +356,48 @@ class _MainState extends State<Main> {
                     ],
                   ),
                 ),
-                Flexible(
-                  flex: 1,
-                  child: Container(
-                    color: Colors.black,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        VerticalDivider(
-                          width: 2,
-                          thickness: 2,
-                          color: cPrimary,
-                          endIndent: 0,
-                          indent: 0,
-                        ),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              VscopeV2(
+                if (!portraitLayout)
+                  Flexible(
+                    flex: 1,
+                    child: Container(
+                      color: Colors.black,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          VerticalDivider(
+                            width: 2,
+                            thickness: 2,
+                            color: cPrimary,
+                            endIndent: 0,
+                            indent: 0,
+                          ),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              controller: ScrollController(),
+                              child: VscopeV2(
                                 img: currentFrame?.iVScope,
                                 overlayOpacity: overlayOpacity,
                                 ovl: overlayFrame?.iVScope,
                                 title: "UV Vectorscope",
                               ),
-                              Divider(
-                                height: 2,
-                                thickness: 2,
-                                color: cPrimary,
-                                endIndent: 0,
-                                indent: 0,
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
-          //bottom part
+          //* bottom part
           Container(
             color: Colors.black,
             child: IntrinsicHeight(
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
+              child: Wrap(
+                //mainAxisSize: MainAxisSize.max,
                 children: [
-                  Flexible(
+                  SizedBox(
+                    width: width / scopesCountX,
                     child: ScopeV2(
                       title: "Luma Waveform",
                       flipSplit: flipSplit,
@@ -407,14 +409,8 @@ class _MainState extends State<Main> {
                       isParade: false,
                     ),
                   ),
-                  VerticalDivider(
-                    width: 2,
-                    color: cPrimary,
-                    thickness: 2,
-                    endIndent: 0,
-                    indent: 0,
-                  ),
-                  Flexible(
+                  SizedBox(
+                    width: width / scopesCountX,
                     child: ScopeV2(
                       key: ValueKey([currentFrame, overlayFrame]),
                       title: "RGB Waveform",
@@ -427,14 +423,8 @@ class _MainState extends State<Main> {
                       isParade: false,
                     ),
                   ),
-                  VerticalDivider(
-                    width: 2,
-                    color: cPrimary,
-                    thickness: 2,
-                    endIndent: 0,
-                    indent: 0,
-                  ),
-                  Flexible(
+                  SizedBox(
+                    width: width / scopesCountX,
                     child: ScopeV2(
                       title: "RGB Parade",
                       flipSplit: flipSplit,
@@ -446,6 +436,16 @@ class _MainState extends State<Main> {
                       isParade: true,
                     ),
                   ),
+                  if (portraitLayout)
+                    SizedBox(
+                      width: width / scopesCountX / 2,
+                      child: VscopeV2(
+                        img: currentFrame?.iVScope,
+                        overlayOpacity: overlayOpacity,
+                        ovl: overlayFrame?.iVScope,
+                        title: "UV Vectorscope",
+                      ),
+                    )
                 ],
               ),
             ),

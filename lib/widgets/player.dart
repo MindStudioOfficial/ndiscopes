@@ -74,187 +74,191 @@ class _FrameViewerState extends State<FrameViewer> {
     return Row(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         //* button sidebar
-        Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            //* select source button
-            DelayedCustomTooltip(
-              "Select NDI Source",
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: IconButton(
-                  onPressed: () {
-                    // pop-up dialog for selecting a source
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return SourceSelectDialog(
-                          // pass the selected source to parent widget
-                          onSelectSource: widget.onSelectSource,
-                        );
-                      },
-                    );
-                  },
-                  iconSize: 25,
-                  color: Colors.white,
-                  icon: const Icon(
-                    FluentIcons.video_clip_24_filled,
+        SingleChildScrollView(
+          controller: ScrollController(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              //* select source button
+              DelayedCustomTooltip(
+                "Select NDI Source",
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                    onPressed: () {
+                      // pop-up dialog for selecting a source
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return SourceSelectDialog(
+                            // pass the selected source to parent widget
+                            onSelectSource: widget.onSelectSource,
+                          );
+                        },
+                      );
+                    },
+                    iconSize: 25,
+                    color: Colors.white,
+                    icon: const Icon(
+                      FluentIcons.video_clip_24_filled,
+                    ),
                   ),
                 ),
               ),
-            ),
-            //* colored container for all reference frame related buttons
-            Container(
-              // changes color when reference frame is selected
-              color: widget.overlay != null ? cAccent : cPrimary,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  //* select reference frames
-                  DelayedCustomTooltip(
-                    "Select Reference Frame",
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        onPressed: () {
-                          frameBrowserOpen = !frameBrowserOpen;
-                          widget.onToggleFrameBrowser(frameBrowserOpen);
-                        },
-                        iconSize: 25,
-                        color: frameBrowserOpen ? Colors.blue : Colors.white,
-                        icon: const Icon(
-                          FluentIcons.image_28_filled,
+              //* colored container for all reference frame related buttons
+              Container(
+                // changes color when reference frame is selected
+                color: widget.overlay != null ? cAccent : cPrimary,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    //* select reference frames
+                    DelayedCustomTooltip(
+                      "Select Reference Frame",
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: IconButton(
+                          onPressed: () {
+                            frameBrowserOpen = !frameBrowserOpen;
+                            widget.onToggleFrameBrowser(frameBrowserOpen);
+                          },
+                          iconSize: 25,
+                          color: frameBrowserOpen ? Colors.blue : Colors.white,
+                          icon: const Icon(
+                            FluentIcons.image_28_filled,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  //* disable overlay button
-                  if (widget.overlay != null) ...[
+                    //* disable overlay button
+                    if (widget.overlay != null) ...[
+                      DelayedCustomTooltip(
+                        "Disable Overlay",
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: IconButton(
+                            iconSize: 25,
+                            color: Colors.white,
+                            onPressed: () {
+                              widget.onRemoveOverlay();
+                            },
+                            icon: const Icon(FluentIcons.dismiss_24_filled),
+                          ),
+                        ),
+                      ),
+                      if (overlayMode != OverlayMode.opacity) ...[
+                        //* split mode toggle button
+                        DelayedCustomTooltip(
+                          overlayMode == OverlayMode.splitHorizontal ? "Split Vertical" : "Split Horizontal",
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: IconButton(
+                              iconSize: 25,
+                              color: Colors.white,
+                              onPressed: () {
+                                overlayMode = overlayMode == OverlayMode.splitHorizontal
+                                    ? OverlayMode.splitVertical
+                                    : OverlayMode.splitHorizontal;
+                                widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                                //setState(() {});
+                              },
+                              icon: Icon(
+                                overlayMode == OverlayMode.splitHorizontal
+                                    ? FluentIcons.split_vertical_28_regular
+                                    : FluentIcons.split_horizontal_28_regular,
+                              ),
+                            ),
+                          ),
+                        ),
+                        //* flip overlay toogle button
+                        DelayedCustomTooltip(
+                          "Flip Overlay Side",
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: IconButton(
+                              iconSize: 25,
+                              color: Colors.white,
+                              onPressed: () {
+                                flipSplit = !flipSplit;
+                                widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                              },
+                              icon: Icon(
+                                overlayMode == OverlayMode.splitHorizontal
+                                    ? FluentIcons.flip_vertical_24_regular
+                                    : FluentIcons.flip_horizontal_24_regular,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ]
+                    ],
+                    //* save reference frame button
                     DelayedCustomTooltip(
-                      "Disable Overlay",
+                      "Save Reference Frame",
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: IconButton(
                           iconSize: 25,
                           color: Colors.white,
                           onPressed: () {
-                            widget.onRemoveOverlay();
+                            widget.onSaveFrame();
                           },
-                          icon: const Icon(FluentIcons.dismiss_24_filled),
+                          icon: const Icon(FluentIcons.image_add_24_filled),
                         ),
                       ),
                     ),
-                    if (overlayMode != OverlayMode.opacity) ...[
-                      //* split mode toggle button
-                      DelayedCustomTooltip(
-                        overlayMode == OverlayMode.splitHorizontal ? "Split Vertical" : "Split Horizontal",
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: IconButton(
-                            iconSize: 25,
-                            color: Colors.white,
-                            onPressed: () {
-                              overlayMode = overlayMode == OverlayMode.splitHorizontal
-                                  ? OverlayMode.splitVertical
-                                  : OverlayMode.splitHorizontal;
-                              widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
-                              //setState(() {});
-                            },
-                            icon: Icon(
-                              overlayMode == OverlayMode.splitHorizontal
-                                  ? FluentIcons.split_vertical_28_regular
-                                  : FluentIcons.split_horizontal_28_regular,
-                            ),
-                          ),
-                        ),
-                      ),
-                      //* flip overlay toogle button
-                      DelayedCustomTooltip(
-                        "Flip Overlay Side",
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: IconButton(
-                            iconSize: 25,
-                            color: Colors.white,
-                            onPressed: () {
-                              flipSplit = !flipSplit;
-                              widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
-                            },
-                            icon: Icon(
-                              overlayMode == OverlayMode.splitHorizontal
-                                  ? FluentIcons.flip_vertical_24_regular
-                                  : FluentIcons.flip_horizontal_24_regular,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ]
                   ],
-                  //* save reference frame button
-                  DelayedCustomTooltip(
-                    "Save Reference Frame",
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        iconSize: 25,
-                        color: Colors.white,
-                        onPressed: () {
-                          widget.onSaveFrame();
-                        },
-                        icon: const Icon(FluentIcons.image_add_24_filled),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            //* mask related buttons
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                //* toogle mask button
-                DelayedCustomTooltip(
-                  "Toogle Mask",
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: IconButton(
-                      color: maskActive ? Colors.blue : Colors.white,
-                      iconSize: 25,
-                      icon: const Icon(FluentIcons.crop_24_filled),
-                      onPressed: () {
-                        maskActive = !maskActive;
-                        widget.onMaskUpdate(mask, maskActive);
-                      },
-                    ),
-                  ),
                 ),
-                //* reset mask button
-                if (maskActive)
+              ),
+              //* mask related buttons
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  //* toogle mask button
                   DelayedCustomTooltip(
-                    "Reset Mask",
+                    "Toogle Mask",
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            mask = defaultMask();
-                          });
-                          widget.onMaskUpdate(defaultMask(), maskActive);
-                        },
-                        color: Colors.white,
+                        color: maskActive ? Colors.blue : Colors.white,
                         iconSize: 25,
-                        icon: const Icon(
-                          FluentIcons.arrow_reset_24_filled,
-                        ),
+                        icon: const Icon(FluentIcons.crop_24_filled),
+                        onPressed: () {
+                          maskActive = !maskActive;
+                          widget.onMaskUpdate(mask, maskActive);
+                        },
                       ),
                     ),
                   ),
-              ],
-            ),
-          ],
+                  //* reset mask button
+                  if (maskActive)
+                    DelayedCustomTooltip(
+                      "Reset Mask",
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              mask = defaultMask();
+                            });
+                            widget.onMaskUpdate(defaultMask(), maskActive);
+                          },
+                          color: Colors.white,
+                          iconSize: 25,
+                          icon: const Icon(
+                            FluentIcons.arrow_reset_24_filled,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
         //* frame viewer
         Expanded(
