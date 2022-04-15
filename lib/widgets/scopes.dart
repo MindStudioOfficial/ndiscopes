@@ -301,6 +301,7 @@ class ScopePainter extends CustomPainter {
         Size s = Size(flipSplit ? third * (1 - splitPos) : third * splitPos, overlay!.height.toDouble());
         for (int i = 0; i < 3; i++) {
           Offset o = Offset(flipSplit ? i * third + third * splitPos : i * third, 0);
+          canvas.drawRect(o + const Offset(10, 10) & s, Paint()..color = Colors.black);
           canvas.drawImageRect(overlay!, o & s, o + const Offset(10, 10) & s, pO);
         }
       }
