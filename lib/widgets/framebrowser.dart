@@ -330,7 +330,8 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
       ),
     );
     // if we not jet have a directory selected and there are directories to select from set the latest directory as initial
-    if (currentDir == null && appDirDirectorys.isNotEmpty) currentDir = appDirDirectorys.last;
+    //if (currentDir == null && appDirDirectorys.isNotEmpty)
+    currentDir = appDirDirectorys.last;
   }
 
   updateCurrentDir() async {
@@ -351,9 +352,9 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
       child: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
-          if (appDirDirectorys.isNotEmpty && currentDir != null)
+          if (appDirDirectorys.isNotEmpty && currentDir != null && appDirDirectorys.contains(currentDir))
             DropdownButton<Directory>(
-              value: appDirDirectorys.contains(currentDir) ? currentDir : appDirDirectorys.last,
+              value: currentDir,
               items: appDirDirectorys
                   .map<DropdownMenuItem<Directory>>(
                     (d) => DropdownMenuItem<Directory>(
