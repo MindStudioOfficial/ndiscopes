@@ -15,7 +15,6 @@ import 'package:ndiscopes/widgets/scopes.dart';
 import 'package:ndiscopes/widgets/window.dart';
 
 late NDI ndi;
-final appConfig = AppConfig();
 
 void main() {
   Paint.enableDithering = true;

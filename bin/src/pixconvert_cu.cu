@@ -256,14 +256,33 @@ __device__ static inline uint8_t atomicCAS8(uint8_t *address, uint8_t expected, 
 
 __device__ static inline uint8_t atomicAddClamp(uint8_t *address, uint8_t val)
 {
-    uint8_t old = *address;
-    uint8_t assumed;
+    uint8_t old = *address; // get value at address
+    uint8_t expected;
     do
     {
-        assumed = old;
-        old = atomicCAS8(address, assumed, clampUint8((int)val + (int)assumed));
-    } while (assumed > old);
+        // save previous value at address to check if it got changed in between atomics later
+        expected = old; 
+        // update the old value with the actual value at that address before the addition
+        // sets value at address to val + the expected value at address
+        // fails if expected is no longer the value at that address because another thread has changed it
+        old = atomicCAS8(address, expected, clampUint8((int)val + (int)expected));
+        // if expected > old the addition has failed because another thread added something in between and we need to try again
+    } while (expected > old);
     return old;
+}
+
+__device__ static inline uint8_t atomicSwapIfGreaterThan(uint8_t *address, uint8_t desired)
+{
+    uint8_t old = *address; // get the value at address
+    uint8_t expected;
+    do {
+        expected = old;
+        // abort if expected is already bigger
+        if(expected>=desired) return; 
+        // swap if desired is greater than expected
+    	old = atomicCAS8(address,expected,desired);
+        // if swap fails because another thread changed the value in the meantime repeat
+    }while (expected != old);
 }
 
 __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope, uint8_t bright)
@@ -474,8 +493,9 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     {
         // add brightness to the green byte of waveform
         atomicAddClamp(d_wf + destI + 1, bright);
-        // set alpha of that pixel to source alpha
-        d_wf[destI + 3] = a;
+        // set alpha of that pixel to source alpha only IF present value is smaller
+        atomicSwapIfGreaterThan(d_wf+destI+3,a);
+        //d_wf[destI + 3] = a;
     }
 
     // make wFRGB
@@ -487,19 +507,25 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
         atomicAddClamp(d_wfRgb + destR, bright);
-        d_wfRgb[destR + 3] = a;
+        // set alpha of that pixel to source alpha only IF present value is smaller
+        atomicSwapIfGreaterThan(d_wfRgb+destR+3,a);
+        //d_wfRgb[destR + 3] = a;
     }
     int destG = 4 * (og * scopeWidth + ox);
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
         atomicAddClamp(d_wfRgb + destG + 1, bright);
-        d_wfRgb[destG + 3] = a;
+        // set alpha of that pixel to source alpha only IF present value is smaller
+        atomicSwapIfGreaterThan(d_wfRgb+destG+3,a);
+        //d_wfRgb[destG + 3] = a;
     }
     int destB = 4 * (ob * scopeWidth + ox);
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
         atomicAddClamp(d_wfRgb + destB + 2, bright);
-        d_wfRgb[destB + 3] = a;
+        // set alpha of that pixel to source alpha only IF present value is smaller
+        atomicSwapIfGreaterThan(d_wfRgb+destB+3,a);
+        //d_wfRgb[destB + 3] = a;
     }
 
     double third = (scopeWidth / (float)3);
@@ -512,19 +538,25 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destR >= 0 && destR < (scopeWidth * scopeHeight * 4) - 4)
     {
         atomicAddClamp(d_wfParade + destR, bright);
-        d_wfParade[destR + 3] = a;
+        // set alpha of that pixel to source alpha only IF present value is smaller
+        atomicSwapIfGreaterThan(d_wfParade+destR+3,a);
+        //d_wfParade[destR + 3] = a;
     }
 
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
         atomicAddClamp(d_wfParade + destG + 1, bright);
-        d_wfParade[destG + 3] = a;
+        // set alpha of that pixel to source alpha only IF present value is smaller
+        atomicSwapIfGreaterThan(d_wfParade+destG+3,a);
+        //d_wfParade[destG + 3] = a;
     }
 
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
         atomicAddClamp(d_wfParade + destB + 2, bright);
-        d_wfParade[destB + 3] = a;
+        // set alpha of that pixel to source alpha only IF present value is smaller
+        atomicSwapIfGreaterThan(d_wfParade+destB+3,a);
+        //d_wfParade[destB + 3] = a;
     }
     ox = minInt((int)roundf(scopeHeight * (u / (float)255)), scopeHeight - 1);
     oy = minInt((int)roundf(scopeHeight * (1 - (v / (float)255))), scopeHeight - 1);
@@ -532,7 +564,9 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
         atomicAddClamp(d_vScope + destI + 1, bright);
-        d_vScope[destI + 3] = a;
+        // set alpha of that pixel to source alpha only IF present value is smaller
+        atomicSwapIfGreaterThan(d_vScope+destI+3,a);
+        //d_vScope[destI + 3] = a;
     }
 }
 
@@ -670,12 +704,12 @@ __global__ void kernelThumbnailFromUyvy(uint8_t *d_src, int srcWidth, int srcHei
     U -= 128;
     V -= 128;
 
-    //calculate RGB values from HDTV Conversion Matrix
+    // calculate RGB values from HDTV Conversion Matrix
     uint8_t r = clampUint8((int)roundf(1.164 * Y + 1.596 * V));
     uint8_t g = clampUint8((int)roundf(1.164 * Y - 0.392 * U - 0.813 * V));
     uint8_t b = clampUint8((int)roundf(1.164 * Y + 2.017 * U));
 
-    //write RGBA data to destination
+    // write RGBA data to destination
     int destByte = pix * 4;
     d_tn[destByte] = r;
     d_tn[destByte + 1] = g;
@@ -690,20 +724,20 @@ EXTERNC void thumbnailFromUyvy(uint8_t *src, int srcWidth, int srcHeight, uint8_
     // calculate number of bytes for destination
     // tn will be in RGBA format, 4 bytes per pixel
     int tnSize = tnPixcount * 4;
-    //printf("%d\n",tnSize);
-    // calculate the amount of pixels in source image
+    // printf("%d\n",tnSize);
+    //  calculate the amount of pixels in source image
     int srcPixcount = srcWidth * srcHeight;
     // calculate the number of bytes for source
     // src is in uyvy format, 2 bytes per pixel
     int srcSize = srcPixcount * 2;
-    //printf("%d\n",srcSize);
-    // create memory on GPU
+    // printf("%d\n",srcSize);
+    //  create memory on GPU
     uint8_t *d_src;
     cudaMalloc(&d_src, srcSize);
     uint8_t *d_tn;
     cudaMalloc(&d_tn, tnSize);
     // copy source to GPU
-    
+
     cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice);
     // calculate the amount of blocks needed for blocks * threads/block = tnPixcount
     int blockCount = (int)ceil(tnPixcount / (double)THREADS);
