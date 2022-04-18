@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:ndiscopes/models/colors.dart';
+import 'package:ndiscopes/widgets/versionchecker.dart';
 
 final bc = WindowButtonColors(
   iconNormal: Colors.white,
@@ -29,15 +30,17 @@ class WindowTitleBar extends StatelessWidget {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Text(
                     "NDI Scopes by MindStudio  -  $sourceName",
                     style: TextStyle(color: Colors.white.withOpacity(.2)),
                     overflow: TextOverflow.visible,
+                    maxLines: 1,
                   ),
                 ),
               ),
             ),
+            const VersionChecker(),
             MinimizeWindowButton(colors: bc),
             MaximizeWindowButton(colors: bc),
             CloseWindowButton(
