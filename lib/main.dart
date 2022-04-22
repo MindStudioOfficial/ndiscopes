@@ -61,21 +61,8 @@ class Main extends StatefulWidget {
 
 class _MainState extends State<Main> {
   NDISource? selectedSource;
-
-  //NDIOutputFrame? currentFrame;
-  //NDIOutputFrame? overlayFrame;
-  //double overlayOpacity = 1;
-
-  //OverlayMode overlayMode = OverlayMode.splitVertical;
-  //double splitPos = 0.5;
-  //bool flipSplit = false;
-
-  //Rect mask = Rect.zero;
-  //bool maskActive = false;
   bool refOpen = false;
-
   bool portraitLayout = false;
-
   @override
   void initState() {
     super.initState();

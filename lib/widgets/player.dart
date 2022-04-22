@@ -288,12 +288,13 @@ class _FrameViewerState extends State<FrameViewer> {
                     //* Overlay slider vertical
                     if (frame.overlayFrame != null && frame.overlayMode == OverlayMode.splitVertical)
                       Positioned(
-                        left: frame.overlayFrame!.iRGBA.width * frame.splitPos - 22.5,
-                        top: frame.overlayFrame!.iRGBA.height / 2 - 22.5,
+                        left: (frame.imageFrame?.iRGBA.width ?? 1920) * frame.splitPos - 22.5,
+                        top: (frame.imageFrame?.iRGBA.height ?? 1080) / 2 - 22.5,
                         child: Listener(
                           onPointerMove: (event) {
                             frame.updateSplitPos(
-                              (frame.splitPos + event.localDelta.dx / frame.overlayFrame!.iRGBA.width).clamp(0, 1),
+                              (frame.splitPos + event.localDelta.dx / (frame.imageFrame?.iRGBA.width ?? 1920))
+                                  .clamp(0, 1),
                             );
 
                             //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
@@ -318,12 +319,13 @@ class _FrameViewerState extends State<FrameViewer> {
                     //* Overlay slider horizontal
                     if (frame.overlayFrame != null && frame.overlayMode == OverlayMode.splitHorizontal)
                       Positioned(
-                        left: frame.overlayFrame!.iRGBA.width / 2 - 22.5,
-                        top: frame.overlayFrame!.iRGBA.height * frame.splitPos - 22.5,
+                        left: (frame.imageFrame?.iRGBA.width ?? 1920) / 2 - 22.5,
+                        top: (frame.imageFrame?.iRGBA.height ?? 1080) * frame.splitPos - 22.5,
                         child: Listener(
                           onPointerMove: (event) {
                             frame.updateSplitPos(
-                              (frame.splitPos + event.localDelta.dy / frame.overlayFrame!.iRGBA.height).clamp(0, 1),
+                              (frame.splitPos + event.localDelta.dy / (frame.imageFrame?.iRGBA.height ?? 1080))
+                                  .clamp(0, 1),
                             );
 
                             //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
@@ -378,6 +380,26 @@ class ImagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // calculate original aspectratios
+    double imgAspect = (img?.width ?? 16) / (img?.height ?? 9);
+    double ovlAspect = (overlay?.width ?? 16) / (overlay?.height ?? 9);
+
+    // decide how to resize the overlay based on the aspectratios
+    bool sizeByHeight = imgAspect > ovlAspect;
+
+    Size imageSize = Size(img?.width.toDouble() ?? 1920, img?.height.toDouble() ?? 1080);
+    Size overlaySize = Size(overlay?.width.toDouble() ?? 1920, overlay?.height.toDouble() ?? 1080);
+
+    // resize the overlay to fit within the image based on aspect ratios
+    Size resizedOverlaySize =
+        overlaySize * (sizeByHeight ? (imageSize.height / overlaySize.height) : (imageSize.width / overlaySize.width));
+
+    // calculate the topleft corner of the overlay to center it on the screen
+    Offset ovlTopLeft = Offset(
+      (imageSize.width - resizedOverlaySize.width) / 2,
+      (imageSize.height - resizedOverlaySize.height) / 2,
+    );
+
     Paint p = Paint()..blendMode = bm ?? BlendMode.srcOver;
     p.colorFilter = const ColorFilter.matrix(
       //* make alpha only dependant on input alpha
@@ -411,26 +433,38 @@ class ImagePainter extends CustomPainter {
         // splits the overlay image vertically based on split position and flip
         case OverlayMode.splitVertical:
           p.color = Colors.white;
-          Size overlaySize =
+          Size cutOverlaySize =
               Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
+
+          Size cutReSizedOverlaySize = Size(
+              flipSplit ? resizedOverlaySize.width * (1 - splitPos) : resizedOverlaySize.width * splitPos,
+              resizedOverlaySize.height.toDouble());
+
           canvas.drawImageRect(
             overlay!,
-            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) & overlaySize,
-            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) & overlaySize,
+            Offset(flipSplit ? overlay!.width * splitPos : 0, 0) & cutOverlaySize,
+            Offset(
+                  flipSplit ? resizedOverlaySize.width * splitPos + ovlTopLeft.dx : ovlTopLeft.dx,
+                  ovlTopLeft.dy,
+                ) &
+                cutReSizedOverlaySize,
             p,
           );
           break;
         // splits the overlay image horizontally based on split position and flip
         case OverlayMode.splitHorizontal:
           p.color = Colors.white;
+          Size cutOverlaySize = Size(
+              overlay!.width.toDouble(), flipSplit ? overlay!.height * (1 - splitPos) : overlay!.height * splitPos);
+
+          Size cutReSizedOverlaySize = Size(resizedOverlaySize.width.toDouble(),
+              flipSplit ? resizedOverlaySize.height * (1 - splitPos) : resizedOverlaySize.height * splitPos);
+
           canvas.drawImageRect(
             overlay!,
-            Offset(0, flipSplit ? overlay!.height * splitPos : 0) &
-                Size(overlay!.width.toDouble(),
-                    flipSplit ? overlay!.height * (1 - splitPos) : overlay!.height * splitPos),
-            Offset(0, flipSplit ? overlay!.height * splitPos : 0) &
-                Size(overlay!.width.toDouble(),
-                    flipSplit ? overlay!.height * (1 - splitPos) : overlay!.height * splitPos),
+            Offset(0, flipSplit ? overlay!.height * splitPos : 0) & cutOverlaySize,
+            Offset(ovlTopLeft.dx, flipSplit ? resizedOverlaySize.height * splitPos + ovlTopLeft.dy : ovlTopLeft.dy) &
+                cutReSizedOverlaySize,
             p,
           );
           break;
