@@ -6,7 +6,7 @@ An open source Windows application to display several diffrent scopes/waveforms 
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/MindStudioOfficial/ndiscopes?style=flat-square)
 ![GitHub contributors](https://img.shields.io/github/contributors/MindStudioOfficial/ndiscopes?style=flat-square)
 
-![Screenshot](blob/sc3.jpg)
+![Screenshot](blob/sc4.jpg)
 
 ## Requirements
 
@@ -33,17 +33,13 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] Overlay on source as splitscreen
   - [x] Overlay on scopes as background
   - [x] Overlay on scopes as splitscreen
-  - [x] Show thumbnails in frame browse (only uyvy)
+  - [x] Show thumbnails in frame browse
 - [x] Draw Masks on source/reference frame
 - [ ] Record and graph RGBL ratio over time
 - NDI Codec support
   - **This software now requests the frames to be in UYVY or BGRA format to maximize compatibility.**
   - [x] UYVY (most common, fastest)
-  - [ ] UYVA
-  - [ ] RGBA
-  - [ ] RGBX
   - [x] BGRA (stills and alpha)
-  - [ ] BGRX
   - others are very uncommon IMO
   
 
