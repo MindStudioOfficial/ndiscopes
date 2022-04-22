@@ -554,20 +554,12 @@ class ScopeV2 extends StatefulWidget {
   final String title;
   final ui.Image? img;
   final ui.Image? ovl;
-  final double overlayOpacity;
-  final bool flipSplit;
-  final OverlayMode overlayMode;
-  final double splitPos;
   final bool isParade;
   const ScopeV2({
     Key? key,
-    required this.flipSplit,
     required this.img,
     required this.isParade,
-    required this.overlayMode,
-    required this.overlayOpacity,
     this.ovl,
-    required this.splitPos,
     required this.title,
   }) : super(key: key);
 
@@ -578,6 +570,7 @@ class ScopeV2 extends StatefulWidget {
 class _ScopeV2State extends State<ScopeV2> {
   @override
   Widget build(BuildContext context) {
+    final frame = context.watch<Frame>();
     return AspectRatio(
       aspectRatio: 600 / 306,
       child: FittedBox(
@@ -596,11 +589,11 @@ class _ScopeV2State extends State<ScopeV2> {
               child: CustomPaint(
                 painter: ScopePainter(
                   img: widget.img,
-                  opacity: widget.overlayOpacity,
+                  opacity: frame.overlayOpacity,
                   overlay: widget.ovl,
-                  flipSplit: widget.flipSplit,
-                  overlayMode: widget.overlayMode,
-                  splitPos: widget.splitPos,
+                  flipSplit: frame.flipSplit,
+                  overlayMode: frame.overlayMode,
+                  splitPos: frame.splitPos,
                   isParade: widget.isParade,
                 ),
                 size: widget.img != null

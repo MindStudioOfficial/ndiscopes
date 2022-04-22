@@ -229,7 +229,6 @@ class _NDIFrameThumbnailState extends State<NDIFrameThumbnail> {
             }),
           );
     }
-    print("reinit tn");
   }
 
   @override
@@ -285,7 +284,6 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
     super.initState();
     //initiate application directory and listener
     init();
-    print("reinit");
   }
 
   //all contents of the application directory
