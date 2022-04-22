@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/decorations.dart';
 import 'package:ndiscopes/models/textstyles.dart';
+import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/customtooltip.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui' as ui;
+import 'package:provider/provider.dart';
 
 //! no longer used
 class Framebrowser extends StatefulWidget {
@@ -214,41 +216,41 @@ class NDIFrameThumbnail extends StatefulWidget {
 
 class _NDIFrameThumbnailState extends State<NDIFrameThumbnail> {
   late SavedInputFrame frame;
+  ui.Image? img;
   @override
   void initState() {
     super.initState();
     // read the file and convert
     frame = SavedInputFrame.fromJSON(jsonDecode(widget.file.readAsStringSync()));
+    if (img == null) {
+      frame.thumbnailImage().then(
+            (i) => setState(() {
+              img = i;
+            }),
+          );
+    }
+    print("reinit tn");
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      return FutureBuilder<ui.Image?>(
-        future: frame.thumbnailImage(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData && snapshot.data != null) {
-            return SizedBox(
-              width: constraints.maxWidth,
-              height: constraints.maxHeight,
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: CustomPaint(
-                  size: const Size(160, 90),
-                  painter: ThumbnailPainter(img: snapshot.data!),
-                ),
-              ),
-            );
-          } else {
-            return const Icon(
-              Icons.image_sharp,
-              color: Colors.white,
-              size: 35,
-            );
-          }
-        },
+    if (img != null) {
+      return SizedBox(
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: CustomPaint(
+            size: const Size(160, 90),
+            painter: ThumbnailPainter(img: img!),
+          ),
+        ),
       );
-    });
+    } else {
+      return const Icon(
+        Icons.image_sharp,
+        color: Colors.white,
+        size: 35,
+      );
+    }
   }
 }
 
@@ -268,8 +270,7 @@ class ThumbnailPainter extends CustomPainter {
 }
 
 class FrameBrowserV2 extends StatefulWidget {
-  final Function(NDIOutputFrame frame) onSelectFrame;
-  const FrameBrowserV2({Key? key, required this.onSelectFrame}) : super(key: key);
+  const FrameBrowserV2({Key? key}) : super(key: key);
 
   @override
   State<FrameBrowserV2> createState() => _FrameBrowserV2State();
@@ -284,6 +285,7 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
     super.initState();
     //initiate application directory and listener
     init();
+    print("reinit");
   }
 
   //all contents of the application directory
@@ -315,6 +317,7 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
     currentDir = appDirDirectorys.last;
     // fetch frames of initial subdirectory
     updateCurrentDir();
+    setState(() {});
   }
 
   updateAppDir() {
@@ -404,18 +407,16 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
                             ),
                           ).convertToScopes(580, 256).then(
                             (frame) {
-                              if (frame != null) widget.onSelectFrame(frame);
+                              if (frame != null) context.read<Frame>().updateOverlayFrame(frame);
                             },
                           );
                         },
                         child: Ink(
                           width: 96,
                           height: 96,
-                          child: Center(
-                            child: NDIFrameThumbnail(
-                              file: fse,
-                              key: ValueKey(fse),
-                            ),
+                          child: NDIFrameThumbnail(
+                            file: fse,
+                            key: ValueKey(fse),
                           ),
                         ),
                       ),

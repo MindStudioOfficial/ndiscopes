@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:ndiscopes/main.dart';
 import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
-import 'package:ndiscopes/service/ndi/ndi.dart';
+import 'package:ndiscopes/providers/frameprovider.dart';
+import 'package:ndiscopes/providers/maskprovider.dart';
 import 'dart:ui' as ui;
 
 import 'package:ndiscopes/widgets/customtooltip.dart';
+
+import 'package:provider/provider.dart';
 
 enum OverlayMode {
   splitVertical,
@@ -17,26 +20,14 @@ enum OverlayMode {
 /// Displays the incoming NDI frames aswell as a selected overlay
 /// and all necessary buttons for source selection reference frame controls and mask controls
 class FrameViewer extends StatefulWidget {
-  final NDIOutputFrame? frame;
-  final NDIOutputFrame? overlay;
-  final double? overlayOpacity;
   final Function(int index) onSelectSource;
   final Function() onSaveFrame;
-  final Function() onRemoveOverlay;
-  final Function(OverlayMode mode, double splitPos, bool flipSplit) onOverlayChanged;
-  final Function(Rect mask, bool active) onMaskUpdate;
   final Function(bool open) onToggleFrameBrowser;
 
   const FrameViewer({
     Key? key,
-    required this.frame,
     required this.onSelectSource,
-    this.overlay,
-    this.overlayOpacity,
     required this.onSaveFrame,
-    required this.onRemoveOverlay,
-    required this.onOverlayChanged,
-    required this.onMaskUpdate,
     required this.onToggleFrameBrowser,
   }) : super(key: key);
 
@@ -45,24 +36,22 @@ class FrameViewer extends StatefulWidget {
 }
 
 class _FrameViewerState extends State<FrameViewer> {
-  OverlayMode overlayMode = OverlayMode.splitVertical;
-  double splitPos = 0.5;
-  bool flipSplit = false;
-  bool maskActive = false;
   bool frameBrowserOpen = false;
-  late Rect mask;
 
   @override
   void initState() {
     super.initState();
     // initiate mask with default value
-    mask = defaultMask();
+    Future.delayed(const Duration(milliseconds: 50), () {
+      context.read<MaskProvider>().updateRect(defaultMask());
+    });
   }
 
   // construct default rectangle for mask
   Rect defaultMask() {
-    Size frameSize = widget.frame != null
-        ? Size(widget.frame!.iRGBA.width.toDouble(), widget.frame!.iRGBA.height.toDouble())
+    Size frameSize = context.read<Frame>().imageFrame != null
+        ? Size(context.read<Frame>().imageFrame!.iRGBA.width.toDouble(),
+            context.read<Frame>().imageFrame!.iRGBA.height.toDouble())
         : const Size(1920, 1080);
     Size maskSize = frameSize / 3;
     Offset maskOffset = Offset(frameSize.width / 3, frameSize.height / 3);
@@ -71,6 +60,8 @@ class _FrameViewerState extends State<FrameViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final frame = context.watch<Frame>();
+    final mask = context.watch<MaskProvider>();
     return Row(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -96,7 +87,7 @@ class _FrameViewerState extends State<FrameViewer> {
                         builder: (context) {
                           return SourceSelectDialog(
                             // pass the selected source to parent widget
-                            onSelectSource: widget.onSelectSource,
+                            onSelectSource: (widget.onSelectSource),
                           );
                         },
                       );
@@ -112,7 +103,7 @@ class _FrameViewerState extends State<FrameViewer> {
               //* colored container for all reference frame related buttons
               Container(
                 // changes color when reference frame is selected
-                color: widget.overlay != null ? cAccent : cPrimary,
+                color: context.watch<Frame>().overlayFrame != null ? cAccent : cPrimary,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -135,7 +126,7 @@ class _FrameViewerState extends State<FrameViewer> {
                       ),
                     ),
                     //* disable overlay button
-                    if (widget.overlay != null) ...[
+                    if (context.watch<Frame>().overlayFrame != null) ...[
                       DelayedCustomTooltip(
                         "Disable Overlay",
                         child: Padding(
@@ -144,30 +135,33 @@ class _FrameViewerState extends State<FrameViewer> {
                             iconSize: 25,
                             color: Colors.white,
                             onPressed: () {
-                              widget.onRemoveOverlay();
+                              frame.updateOverlayFrame(null);
                             },
                             icon: const Icon(FluentIcons.dismiss_24_filled),
                           ),
                         ),
                       ),
-                      if (overlayMode != OverlayMode.opacity) ...[
+                      if (frame.overlayMode != OverlayMode.opacity) ...[
                         //* split mode toggle button
                         DelayedCustomTooltip(
-                          overlayMode == OverlayMode.splitHorizontal ? "Split Vertical" : "Split Horizontal",
+                          frame.overlayMode == OverlayMode.splitHorizontal ? "Split Vertical" : "Split Horizontal",
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: IconButton(
                               iconSize: 25,
                               color: Colors.white,
                               onPressed: () {
-                                overlayMode = overlayMode == OverlayMode.splitHorizontal
-                                    ? OverlayMode.splitVertical
-                                    : OverlayMode.splitHorizontal;
-                                widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                                frame.updateOverlayMode(
+                                  frame.overlayMode == OverlayMode.splitHorizontal
+                                      ? OverlayMode.splitVertical
+                                      : OverlayMode.splitHorizontal,
+                                );
+
+                                //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                                 //setState(() {});
                               },
                               icon: Icon(
-                                overlayMode == OverlayMode.splitHorizontal
+                                frame.overlayMode == OverlayMode.splitHorizontal
                                     ? FluentIcons.split_vertical_28_regular
                                     : FluentIcons.split_horizontal_28_regular,
                               ),
@@ -183,11 +177,12 @@ class _FrameViewerState extends State<FrameViewer> {
                               iconSize: 25,
                               color: Colors.white,
                               onPressed: () {
-                                flipSplit = !flipSplit;
-                                widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                                frame.updateFlipSplit(!frame.flipSplit);
+                                //flipSplit = !flipSplit;
+                                //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                               },
                               icon: Icon(
-                                overlayMode == OverlayMode.splitHorizontal
+                                frame.overlayMode == OverlayMode.splitHorizontal
                                     ? FluentIcons.flip_vertical_24_regular
                                     : FluentIcons.flip_horizontal_24_regular,
                               ),
@@ -224,28 +219,26 @@ class _FrameViewerState extends State<FrameViewer> {
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: IconButton(
-                        color: maskActive ? Colors.blue : Colors.white,
+                        color: mask.active ? Colors.blue : Colors.white,
                         iconSize: 25,
                         icon: const Icon(FluentIcons.crop_24_filled),
                         onPressed: () {
-                          maskActive = !maskActive;
-                          widget.onMaskUpdate(mask, maskActive);
+                          ndi.updateMask(mask.rect, !mask.active);
+                          mask.toogle();
                         },
                       ),
                     ),
                   ),
                   //* reset mask button
-                  if (maskActive)
+                  if (mask.active)
                     DelayedCustomTooltip(
                       "Reset Mask",
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: IconButton(
                           onPressed: () {
-                            setState(() {
-                              mask = defaultMask();
-                            });
-                            widget.onMaskUpdate(defaultMask(), maskActive);
+                            mask.updateRect(defaultMask());
+                            ndi.updateMask(defaultMask(), mask.active);
                           },
                           color: Colors.white,
                           iconSize: 25,
@@ -272,40 +265,38 @@ class _FrameViewerState extends State<FrameViewer> {
                     //* NDI SOURCE IMAGE + Overlay
                     CustomPaint(
                       painter: ImagePainter(
-                        img: widget.frame != null ? widget.frame!.iRGBA : null,
-                        overlay: widget.overlay != null ? widget.overlay!.iRGBA : null,
-                        opacity: widget.overlayOpacity,
-                        flipSplit: flipSplit,
-                        splitPos: splitPos,
-                        overlayMode: overlayMode,
+                        img: frame.imageFrame?.iRGBA,
+                        overlay: frame.overlayFrame?.iRGBA,
+                        opacity: frame.overlayOpacity,
+                        flipSplit: frame.flipSplit,
+                        splitPos: frame.splitPos,
+                        overlayMode: frame.overlayMode,
                       ),
                       size: Size(
-                        widget.frame != null ? widget.frame!.iRGBA.width.toDouble() : 1920,
-                        widget.frame != null ? widget.frame!.iRGBA.height.toDouble() : 1080,
+                        frame.imageFrame?.iRGBA.width.toDouble() ?? 1920,
+                        frame.imageFrame?.iRGBA.height.toDouble() ?? 1080,
                       ),
                     ),
                     //* Mask Overlay
-                    if (maskActive)
+                    if (mask.active)
                       Mask(
                         frameSize: Size(
-                          widget.frame != null ? widget.frame!.iRGBA.width.toDouble() : 1920,
-                          widget.frame != null ? widget.frame!.iRGBA.height.toDouble() : 1080,
+                          frame.imageFrame?.iRGBA.width.toDouble() ?? 1920,
+                          frame.imageFrame?.iRGBA.height.toDouble() ?? 1080,
                         ),
-                        onMaskUpdated: (m) {
-                          mask = m;
-                          widget.onMaskUpdate(m, maskActive);
-                        },
-                        mask: mask,
                       ),
                     //* Overlay slider vertical
-                    if (widget.overlay != null && overlayMode == OverlayMode.splitVertical)
+                    if (frame.overlayFrame != null && frame.overlayMode == OverlayMode.splitVertical)
                       Positioned(
-                        left: widget.overlay!.iRGBA.width * splitPos - 22.5,
-                        top: widget.overlay!.iRGBA.height / 2 - 22.5,
+                        left: frame.overlayFrame!.iRGBA.width * frame.splitPos - 22.5,
+                        top: frame.overlayFrame!.iRGBA.height / 2 - 22.5,
                         child: Listener(
                           onPointerMove: (event) {
-                            splitPos = (splitPos + event.localDelta.dx / widget.overlay!.iRGBA.width).clamp(0, 1);
-                            widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                            frame.updateSplitPos(
+                              (frame.splitPos + event.localDelta.dx / frame.overlayFrame!.iRGBA.width).clamp(0, 1),
+                            );
+
+                            //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                           },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(22.5),
@@ -325,14 +316,17 @@ class _FrameViewerState extends State<FrameViewer> {
                         ),
                       ),
                     //* Overlay slider horizontal
-                    if (widget.overlay != null && overlayMode == OverlayMode.splitHorizontal)
+                    if (frame.overlayFrame != null && frame.overlayMode == OverlayMode.splitHorizontal)
                       Positioned(
-                        left: widget.overlay!.iRGBA.width / 2 - 22.5,
-                        top: widget.overlay!.iRGBA.height * splitPos - 22.5,
+                        left: frame.overlayFrame!.iRGBA.width / 2 - 22.5,
+                        top: frame.overlayFrame!.iRGBA.height * frame.splitPos - 22.5,
                         child: Listener(
                           onPointerMove: (event) {
-                            splitPos = (splitPos + event.localDelta.dy / widget.overlay!.iRGBA.height).clamp(0, 1);
-                            widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                            frame.updateSplitPos(
+                              (frame.splitPos + event.localDelta.dy / frame.overlayFrame!.iRGBA.height).clamp(0, 1),
+                            );
+
+                            //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                           },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(22.5),
@@ -571,67 +565,44 @@ class _SourceSelectDialogState extends State<SourceSelectDialog> {
 
 /// displays the mask with control points
 // ignore: must_be_immutable
-class Mask extends StatefulWidget {
+class Mask extends StatelessWidget {
   final Size frameSize;
-  final Function(Rect mask) onMaskUpdated;
-
-  // mask can be changed from inside the widget and outside
-  // not optimal
-  Rect mask;
-
-  Mask({
-    Key? key,
-    required this.onMaskUpdated,
-    required this.frameSize,
-    required this.mask,
-  }) : super(key: key);
-
-  @override
-  State<Mask> createState() => _MaskState();
-}
-
-class _MaskState extends State<Mask> {
-  @override
-  void initState() {
-    super.initState();
-  }
+  const Mask({Key? key, required this.frameSize}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final mask = context.watch<MaskProvider>();
     return Stack(
       children: [
         //* paints the outside of the mask slightly black
         CustomPaint(
-          size: widget.frameSize,
-          painter: MaskPainter(mask: widget.mask),
+          size: frameSize,
+          painter: MaskPainter(mask: mask.rect),
         ),
         //* the actual rectangle with white borders that can be moved around
         Positioned(
-          top: widget.mask.top,
-          left: widget.mask.left,
+          top: mask.rect.top,
+          left: mask.rect.left,
           child: MouseRegion(
             cursor: SystemMouseCursors.move,
             child: Listener(
               //* listen for move events
               onPointerMove: (event) {
-                Rect newMask = widget.mask.shift(event.localDelta);
+                Rect newMask = mask.rect.shift(event.localDelta);
                 //* move the mask but not outside the frame
                 newMask = Offset(
-                      newMask.topLeft.dx.clamp(0, widget.frameSize.width - newMask.width),
-                      newMask.topLeft.dy.clamp(0, widget.frameSize.height - newMask.height),
+                      newMask.topLeft.dx.clamp(0, frameSize.width - newMask.width),
+                      newMask.topLeft.dy.clamp(0, frameSize.height - newMask.height),
                     ) &
                     newMask.size;
-                //* update the mask locally
-                setState(() {
-                  widget.mask = newMask;
-                });
-                //* send the mask to the api to mask the actual frames
-                widget.onMaskUpdated(newMask);
+                //* update the mask
+                mask.updateRect(newMask);
+                ndi.updateMask(newMask, mask.active);
               },
               //* the actual white border of the mask rectangle
               child: Container(
-                width: widget.mask.width,
-                height: widget.mask.height,
+                width: mask.rect.width,
+                height: mask.rect.height,
                 decoration: BoxDecoration(border: Border.all(color: Colors.white, width: 2)),
               ),
             ),
@@ -639,28 +610,27 @@ class _MaskState extends State<Mask> {
         ),
         //* top left resize control
         Positioned(
-          top: widget.mask.topLeft.dy - 15,
-          left: widget.mask.topLeft.dx - 15,
+          top: mask.rect.topLeft.dy - 15,
+          left: mask.rect.topLeft.dx - 15,
           child: MouseRegion(
             cursor: SystemMouseCursors.resizeUpLeftDownRight,
             child: Listener(
               //* listen for move events
               onPointerMove: (event) {
-                Size newSize = (widget.mask.size + -(event.localDelta));
-                Offset newPos = (widget.mask.topLeft + event.localDelta);
+                Size newSize = (mask.rect.size + -(event.localDelta));
+                Offset newPos = (mask.rect.topLeft + event.localDelta);
 
                 newPos = Offset(
-                  newPos.dx.clamp(0, widget.frameSize.width),
-                  newPos.dy.clamp(0, widget.frameSize.height),
+                  newPos.dx.clamp(0, frameSize.width),
+                  newPos.dy.clamp(0, frameSize.height),
                 );
                 newSize = Size(
-                  newSize.width.clamp(0, widget.frameSize.width - newPos.dx),
-                  newSize.height.clamp(0, widget.frameSize.height - newPos.dy),
+                  newSize.width.clamp(0, frameSize.width - newPos.dx),
+                  newSize.height.clamp(0, frameSize.height - newPos.dy),
                 );
-                setState(() {
-                  widget.mask = newPos & newSize;
-                });
-                widget.onMaskUpdated(newPos & newSize);
+
+                mask.updateRect(newPos & newSize);
+                ndi.updateMask(newPos & newSize, mask.active);
               },
               child: Container(
                 width: 30,
@@ -676,24 +646,21 @@ class _MaskState extends State<Mask> {
         ),
         //* bottom right resize control
         Positioned(
-          top: widget.mask.bottomRight.dy - 15,
-          left: widget.mask.bottomRight.dx - 15,
+          top: mask.rect.bottomRight.dy - 15,
+          left: mask.rect.bottomRight.dx - 15,
           child: MouseRegion(
             cursor: SystemMouseCursors.resizeUpLeftDownRight,
             child: Listener(
               //* listen for move events
               onPointerMove: (event) {
-                Size newSize = (widget.mask.size + event.localDelta);
+                Size newSize = (mask.rect.size + event.localDelta);
 
                 newSize = Size(
-                  newSize.width.clamp(0, widget.frameSize.width - widget.mask.topLeft.dx),
-                  newSize.height.clamp(0, widget.frameSize.height - widget.mask.topLeft.dy),
+                  newSize.width.clamp(0, frameSize.width - mask.rect.topLeft.dx),
+                  newSize.height.clamp(0, frameSize.height - mask.rect.topLeft.dy),
                 );
-
-                setState(() {
-                  widget.mask = widget.mask.topLeft & newSize;
-                });
-                widget.onMaskUpdated(widget.mask.topLeft & newSize);
+                ndi.updateMask(mask.rect.topLeft & newSize, mask.active);
+                mask.updateRect(mask.rect.topLeft & newSize);
               },
               child: Container(
                 width: 30,

@@ -7,12 +7,15 @@ import 'package:ndiscopes/config.dart';
 import 'package:ndiscopes/models/buttonstyles.dart';
 import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
+import 'package:ndiscopes/providers/frameprovider.dart';
+import 'package:ndiscopes/providers/maskprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/framebrowser.dart';
 import 'package:ndiscopes/widgets/player.dart';
 import 'package:ndiscopes/widgets/scopes.dart';
 import 'package:ndiscopes/widgets/window.dart';
+import 'package:provider/provider.dart';
 
 late NDI ndi;
 
@@ -20,13 +23,23 @@ void main() {
   Paint.enableDithering = true;
   ndi = NDI();
   runApp(
-    MaterialApp(
-      scrollBehavior:
-          const MaterialScrollBehavior().copyWith(dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch}),
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: cAppBackground,
-        body: const Main(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => Frame(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MaskProvider(),
+        ),
+      ],
+      child: MaterialApp(
+        scrollBehavior:
+            const MaterialScrollBehavior().copyWith(dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch}),
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: cAppBackground,
+          body: const Main(),
+        ),
       ),
     ),
   );
@@ -47,17 +60,18 @@ class Main extends StatefulWidget {
 }
 
 class _MainState extends State<Main> {
-  NDIOutputFrame? currentFrame;
-  NDIOutputFrame? overlayFrame;
-  double overlayOpacity = 1;
   NDISource? selectedSource;
 
-  OverlayMode overlayMode = OverlayMode.splitVertical;
-  double splitPos = 0.5;
-  bool flipSplit = false;
+  //NDIOutputFrame? currentFrame;
+  //NDIOutputFrame? overlayFrame;
+  //double overlayOpacity = 1;
 
-  Rect mask = Rect.zero;
-  bool maskActive = false;
+  //OverlayMode overlayMode = OverlayMode.splitVertical;
+  //double splitPos = 0.5;
+  //bool flipSplit = false;
+
+  //Rect mask = Rect.zero;
+  //bool maskActive = false;
   bool refOpen = false;
 
   bool portraitLayout = false;
@@ -274,79 +288,56 @@ class _MainState extends State<Main> {
                     mainAxisSize: MainAxisSize.max,
                     children: [
                       Expanded(
-                        child: FrameViewer(
-                          onMaskUpdate: (m, active) {
-                            maskActive = active;
-                            mask = m;
-                            ndi.updateMask(mask, maskActive);
-                            setState(() {});
-                          },
-                          frame: currentFrame,
-                          overlay: overlayFrame,
-                          overlayOpacity: overlayOpacity,
-                          onSaveFrame: () {
-                            if (selectedSource == null) return;
-                            ndi.getSingleFrame(
-                              selectedSource!.source,
-                              const Size(580, 256),
-                              (frame) {
-                                saveInputFrame(frame);
-                              },
-                              mask,
-                              maskActive,
-                            );
-                          },
-                          onRemoveOverlay: () {
-                            overlayFrame = null;
-                            setState(() {});
-                          },
-                          onSelectSource: (index) {
-                            final pS = ndi.getSourceAt(index);
-
-                            if (pS != null) {
-                              ndi.stopGetFrames();
-                              selectedSource = NDISource(pS);
-                              setState(() {});
-                              ndi.getFrames(
+                        child: RepaintBoundary(
+                          child: FrameViewer(
+                            onSaveFrame: () {
+                              if (selectedSource == null) return;
+                              ndi.getSingleFrame(
                                 selectedSource!.source,
                                 const Size(580, 256),
-                                (frame) => setState(
-                                  () => currentFrame = frame,
-                                ),
-                                mask,
-                                maskActive,
+                                (frame) {
+                                  saveInputFrame(frame);
+                                },
+                                context.read<MaskProvider>().rect,
+                                context.read<MaskProvider>().active,
                               );
-                            }
-                          },
-                          onOverlayChanged: (mode, pos, flip) {
-                            setState(() {
-                              overlayMode = mode;
-                              splitPos = pos;
-                              flipSplit = flip;
-                            });
-                          },
-                          onToggleFrameBrowser: (open) {
-                            setState(() {
-                              refOpen = open;
-                            });
-                          },
+                            },
+                            onSelectSource: (index) {
+                              final pS = ndi.getSourceAt(index);
+
+                              if (pS != null) {
+                                ndi.stopGetFrames();
+                                selectedSource = NDISource(pS);
+                                setState(() {});
+                                ndi.getFrames(
+                                  selectedSource!.source,
+                                  const Size(580, 256),
+                                  (frame) => setState(
+                                    () => context.read<Frame>().updateImageFrame(frame),
+                                  ),
+                                  context.read<MaskProvider>().rect,
+                                  context.read<MaskProvider>().active,
+                                );
+                              }
+                            },
+                            onToggleFrameBrowser: (open) {
+                              setState(() {
+                                refOpen = open;
+                              });
+                            },
+                          ),
                         ),
                       ),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
                         width: refOpen ? 175 : 0,
                         curve: Curves.easeInOutQuad,
-                        child: SingleChildScrollView(
+                        child: const SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          physics: const NeverScrollableScrollPhysics(),
+                          physics: NeverScrollableScrollPhysics(),
                           child: SizedBox(
                             width: 175,
-                            child: FrameBrowserV2(
-                              onSelectFrame: (frame) {
-                                overlayFrame = frame;
-                                setState(() {});
-                              },
-                            ),
+                            child: FrameBrowserV2(),
                           ),
                         ),
                       ),
@@ -371,10 +362,7 @@ class _MainState extends State<Main> {
                           Expanded(
                             child: SingleChildScrollView(
                               controller: ScrollController(),
-                              child: VscopeV2(
-                                img: currentFrame?.iVScope,
-                                overlayOpacity: overlayOpacity,
-                                ovl: overlayFrame?.iVScope,
+                              child: const VscopeV2(
                                 title: "UV Vectorscope",
                               ),
                             ),
@@ -397,26 +385,25 @@ class _MainState extends State<Main> {
                     width: width / scopesCountX,
                     child: ScopeV2(
                       title: "Luma Waveform",
-                      flipSplit: flipSplit,
-                      img: currentFrame?.iWF,
-                      overlayMode: overlayMode,
-                      overlayOpacity: overlayOpacity,
-                      ovl: overlayFrame?.iWF,
-                      splitPos: splitPos,
+                      flipSplit: context.watch<Frame>().flipSplit,
+                      img: context.watch<Frame>().imageFrame?.iWF,
+                      overlayMode: context.watch<Frame>().overlayMode,
+                      overlayOpacity: context.watch<Frame>().overlayOpacity,
+                      ovl: context.watch<Frame>().overlayFrame?.iWF,
+                      splitPos: context.watch<Frame>().splitPos,
                       isParade: false,
                     ),
                   ),
                   SizedBox(
                     width: width / scopesCountX,
                     child: ScopeV2(
-                      key: ValueKey([currentFrame, overlayFrame]),
                       title: "RGB Waveform",
-                      flipSplit: flipSplit,
-                      img: currentFrame?.iWFRgb,
-                      overlayMode: overlayMode,
-                      overlayOpacity: overlayOpacity,
-                      ovl: overlayFrame?.iWFRgb,
-                      splitPos: splitPos,
+                      flipSplit: context.watch<Frame>().flipSplit,
+                      img: context.watch<Frame>().imageFrame?.iWFRgb,
+                      overlayMode: context.watch<Frame>().overlayMode,
+                      overlayOpacity: context.watch<Frame>().overlayOpacity,
+                      ovl: context.watch<Frame>().overlayFrame?.iWFRgb,
+                      splitPos: context.watch<Frame>().splitPos,
                       isParade: false,
                     ),
                   ),
@@ -424,22 +411,19 @@ class _MainState extends State<Main> {
                     width: width / scopesCountX,
                     child: ScopeV2(
                       title: "RGB Parade",
-                      flipSplit: flipSplit,
-                      img: currentFrame?.iWFParade,
-                      overlayMode: overlayMode,
-                      overlayOpacity: overlayOpacity,
-                      ovl: overlayFrame?.iWFParade,
-                      splitPos: splitPos,
+                      flipSplit: context.watch<Frame>().flipSplit,
+                      img: context.watch<Frame>().imageFrame?.iWFParade,
+                      overlayMode: context.watch<Frame>().overlayMode,
+                      overlayOpacity: context.watch<Frame>().overlayOpacity,
+                      ovl: context.watch<Frame>().overlayFrame?.iWFParade,
+                      splitPos: context.watch<Frame>().splitPos,
                       isParade: true,
                     ),
                   ),
                   if (portraitLayout)
                     SizedBox(
                       width: width / scopesCountX / 2,
-                      child: VscopeV2(
-                        img: currentFrame?.iVScope,
-                        overlayOpacity: overlayOpacity,
-                        ovl: overlayFrame?.iVScope,
+                      child: const VscopeV2(
                         title: "UV Vectorscope",
                       ),
                     )

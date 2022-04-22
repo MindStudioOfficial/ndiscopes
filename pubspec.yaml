@@ -42,6 +42,7 @@ dependencies:
   ffigen: ^4.1.3
   http: ^0.13.4
   url_launcher: ^6.0.20
+  provider: ^6.0.2
 
 dev_dependencies:
   flutter_test:

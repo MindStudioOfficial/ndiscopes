@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/decorations.dart';
 import 'package:ndiscopes/models/textstyles.dart';
+import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'dart:ui' as ui;
 import 'package:ndiscopes/util/colorconversion.dart';
 import 'package:ndiscopes/widgets/player.dart';
+
+import 'package:provider/provider.dart';
 
 //! no longer used
 class Scopes extends StatelessWidget {
@@ -616,20 +619,15 @@ class _ScopeV2State extends State<ScopeV2> {
 }
 
 class VscopeV2 extends StatelessWidget {
-  final ui.Image? img;
-  final ui.Image? ovl;
   final String title;
-  final double overlayOpacity;
   const VscopeV2({
     Key? key,
-    required this.img,
-    required this.ovl,
     required this.title,
-    required this.overlayOpacity,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final frame = context.watch<Frame>();
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -646,8 +644,14 @@ class VscopeV2 extends StatelessWidget {
             fit: BoxFit.contain,
             child: ClipRect(
               child: CustomPaint(
-                painter: VScopePainter(img: img, opacity: overlayOpacity, overlay: ovl),
-                size: img != null ? Size(img!.width + 20, img!.height + 20) : const Size(276, 276),
+                painter: VScopePainter(
+                    img: frame.imageFrame?.iVScope,
+                    opacity: frame.overlayOpacity,
+                    overlay: frame.overlayFrame?.iVScope),
+                size: Size(
+                  (frame.imageFrame?.iVScope.width ?? 256) + 20,
+                  (frame.imageFrame?.iVScope.height ?? 256) + 20,
+                ),
               ),
             ),
           ),
