@@ -574,7 +574,7 @@ class SavedInputFrame {
   /// If [thumbnail] is already present it will not be rendered again and just returned as a [ui.Image].
   Future<ui.Image?> thumbnailImage() {
     final c = Completer<ui.Image?>();
-    if (format != NDIInputFormat.uyvy) {
+    if (format != NDIInputFormat.uyvy && format != NDIInputFormat.bgra) {
       c.complete(null);
       return c.future;
     }
@@ -587,7 +587,15 @@ class SavedInputFrame {
       Pointer<Uint8> pTn = calloc.call<Uint8>(160 * 90 * 4);
       // create thumbnail from source in CUDA
       //! replace with CPU/GPU compatible
-      pixconvertCUDA.thumbnailFromUyvy(pSrc, width, height, pTn, 160, 90);
+      switch (format) {
+        case NDIInputFormat.bgra:
+          pixconvertCUDA.thumbnailFromBgra(pSrc, width, height, pTn, 160, 90);
+          break;
+        case NDIInputFormat.uyvy:
+          pixconvertCUDA.thumbnailFromUyvy(pSrc, width, height, pTn, 160, 90);
+          break;
+        default:
+      }
 
       // create ui.Image from rgba pointer
       ui.decodeImageFromPixels(

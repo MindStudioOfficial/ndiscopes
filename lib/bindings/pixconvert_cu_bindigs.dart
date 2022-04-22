@@ -18,57 +18,6 @@ class PixconvertCUDA {
   PixconvertCUDA.fromLookup(ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) lookup)
       : _lookup = lookup;
 
-  int add(
-    int a,
-    int b,
-  ) {
-    return _add(
-      a,
-      b,
-    );
-  }
-
-  late final _addPtr = _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Int32, ffi.Int32)>>('add');
-  late final _add = _addPtr.asFunction<int Function(int, int)>();
-
-  void uyvyToRGBA(
-    int width,
-    int height,
-    ffi.Pointer<ffi.Uint8> src,
-    ffi.Pointer<ffi.Uint8> dest,
-  ) {
-    return _uyvyToRGBA(
-      width,
-      height,
-      src,
-      dest,
-    );
-  }
-
-  late final _uyvyToRGBAPtr = _lookup<
-          ffi.NativeFunction<ffi.Void Function(ffi.Int32, ffi.Int32, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>)>>(
-      'uyvyToRGBA');
-  late final _uyvyToRGBA =
-      _uyvyToRGBAPtr.asFunction<void Function(int, int, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>)>();
-
-  void rgbaToWaveform(
-    int srcWidth,
-    int srcHeight,
-    ffi.Pointer<ffi.Uint8> src,
-    int wfWidth,
-    int wfHeight,
-    ffi.Pointer<ffi.Uint8> dest,
-  ) {
-    return _rgbaToWaveform(
-      srcWidth,
-      srcHeight,
-      src,
-      wfWidth,
-      wfHeight,
-      dest,
-    );
-  }
-
   late final _rgbaToWaveformPtr = _lookup<
       ffi.NativeFunction<
           ffi.Void Function(ffi.Int32, ffi.Int32, ffi.Pointer<ffi.Uint8>, ffi.Int32, ffi.Int32,
@@ -218,6 +167,38 @@ class PixconvertCUDA {
   )>>("thumbnailFromUyvy");
 
   late final _thumbnailFromUyvy = _thumbnailFromUyvyPtr.asFunction<
+      void Function(
+    ffi.Pointer<ffi.Uint8> src,
+    int srcWidth,
+    int srcHeight,
+    ffi.Pointer<ffi.Uint8> tn,
+    int tnWidth,
+    int tnHeight,
+  )>();
+
+  void thumbnailFromBgra(
+    ffi.Pointer<ffi.Uint8> src,
+    int srcWidth,
+    int srcHeight,
+    ffi.Pointer<ffi.Uint8> tn,
+    int tnWidth,
+    int tnHeight,
+  ) {
+    return _thumbnailFromBgra(src, srcWidth, srcHeight, tn, tnWidth, tnHeight);
+  }
+
+  late final _thumbnailFromBgraPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int32,
+    ffi.Int32,
+  )>>("thumbnailFromBgra");
+
+  late final _thumbnailFromBgra = _thumbnailFromBgraPtr.asFunction<
       void Function(
     ffi.Pointer<ffi.Uint8> src,
     int srcWidth,

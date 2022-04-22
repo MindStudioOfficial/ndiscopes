@@ -259,7 +259,19 @@ class ThumbnailPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     //canvas.drawPaint(Paint()..color = Colors.black);
-    canvas.drawImage(img, Offset.zero, Paint());
+    canvas.drawImage(
+      img,
+      Offset.zero,
+      Paint()
+        ..colorFilter = const ColorFilter.matrix(
+          <double>[
+            1, 0, 0, 0, 0, //
+            0, 1, 0, 0, 0, //
+            0, 0, 1, 0, 0, //
+            0, 0, 0, 1, 0, //
+          ],
+        ),
+    );
   }
 
   @override

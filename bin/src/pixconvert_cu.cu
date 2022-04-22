@@ -14,11 +14,6 @@
 
 #define THREADS 256
 
-EXTERNC int add(int a, int b)
-{
-    return a + b;
-}
-
 __device__ uint8_t clampUint8(int v)
 {
     if (v > 255)
@@ -34,202 +29,6 @@ __device__ int minInt(int a, int b)
         return b;
     return a;
 }
-
-__global__ void kernelUyvyRGBA(uint8_t *d_src, uint8_t *d_dest, int pixcount)
-{
-    int pix = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (pix >= pixcount)
-        return;
-    int i = pix * 2;
-
-    int y, u, v;
-    y = d_src[i + 1] - 16;
-
-    if (pix % 2 == 0)
-    {
-        u = d_src[i];
-        v = d_src[i + 2];
-    }
-    else
-    {
-        v = d_src[i];
-        u = d_src[i - 2];
-    }
-    u -= 128;
-    v -= 128;
-
-    uint8_t r = clampUint8((int)roundf(1.164 * y + 1.596 * v));
-    uint8_t g = clampUint8((int)roundf(1.164 * y - 0.392 * u - 0.813 * v));
-    uint8_t b = clampUint8((int)roundf(1.164 * y + 2.017 * u));
-
-    int offset = pix * 4;
-    d_dest[offset] = r;
-    d_dest[offset + 1] = g;
-    d_dest[offset + 2] = b;
-    d_dest[offset + 3] = 255;
-}
-
-EXTERNC void uyvyToRGBA(int width, int height, uint8_t *src, uint8_t *dest)
-{
-    uint8_t *d_src;
-    uint8_t *d_dest;
-    size_t srcSize = sizeof(uint8_t) * width * height * 2;
-    size_t destSize = sizeof(uint8_t) * width * height * 4;
-    int pixcount = width * height;
-
-    cudaMalloc(&d_src, srcSize);
-    cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice);
-
-    cudaMalloc(&d_dest, destSize);
-    int blockCount = (int)ceil(pixcount / (double)THREADS);
-
-    kernelUyvyRGBA<<<blockCount, THREADS>>>(d_src, d_dest, pixcount);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(dest, d_dest, destSize, cudaMemcpyDeviceToHost);
-
-    cudaFree(d_src);
-    cudaFree(d_dest);
-}
-
-__global__ void kernelUyvyYUV(uint8_t *d_src, uint8_t *d_dest, int pixcount)
-{
-    int pix = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (pix >= pixcount)
-        return;
-    int i = pix * 2;
-
-    uint8_t y, u, v;
-    y = d_src[i + 1];
-
-    if (pix % 2 == 0)
-    {
-        u = d_src[i];
-        v = d_src[i + 2];
-    }
-    else
-    {
-        v = d_src[i];
-        u = d_src[i - 2];
-    }
-
-    int o = pix * 4;
-    d_dest[o] = y;
-    d_dest[o + 1] = u;
-    d_dest[o + 2] = v;
-}
-
-EXTERNC void uyvyToYUV(int width, int height, uint8_t *src, uint8_t *dest)
-{
-    uint8_t *d_src;
-    uint8_t *d_dest;
-    int pixcount = width * height;                    // pixels
-    size_t srcSize = sizeof(uint8_t) * pixcount * 2;  // pixels * 2 Bytes UY/VY
-    size_t destSize = sizeof(uint8_t) * pixcount * 3; // pixels * 3 Bytes YUV
-
-    cudaMalloc(&d_src, srcSize);
-    cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice); // SRC CPU -> GPU
-    cudaMalloc(&d_dest, destSize);
-
-    int blockCount = (int)ceil(pixcount / (double)THREADS);
-
-    kernelUyvyYUV<<<blockCount, THREADS>>>(d_src, d_dest, pixcount);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(dest, d_dest, destSize, cudaMemcpyDeviceToHost); // DEST GPU -> CPU
-
-    cudaFree(d_src);
-    cudaFree(d_dest);
-}
-
-__global__ void kernelFillRgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, uint8_t *d_dest, int pixcount)
-{
-    int pix = blockIdx.x * blockDim.x + threadIdx.x;
-    if (pix >= pixcount)
-        return;
-    int pixb = pix * 4;
-    d_dest[pixb] = r;
-    d_dest[pixb + 1] = g;
-    d_dest[pixb + 2] = b;
-    d_dest[pixb + 3] = a;
-}
-
-__global__ void kernelRgbaToWaveform(int srcWidth, int srcHeight, int wfWidth, int wfHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest)
-{
-    int pix = blockIdx.x * blockDim.x + threadIdx.x;
-    if (pix >= pixcount)
-        return;
-    int pixb = pix * 4;
-    float b = sqrtf(0.299 * powf(d_src[pixb], 2) + 0.587 * powf(d_src[pixb + 1], 2) + 0.114 * powf(d_src[pixb + 2], 2));
-
-    int x = pix % srcWidth;
-    int ox = (int)floor(wfWidth * (x / (double)srcWidth));
-    int oy = (int)floor(wfHeight * (1 - (b / (double)255)));
-
-    int destI = 4 * (oy * wfWidth + ox);
-    if (destI >= 0 && destI < (wfWidth * wfHeight * 4) - 3)
-    {
-        d_dest[destI + 1] = clampUint8(d_dest[destI + 1] + 10);
-        d_dest[destI + 3] = clampUint8(d_dest[destI + 3] + 1);
-    }
-}
-
-EXTERNC void rgbaToWaveform(int srcWidth, int srcHeight, uint8_t *src, int wfWidth, int wfHeight, uint8_t *dest)
-{
-    int pixcount = srcWidth * srcHeight;
-    int srcSize = 4 * pixcount;
-
-    int wfpixcount = wfWidth * wfHeight;
-    int destSize = 4 * wfpixcount;
-
-    uint8_t *d_src;
-    uint8_t *d_dest;
-
-    cudaMalloc(&d_src, srcSize);
-    cudaMalloc(&d_dest, destSize);
-
-    cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice);
-
-    // int blockCount = (int)ceil(wfpixcount / (double)THREADS);
-    // kernelFillRgba<<<blockCount, THREADS>>>(0, 0, 0, 128, d_dest, wfpixcount);
-    // cudaDeviceSynchronize();
-
-    int blockCount = (int)ceil(pixcount / (double)THREADS);
-    kernelRgbaToWaveform<<<blockCount, THREADS>>>(srcWidth, srcHeight, wfWidth, wfHeight, pixcount, d_src, d_dest);
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(dest, d_dest, destSize, cudaMemcpyDeviceToHost);
-
-    cudaFree(d_src);
-    cudaFree(d_dest);
-}
-
-/*
-__device__ static inline uint8_t atomicAdd2(uint8_t* address, uint8_t val) {
-    size_t long_address_modulo = (size_t) address & 3;
-    auto* base_address = (unsigned int*) ((uint8_t*) address - long_address_modulo);
-    unsigned int long_val = (unsigned int) val << (8 * long_address_modulo);
-    unsigned int long_old = atomicAdd(base_address, long_val);
-
-    if (long_address_modulo == 3) {
-        // the first 8 bits of long_val represent the char value,
-        // hence the first 8 bits of long_old represent its previous value.
-        return (uint8_t) (long_old >> 24);
-    } else {
-        // bits that represent the char value within long_val
-        unsigned int mask = 0x000000ff << (8 * long_address_modulo);
-        unsigned int masked_old = long_old & mask;
-        // isolate the bits that represent the char value within long_old, add the long_val to that,
-        // then re-isolate by excluding bits that represent the char value
-        unsigned int overflow = (masked_old + long_val) & ~mask;
-        if (overflow) {
-            atomicSub(base_address, overflow);
-        }
-        return (uint8_t) (masked_old >> 8 * long_address_modulo);
-    }
-}*/
 
 __device__ static inline uint8_t atomicCAS8(uint8_t *address, uint8_t expected, uint8_t desired)
 {
@@ -261,7 +60,7 @@ __device__ static inline uint8_t atomicAddClamp(uint8_t *address, uint8_t val)
     do
     {
         // save previous value at address to check if it got changed in between atomics later
-        expected = old; 
+        expected = old;
         // update the old value with the actual value at that address before the addition
         // sets value at address to val + the expected value at address
         // fails if expected is no longer the value at that address because another thread has changed it
@@ -275,14 +74,16 @@ __device__ static inline uint8_t atomicSwapIfGreaterThan(uint8_t *address, uint8
 {
     uint8_t old = *address; // get the value at address
     uint8_t expected;
-    do {
+    do
+    {
         expected = old;
         // abort if expected is already bigger
-        if(expected>=desired) return; 
+        if (expected >= desired)
+            return;
         // swap if desired is greater than expected
-    	old = atomicCAS8(address,expected,desired);
+        old = atomicCAS8(address, expected, desired);
         // if swap fails because another thread changed the value in the meantime repeat
-    }while (expected != old);
+    } while (expected != old);
 }
 
 __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, int scopeHeight, int pixcount, uint8_t *d_src, uint8_t *d_dest, uint8_t *d_wf, uint8_t *d_wfRgb, uint8_t *d_wfParade, uint8_t *d_vScope, uint8_t bright)
@@ -494,8 +295,8 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
         // add brightness to the green byte of waveform
         atomicAddClamp(d_wf + destI + 1, bright);
         // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_wf+destI+3,a);
-        //d_wf[destI + 3] = a;
+        atomicSwapIfGreaterThan(d_wf + destI + 3, a);
+        // d_wf[destI + 3] = a;
     }
 
     // make wFRGB
@@ -508,24 +309,24 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     {
         atomicAddClamp(d_wfRgb + destR, bright);
         // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_wfRgb+destR+3,a);
-        //d_wfRgb[destR + 3] = a;
+        atomicSwapIfGreaterThan(d_wfRgb + destR + 3, a);
+        // d_wfRgb[destR + 3] = a;
     }
     int destG = 4 * (og * scopeWidth + ox);
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
         atomicAddClamp(d_wfRgb + destG + 1, bright);
         // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_wfRgb+destG+3,a);
-        //d_wfRgb[destG + 3] = a;
+        atomicSwapIfGreaterThan(d_wfRgb + destG + 3, a);
+        // d_wfRgb[destG + 3] = a;
     }
     int destB = 4 * (ob * scopeWidth + ox);
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
         atomicAddClamp(d_wfRgb + destB + 2, bright);
         // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_wfRgb+destB+3,a);
-        //d_wfRgb[destB + 3] = a;
+        atomicSwapIfGreaterThan(d_wfRgb + destB + 3, a);
+        // d_wfRgb[destB + 3] = a;
     }
 
     double third = (scopeWidth / (float)3);
@@ -539,24 +340,24 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     {
         atomicAddClamp(d_wfParade + destR, bright);
         // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_wfParade+destR+3,a);
-        //d_wfParade[destR + 3] = a;
+        atomicSwapIfGreaterThan(d_wfParade + destR + 3, a);
+        // d_wfParade[destR + 3] = a;
     }
 
     if (destG >= 0 && destG < (scopeWidth * scopeHeight * 4) - 3)
     {
         atomicAddClamp(d_wfParade + destG + 1, bright);
         // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_wfParade+destG+3,a);
-        //d_wfParade[destG + 3] = a;
+        atomicSwapIfGreaterThan(d_wfParade + destG + 3, a);
+        // d_wfParade[destG + 3] = a;
     }
 
     if (destB >= 0 && destB < (scopeWidth * scopeHeight * 4) - 2)
     {
         atomicAddClamp(d_wfParade + destB + 2, bright);
         // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_wfParade+destB+3,a);
-        //d_wfParade[destB + 3] = a;
+        atomicSwapIfGreaterThan(d_wfParade + destB + 3, a);
+        // d_wfParade[destB + 3] = a;
     }
     ox = minInt((int)roundf(scopeHeight * (u / (float)255)), scopeHeight - 1);
     oy = minInt((int)roundf(scopeHeight * (1 - (v / (float)255))), scopeHeight - 1);
@@ -565,8 +366,8 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     {
         atomicAddClamp(d_vScope + destI + 1, bright);
         // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_vScope+destI+3,a);
-        //d_vScope[destI + 3] = a;
+        atomicSwapIfGreaterThan(d_vScope + destI + 3, a);
+        // d_vScope[destI + 3] = a;
     }
 }
 
@@ -743,6 +544,68 @@ EXTERNC void thumbnailFromUyvy(uint8_t *src, int srcWidth, int srcHeight, uint8_
     int blockCount = (int)ceil(tnPixcount / (double)THREADS);
     // call kernel for each thumbnail pixel
     kernelThumbnailFromUyvy<<<blockCount, THREADS>>>(d_src, srcWidth, srcHeight, d_tn, tnWidth, tnHeight);
+    // wait for all threads to finish
+    cudaDeviceSynchronize();
+    // copy back data from GPU
+    cudaMemcpy(tn, d_tn, tnSize, cudaMemcpyDeviceToHost);
+    // free GPU memory
+    cudaFree(d_src);
+    cudaFree(d_tn);
+}
+
+__global__ void kernelThumbnailFromBgra(uint8_t *d_src, int srcWidth, int srcHeight, uint8_t *d_tn, int tnWidth, int tnHeight)
+{
+    // calculate amount of pixels of destination
+    int pixcount = tnWidth * tnHeight;
+    // calculate index of current pixel in destination
+    int pix = blockIdx.x * blockDim.x + threadIdx.x;
+    // end if we are out of bounds
+    if (pix >= pixcount)
+        return;
+    // get values of corresponding src pixel
+    int x = pix % tnWidth;
+    int y = (int)floor(pix / (double)tnWidth);
+    int srcX = minInt((int)round(srcWidth * (x / (double)tnWidth)), srcWidth - 1);
+    int srcY = minInt((int)round(srcHeight * (y / (double)tnHeight)), srcHeight - 1);
+
+    // get pixel and byte index in source image
+    int srcPix = srcX + srcY * srcWidth;
+    int srcByte = srcPix * 4;
+
+    // write RGBA data to destination
+    int destByte = pix * 4;
+    d_tn[destByte] = d_src[srcByte + 2];     // R
+    d_tn[destByte + 1] = d_src[srcByte + 1]; // G
+    d_tn[destByte + 2] = d_src[srcByte];     // B
+    d_tn[destByte + 3] = d_src[srcByte + 3]; // A
+}
+
+EXTERNC void thumbnailFromBgra(uint8_t *src, int srcWidth, int srcHeight, uint8_t *tn, int tnWidth, int tnHeight)
+{
+    // calculate the amount of pixels in the destination
+    int tnPixcount = tnWidth * tnHeight;
+    // calculate number of bytes for destination
+    // tn will be in RGBA format, 4 bytes per pixel
+    int tnSize = tnPixcount * 4;
+    // printf("%d\n",tnSize);
+    //  calculate the amount of pixels in source image
+    int srcPixcount = srcWidth * srcHeight;
+    // calculate the number of bytes for source
+    // src is in bgra format, 4 bytes per pixel
+    int srcSize = srcPixcount * 4;
+    // printf("%d\n",srcSize);
+    //  create memory on GPU
+    uint8_t *d_src;
+    cudaMalloc(&d_src, srcSize);
+    uint8_t *d_tn;
+    cudaMalloc(&d_tn, tnSize);
+    // copy source to GPU
+
+    cudaMemcpy(d_src, src, srcSize, cudaMemcpyHostToDevice);
+    // calculate the amount of blocks needed for blocks * threads/block = tnPixcount
+    int blockCount = (int)ceil(tnPixcount / (double)THREADS);
+    // call kernel for each thumbnail pixel
+    kernelThumbnailFromBgra<<<blockCount, THREADS>>>(d_src, srcWidth, srcHeight, d_tn, tnWidth, tnHeight);
     // wait for all threads to finish
     cudaDeviceSynchronize();
     // copy back data from GPU
