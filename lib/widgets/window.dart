@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:ndiscopes/models/colors.dart';
+import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/widgets/versionchecker.dart';
+import 'package:provider/provider.dart';
 
 final bc = WindowButtonColors(
   iconNormal: Colors.white,
@@ -14,10 +16,14 @@ final bc = WindowButtonColors(
 
 class WindowTitleBar extends StatelessWidget {
   final String sourceName;
-  const WindowTitleBar({Key? key, required this.sourceName}) : super(key: key);
+  const WindowTitleBar({
+    Key? key,
+    required this.sourceName,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final frame = context.watch<Frame>();
     return Container(
       width: MediaQuery.of(context).size.width,
       height: 32.0,
@@ -32,7 +38,7 @@ class WindowTitleBar extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Text(
-                    "NDI Scopes by MindStudio  -  $sourceName",
+                    "NDI Scopes by MindStudio  -  $sourceName ${frame.imageFrame != null ? frame.imageFrame!.iRGBA.width.toString() + " x " + frame.imageFrame!.iRGBA.height.toString() : ""}",
                     style: TextStyle(color: Colors.white.withOpacity(.2)),
                     overflow: TextOverflow.visible,
                     maxLines: 1,
