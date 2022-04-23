@@ -71,11 +71,11 @@ flutter:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
   assets:
-      # - graphics/
       - bin/Processing.NDI.Lib.x64.dll
       - bin/pixconvert_cu.dll
       - license.md
       - Processing.NDI.Lib.Licenses.txt
+      - graphics/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

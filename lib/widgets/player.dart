@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/main.dart';
@@ -250,6 +252,20 @@ class _FrameViewerState extends State<FrameViewer> {
                     ),
                 ],
               ),
+              DelayedCustomTooltip(
+                "Toogle Transparancy Grid",
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton(
+                    color: frame.gridEnabled ? Colors.blue : Colors.white,
+                    iconSize: 25,
+                    icon: const Icon(FluentIcons.tab_in_private_24_filled),
+                    onPressed: () {
+                      frame.toogleGrid();
+                    },
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -262,6 +278,16 @@ class _FrameViewerState extends State<FrameViewer> {
               child: ClipRect(
                 child: Stack(
                   children: [
+                    if (frame.gridEnabled)
+                      SizedBox(
+                        width: frame.imageFrame?.iRGBA.width.toDouble() ?? 1920,
+                        height: frame.imageFrame?.iRGBA.height.toDouble() ?? 1080,
+                        child: Image.asset(
+                          "graphics/transparency500.png",
+                          repeat: ImageRepeat.repeat,
+                          alignment: Alignment.topLeft,
+                        ),
+                      ),
                     //* NDI SOURCE IMAGE + Overlay
                     CustomPaint(
                       painter: ImagePainter(
@@ -419,7 +445,6 @@ class ImagePainter extends CustomPainter {
     }
     // paint the image if available
     else {
-      //TODO: optional checkerboard behind frame with alpha
       canvas.drawImage(img!, Offset.zero, p);
     }
     // paints the overlay image if available

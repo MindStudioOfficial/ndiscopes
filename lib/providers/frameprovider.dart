@@ -9,6 +9,7 @@ class Frame with ChangeNotifier {
   OverlayMode _overlayMode = OverlayMode.splitVertical;
   double _splitPos = 0.5;
   bool _flipSplit = false;
+  bool _gridEnabled = false;
 
   NDIOutputFrame? get imageFrame => _imageFrame;
   NDIOutputFrame? get overlayFrame => _overlayFrame;
@@ -16,6 +17,7 @@ class Frame with ChangeNotifier {
   OverlayMode get overlayMode => _overlayMode;
   double get splitPos => _splitPos;
   bool get flipSplit => _flipSplit;
+  bool get gridEnabled => _gridEnabled;
 
   void updateImageFrame(NDIOutputFrame? frame) {
     _imageFrame = frame;
@@ -44,6 +46,11 @@ class Frame with ChangeNotifier {
 
   void updateFlipSplit(bool flip) {
     _flipSplit = flip;
+    notifyListeners();
+  }
+
+  void toogleGrid({bool? enabled}) {
+    _gridEnabled = enabled ?? !_gridEnabled;
     notifyListeners();
   }
 }
