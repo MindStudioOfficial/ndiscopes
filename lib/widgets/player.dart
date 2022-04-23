@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/main.dart';
@@ -8,9 +6,7 @@ import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
 import 'dart:ui' as ui;
-
 import 'package:ndiscopes/widgets/customtooltip.dart';
-
 import 'package:provider/provider.dart';
 
 enum OverlayMode {

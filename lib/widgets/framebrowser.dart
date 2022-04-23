@@ -9,7 +9,6 @@ import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
-import 'package:ndiscopes/widgets/customtooltip.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui' as ui;
@@ -28,6 +27,7 @@ class Framebrowser extends StatefulWidget {
 class _FramebrowserState extends State<Framebrowser> {
   Directory? currentDir;
   StreamSubscription? fsWatcher;
+
   @override
   void initState() {
     super.initState();
@@ -217,6 +217,7 @@ class NDIFrameThumbnail extends StatefulWidget {
 class _NDIFrameThumbnailState extends State<NDIFrameThumbnail> {
   late SavedInputFrame frame;
   ui.Image? img;
+
   @override
   void initState() {
     super.initState();
@@ -276,7 +277,7 @@ class ThumbnailPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+    return false;
   }
 }
 
@@ -368,18 +369,17 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
           if (appDirDirectorys.isNotEmpty && currentDir != null && appDirDirectorys.contains(currentDir))
             DropdownButton<Directory>(
               value: currentDir,
-              items: appDirDirectorys
-                  .map<DropdownMenuItem<Directory>>(
-                    (d) => DropdownMenuItem<Directory>(
-                      key: ValueKey(d),
-                      value: d,
-                      child: Text(
-                        path.basename(d.path),
-                        style: tSmall,
-                      ),
-                    ),
-                  )
-                  .toList(),
+              items: List<DropdownMenuItem<Directory>>.generate(
+                appDirDirectorys.length,
+                (index) => DropdownMenuItem<Directory>(
+                  child: Text(
+                    path.basename(appDirDirectorys[index].path),
+                    style: tSmall,
+                  ),
+                  value: appDirDirectorys[index],
+                  key: ValueKey(appDirDirectorys[index]),
+                ),
+              ),
               onChanged: (d) {
                 if (d != null) currentDir = d;
                 updateCurrentDir();
@@ -403,31 +403,27 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
                 final fse = currentDirContents[index];
                 // ignore files that don't end with ".ndis" and directories
                 if (fse is File && path.extension(fse.path) == ".ndis") {
-                  return DelayedCustomTooltip(
-                    // get filename from path
-                    path.basename(fse.path),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: InkWell(
-                        onTap: () {
-                          // read data from file and create frame and scopes
-                          SavedInputFrame.fromJSON(
-                            jsonDecode(
-                              fse.readAsStringSync(),
-                            ),
-                          ).convertToScopes(580, 256).then(
-                            (frame) {
-                              if (frame != null) context.read<Frame>().updateOverlayFrame(frame);
-                            },
-                          );
-                        },
-                        child: Ink(
-                          width: 96,
-                          height: 96,
-                          child: NDIFrameThumbnail(
-                            file: fse,
-                            key: ValueKey(fse),
+                  return Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: InkWell(
+                      onTap: () {
+                        // read data from file and create frame and scopes
+                        SavedInputFrame.fromJSON(
+                          jsonDecode(
+                            fse.readAsStringSync(),
                           ),
+                        ).convertToScopes(580, 256).then(
+                          (frame) {
+                            if (frame != null) context.read<Frame>().updateOverlayFrame(frame);
+                          },
+                        );
+                      },
+                      child: Ink(
+                        width: 96,
+                        height: 96,
+                        child: NDIFrameThumbnail(
+                          file: fse,
+                          key: ValueKey(fse),
                         ),
                       ),
                     ),
