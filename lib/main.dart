@@ -241,13 +241,13 @@ class _MainState extends State<Main> {
                       ),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
-                        width: settingsOpen ? 225 : 0,
+                        width: settingsOpen ? 175 : 0,
                         curve: Curves.easeInOutQuad,
                         child: const SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           physics: NeverScrollableScrollPhysics(),
                           child: SizedBox(
-                            width: 225,
+                            width: 175,
                             child: Settings(),
                           ),
                         ),

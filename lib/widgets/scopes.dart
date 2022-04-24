@@ -133,6 +133,7 @@ class ScopePainter extends CustomPainter {
     // draw horizontal level depending on percentage or 8bit
     p = Paint()..color = Colors.white.withOpacity(.3);
 
+    // calculate the amount of lines/labels
     int increments = 0;
     switch (scopeSettings.wFScaleType) {
       case WFScaleTypes.percentage:
@@ -160,7 +161,7 @@ class ScopePainter extends CustomPainter {
 
         final pb = ui.ParagraphBuilder(
           ui.ParagraphStyle(
-            fontSize: 10,
+            fontSize: 11,
             textAlign: TextAlign.center,
             fontWeight: FontWeight.w100,
           ),
