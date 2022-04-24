@@ -21,12 +21,14 @@ class FrameViewer extends StatefulWidget {
   final Function(int index) onSelectSource;
   final Function() onSaveFrame;
   final Function(bool open) onToggleFrameBrowser;
+  final Function(bool open) onToggleSettings;
 
   const FrameViewer({
     Key? key,
     required this.onSelectSource,
     required this.onSaveFrame,
     required this.onToggleFrameBrowser,
+    required this.onToggleSettings,
   }) : super(key: key);
 
   @override
@@ -35,6 +37,7 @@ class FrameViewer extends StatefulWidget {
 
 class _FrameViewerState extends State<FrameViewer> {
   bool frameBrowserOpen = false;
+  bool settingsOpen = false;
 
   @override
   void initState() {
@@ -258,6 +261,21 @@ class _FrameViewerState extends State<FrameViewer> {
                     icon: const Icon(FluentIcons.tab_in_private_24_filled),
                     onPressed: () {
                       frame.toogleGrid();
+                    },
+                  ),
+                ),
+              ),
+              DelayedCustomTooltip(
+                "Toogle Settings",
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton(
+                    color: frame.gridEnabled ? Colors.blue : Colors.white,
+                    iconSize: 25,
+                    icon: const Icon(FluentIcons.settings_24_filled),
+                    onPressed: () {
+                      settingsOpen = !settingsOpen;
+                      widget.onToggleSettings(settingsOpen);
                     },
                   ),
                 ),

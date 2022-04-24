@@ -4,6 +4,8 @@ Color cDominant = const Color.fromRGBO(14, 14, 14, 1);
 Color cPrimary = const Color.fromRGBO(24, 24, 24, 1);
 Color cAccent = const Color.fromARGB(255, 15, 29, 43);
 
+Color cHighlight = const Color.fromARGB(255, 25, 120, 215);
+
 Color cWindowTitleBar = cDominant;
 Color cAppBackground = cDominant;
 

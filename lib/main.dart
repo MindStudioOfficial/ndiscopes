@@ -9,11 +9,13 @@ import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
+import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/framebrowser.dart';
 import 'package:ndiscopes/widgets/player.dart';
 import 'package:ndiscopes/widgets/scopes.dart';
+import 'package:ndiscopes/widgets/settings.dart';
 import 'package:ndiscopes/widgets/window.dart';
 import 'package:provider/provider.dart';
 
@@ -31,8 +33,12 @@ void main() {
         ChangeNotifierProvider(
           create: (_) => MaskProvider(),
         ),
+        ChangeNotifierProvider(
+          create: (_) => ScopeSettings(),
+        ),
       ],
       child: MaterialApp(
+        theme: ThemeData(unselectedWidgetColor: cHighlight, toggleableActiveColor: cHighlight),
         scrollBehavior:
             const MaterialScrollBehavior().copyWith(dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch}),
         debugShowCheckedModeBanner: false,
@@ -62,6 +68,7 @@ class Main extends StatefulWidget {
 class _MainState extends State<Main> {
   NDISource? selectedSource;
   bool refOpen = false;
+  bool settingsOpen = false;
   bool portraitLayout = false;
   @override
   void initState() {
@@ -141,115 +148,6 @@ class _MainState extends State<Main> {
     calloc.free(major);
     calloc.free(minor);
   }
-  /*
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      return Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          WindowTitleBar(sourceName: selectedSource != null ? selectedSource!.name : "No Source"),
-          Row(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Flexible(
-                child: SizedBox(
-                  height: constraints.maxHeight - appWindow.titleBarHeight - 2,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Expanded(
-                        child: FrameViewer(
-                          onMaskUpdate: (m, active) {
-                            maskActive = active;
-                            mask = m;
-                            ndi.updateMask(mask, maskActive);
-                            setState(() {});
-                          },
-                          frame: currentFrame,
-                          overlay: overlayFrame,
-                          overlayOpacity: overlayOpacity,
-                          onSaveFrame: () {
-                            if (selectedSource == null) return;
-                            ndi.getSingleFrame(
-                              selectedSource!.source,
-                              const Size(580, 256),
-                              (frame) {
-                                saveInputFrame(frame);
-                              },
-                              mask,
-                              maskActive,
-                            );
-                          },
-                          onRemoveOverlay: () {
-                            overlayFrame = null;
-                            setState(() {});
-                          },
-                          onSelectSource: (index) {
-                            final pS = ndi.getSourceAt(index);
-
-                            if (pS != null) {
-                              ndi.stopGetFrames();
-                              selectedSource = NDISource(pS);
-                              setState(() {});
-                              ndi.getFrames(
-                                selectedSource!.source,
-                                const Size(580, 256),
-                                (frame) => setState(
-                                  () => currentFrame = frame,
-                                ),
-                                mask,
-                                maskActive,
-                              );
-                            }
-                          },
-                          onOverlayChanged: (mode, pos, flip) {
-                            setState(() {
-                              overlayMode = mode;
-                              splitPos = pos;
-                              flipSplit = flip;
-                            });
-                          },
-                        ),
-                      ),
-                      SizedBox(
-                        height: 150,
-                        child: Framebrowser(
-                          onselectFrame: (frame) {
-                            overlayFrame = frame;
-                            setState(() {});
-                          },
-                        ),
-                      ),
-                      Container(
-                        height: 150,
-                        color: Colors.transparent,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                color: cAppBackground,
-                height: constraints.maxHeight - appWindow.titleBarHeight - 2,
-                width: 600,
-                child: Scopes(
-                  frame: currentFrame,
-                  overlay: overlayFrame,
-                  overlayMode: overlayMode,
-                  splitPos: splitPos,
-                  flipSplit: flipSplit,
-                ),
-              ),
-            ],
-          ),
-        ],
-      );
-    });
-    
-  }
-  */
 
   @override
   Widget build(BuildContext context) {
@@ -312,6 +210,11 @@ class _MainState extends State<Main> {
                                 refOpen = open;
                               });
                             },
+                            onToggleSettings: (open) {
+                              setState(() {
+                                settingsOpen = open;
+                              });
+                            },
                           ),
                         ),
                       ),
@@ -325,6 +228,19 @@ class _MainState extends State<Main> {
                           child: SizedBox(
                             width: 175,
                             child: FrameBrowserV2(),
+                          ),
+                        ),
+                      ),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: settingsOpen ? 225 : 0,
+                        curve: Curves.easeInOutQuad,
+                        child: const SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: NeverScrollableScrollPhysics(),
+                          child: SizedBox(
+                            width: 225,
+                            child: Settings(),
                           ),
                         ),
                       ),

@@ -1,201 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:ndiscopes/models/decorations.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
-import 'package:ndiscopes/service/ndi/ndi.dart';
+import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'dart:ui' as ui;
 import 'package:ndiscopes/util/colorconversion.dart';
 import 'package:ndiscopes/widgets/player.dart';
 
 import 'package:provider/provider.dart';
-
-//! no longer used
-class Scopes extends StatelessWidget {
-  final NDIOutputFrame? frame;
-  final NDIOutputFrame? overlay;
-  final OverlayMode overlayMode;
-  final double splitPos;
-  final double? overlayOpacity;
-  final bool flipSplit;
-  const Scopes({
-    Key? key,
-    required this.frame,
-    this.overlay,
-    this.overlayOpacity,
-    required this.overlayMode,
-    required this.splitPos,
-    required this.flipSplit,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Container(
-        color: Colors.black,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Scope(
-              img: frame?.iWF,
-              title: "Luma Waveform",
-              overlay: overlay != null ? overlay!.iWF : null,
-              overlayOpacity: overlayOpacity,
-              flipSplit: flipSplit,
-              overlayMode: overlayMode,
-              splitPos: splitPos,
-            ),
-            Scope(
-              img: frame?.iWFRgb,
-              title: "RGB Waveform",
-              overlay: overlay != null ? overlay!.iWFRgb : null,
-              overlayOpacity: overlayOpacity,
-              flipSplit: flipSplit,
-              overlayMode: overlayMode,
-              splitPos: splitPos,
-            ),
-            Scope(
-              img: frame?.iWFParade,
-              title: "RGB Parade",
-              overlay: overlay != null ? overlay!.iWFParade : null,
-              overlayOpacity: overlayOpacity,
-              flipSplit: flipSplit,
-              overlayMode: overlayMode,
-              splitPos: splitPos,
-              isParade: true,
-            ),
-            VScope(
-              img: frame?.iVScope,
-              title: "Vectorscope",
-              overlay: overlay != null ? overlay!.iVScope : null,
-              overlayOpacity: overlayOpacity,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-//! no longer used
-class Scope extends StatefulWidget {
-  final String title;
-  final ui.Image? img;
-  final ui.Image? overlay;
-  final double? overlayOpacity;
-  final double splitPos;
-  final OverlayMode overlayMode;
-  final bool flipSplit;
-  final bool? isParade;
-  const Scope({
-    Key? key,
-    required this.img,
-    required this.title,
-    this.overlay,
-    this.overlayOpacity,
-    required this.flipSplit,
-    required this.overlayMode,
-    required this.splitPos,
-    this.isParade,
-  }) : super(key: key);
-
-  @override
-  _ScopeState createState() => _ScopeState();
-}
-
-//! no longer used
-class _ScopeState extends State<Scope> {
-  bool expanded = true;
-  bool hover = false;
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        MouseRegion(
-          cursor: SystemMouseCursors.click,
-          onEnter: (event) {
-            setState(() {
-              hover = true;
-            });
-          },
-          onExit: (event) {
-            setState(() {
-              hover = false;
-            });
-          },
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                expanded = !expanded;
-              });
-            },
-            child: Container(
-              height: 30,
-              //color: hover ? cScopeTitleBackgroundHover : cScopeTitleBackground,
-              decoration: hover ? dHoverGradient : dGradient,
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  const SizedBox(
-                    width: 4,
-                  ),
-                  Icon(
-                    expanded ? Icons.expand_more_sharp : Icons.expand_less_sharp,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                      child: Text(
-                        widget.title,
-                        style: tSmall,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        AnimatedContainer(
-          decoration: dBorder,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOutQuad,
-          height: expanded ? 296 : 0,
-          child: SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: SizedBox(
-              width: 600,
-              height: 296,
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: ClipRect(
-                  child: CustomPaint(
-                    painter: ScopePainter(
-                      img: widget.img,
-                      opacity: widget.overlayOpacity,
-                      overlay: widget.overlay,
-                      flipSplit: widget.flipSplit,
-                      overlayMode: widget.overlayMode,
-                      splitPos: widget.splitPos,
-                      isParade: widget.isParade,
-                    ),
-                    size: widget.img != null
-                        ? Size(widget.img!.width + 20, widget.img!.height + 20)
-                        : const Size(600, 275),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 /// paints a scope provided in [img]
 ///
@@ -325,110 +136,6 @@ class ScopePainter extends CustomPainter {
   }
 }
 
-//! no longer used
-class VScope extends StatefulWidget {
-  final String title;
-  final ui.Image? img;
-  final ui.Image? overlay;
-  final double? overlayOpacity;
-  const VScope({Key? key, required this.img, required this.title, this.overlay, this.overlayOpacity}) : super(key: key);
-
-  @override
-  _VScopeState createState() => _VScopeState();
-}
-
-//! no longer used
-class _VScopeState extends State<VScope> {
-  bool expanded = true;
-  bool hover = false;
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        MouseRegion(
-          cursor: SystemMouseCursors.click,
-          onEnter: (event) {
-            setState(() {
-              hover = true;
-            });
-          },
-          onExit: (event) {
-            setState(() {
-              hover = false;
-            });
-          },
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                expanded = !expanded;
-              });
-            },
-            child: Container(
-              height: 30,
-              //color: hover ? cScopeTitleBackgroundHover : cScopeTitleBackground,
-              decoration: hover ? dHoverGradient : dGradient,
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  const SizedBox(
-                    width: 4,
-                  ),
-                  Icon(
-                    expanded ? Icons.expand_more_sharp : Icons.expand_less_sharp,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                      child: Text(
-                        widget.title,
-                        style: tSmall,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        AnimatedContainer(
-          decoration: dBorder,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOutQuad,
-          height: expanded ? 600 : 0,
-          child: SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: Stack(
-              children: [
-                SizedBox(
-                  width: 600,
-                  height: 600,
-                  child: FittedBox(
-                    fit: BoxFit.contain,
-                    child: ClipRect(
-                      child: CustomPaint(
-                        painter:
-                            VScopePainter(img: widget.img, opacity: widget.overlayOpacity, overlay: widget.overlay),
-                        size: widget.img != null
-                            ? Size(widget.img!.width + 20, widget.img!.height + 20)
-                            : const Size(276, 276),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// the colors at which to draw the squares on the vectorscope
 ///
 /// once at 100% and once at 75% saturation
@@ -446,8 +153,9 @@ class VScopePainter extends CustomPainter {
   ui.Image? img;
   ui.Image? overlay;
   double? opacity;
+  double scopeScale;
 
-  VScopePainter({required this.img, this.overlay, this.opacity});
+  VScopePainter({required this.img, this.overlay, this.opacity, required this.scopeScale});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -502,6 +210,11 @@ class VScopePainter extends CustomPainter {
     // move back to 0,0
     canvas.translate(-138, -138);
 
+    canvas.scale(scopeScale);
+    Offset imageRecenter = Offset(
+      (size.width / scopeScale - (img?.width ?? overlay?.width ?? 256)) / 2,
+      (size.height / scopeScale - (img?.height ?? overlay?.height ?? 256)) / 2,
+    );
     // paint the overlay behind the image
     Paint p = Paint()
       ..isAntiAlias = true
@@ -520,7 +233,7 @@ class VScopePainter extends CustomPainter {
           0, 1, 0, 0, 0, // a
         ],
       );
-      canvas.drawImage(overlay!, const Offset(10, 10), p);
+      canvas.drawImage(overlay!, imageRecenter, p);
     }
 
     if (img != null) {
@@ -540,7 +253,7 @@ class VScopePainter extends CustomPainter {
         ],
       );
 
-      canvas.drawImage(img!, const Offset(10, 10), p2);
+      canvas.drawImage(img!, imageRecenter, p2);
     }
   }
 
@@ -621,6 +334,8 @@ class VscopeV2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final frame = context.watch<Frame>();
+    final scopeSettings = context.watch<ScopeSettings>();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -638,9 +353,11 @@ class VscopeV2 extends StatelessWidget {
             child: ClipRect(
               child: CustomPaint(
                 painter: VScopePainter(
-                    img: frame.imageFrame?.iVScope,
-                    opacity: frame.overlayOpacity,
-                    overlay: frame.overlayFrame?.iVScope),
+                  img: frame.imageFrame?.iVScope,
+                  opacity: frame.overlayOpacity,
+                  overlay: frame.overlayFrame?.iVScope,
+                  scopeScale: scopeSettings.vScopeScale,
+                ),
                 size: Size(
                   (frame.imageFrame?.iVScope.width ?? 256) + 20,
                   (frame.imageFrame?.iVScope.height ?? 256) + 20,
