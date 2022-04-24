@@ -21,6 +21,7 @@ class ScopePainter extends CustomPainter {
   final OverlayMode overlayMode;
   final bool flipSplit;
   final bool? isParade;
+  final ScopeSettings scopeSettings;
 
   const ScopePainter({
     required this.img,
@@ -30,6 +31,7 @@ class ScopePainter extends CustomPainter {
     required this.overlayMode,
     required this.splitPos,
     this.isParade,
+    required this.scopeSettings,
   });
 
   @override
@@ -41,6 +43,8 @@ class ScopePainter extends CustomPainter {
     Paint p = Paint()
       ..isAntiAlias = true
       ..filterQuality = FilterQuality.high;
+
+    Offset topLeft = const Offset(20, 10);
 
     // if split horizontal put overlay with opacity in background
     if (overlay != null && overlayMode == OverlayMode.splitHorizontal) {
@@ -59,7 +63,7 @@ class ScopePainter extends CustomPainter {
           0, 0, 0, 1, 0, // a
         ],
       );
-      canvas.drawImage(overlay!, const Offset(10, 10), p);
+      canvas.drawImage(overlay!, topLeft, p);
     }
     // paint the scope image
     if (img != null) {
@@ -74,7 +78,7 @@ class ScopePainter extends CustomPainter {
           0, 0, 0, 1, 0, // a
         ],
       );
-      canvas.drawImage(img!, const Offset(10, 10), pI);
+      canvas.drawImage(img!, topLeft, pI);
     }
 
     // paint the vertically split overlay on top of the image
@@ -99,7 +103,7 @@ class ScopePainter extends CustomPainter {
       if (isParade == null || !isParade!) {
         Rect srcRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) &
             Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
-        Rect dstRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) + const Offset(10, 10) &
+        Rect dstRect = Offset(flipSplit ? overlay!.width * splitPos : 0, 0) + topLeft &
             Size(flipSplit ? overlay!.width * (1 - splitPos) : overlay!.width * splitPos, overlay!.height.toDouble());
         canvas.drawRect(dstRect, Paint()..color = Colors.black);
         canvas.drawImageRect(
@@ -115,18 +119,68 @@ class ScopePainter extends CustomPainter {
         Size s = Size(flipSplit ? third * (1 - splitPos) : third * splitPos, overlay!.height.toDouble());
         for (int i = 0; i < 3; i++) {
           Offset o = Offset(flipSplit ? i * third + third * splitPos : i * third, 0);
-          canvas.drawRect(o + const Offset(10, 10) & s, Paint()..color = Colors.black);
-          canvas.drawImageRect(overlay!, o & s, o + const Offset(10, 10) & s, pO);
+          canvas.drawRect(o + topLeft & s, Paint()..color = Colors.black);
+          canvas.drawImageRect(
+            overlay!,
+            o & s,
+            o + topLeft & s,
+            pO,
+          );
         }
       }
     }
 
-    // draw horizontal level lines in increments of 32
+    // draw horizontal level depending on percentage or 8bit
     p = Paint()..color = Colors.white.withOpacity(.3);
-    for (int i = 0; i <= 8; i++) {
-      double y = i * (img != null ? img!.height : 256) / 8;
 
-      canvas.drawLine(Offset(10, y + 10), Offset(img != null ? img!.width + 10 : 590, y + 10), p);
+    int increments = 0;
+    switch (scopeSettings.wVScaleType) {
+      case WFScaleTypes.percentage:
+        increments = 10;
+        break;
+      case WFScaleTypes.bits:
+        increments = 8;
+        break;
+    }
+
+    bool labels = scopeSettings.showWVScale;
+
+    for (int i = 0; i <= increments; i++) {
+      double y = i * (img != null ? img!.height : 256) / increments;
+      if (labels) {
+        String label = "";
+        switch (scopeSettings.wVScaleType) {
+          case WFScaleTypes.percentage:
+            label = (100 - (100 / increments * i)).toInt().toString();
+            break;
+          case WFScaleTypes.bits:
+            label = (256 - y).toInt().toString();
+            break;
+        }
+
+        final pb = ui.ParagraphBuilder(
+          ui.ParagraphStyle(
+            fontSize: 10,
+            textAlign: TextAlign.center,
+            fontWeight: FontWeight.w100,
+          ),
+        )
+          ..pushStyle(ui.TextStyle(color: Colors.grey))
+          ..addText(label);
+
+        final paragraph = pb.build();
+        paragraph.layout(const ui.ParagraphConstraints(width: 18));
+
+        canvas.drawParagraph(
+          paragraph,
+          Offset(1, y),
+        );
+      }
+      canvas.drawLine(
+        Offset(20, y + 10),
+        Offset(img != null ? img!.width + 20 : 600, y + 10),
+        p,
+      );
     }
   }
 
@@ -283,6 +337,7 @@ class ScopeV2 extends StatefulWidget {
 class _ScopeV2State extends State<ScopeV2> {
   @override
   Widget build(BuildContext context) {
+    final scopeSettings = context.watch<ScopeSettings>();
     final frame = context.watch<Frame>();
     return AspectRatio(
       aspectRatio: 600 / 306,
@@ -301,6 +356,7 @@ class _ScopeV2State extends State<ScopeV2> {
             ClipRect(
               child: CustomPaint(
                 painter: ScopePainter(
+                  scopeSettings: scopeSettings,
                   img: widget.img,
                   opacity: frame.overlayOpacity,
                   overlay: widget.ovl,

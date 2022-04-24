@@ -1,4 +1,3 @@
-import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
@@ -50,10 +49,10 @@ class Settings extends StatelessWidget {
               Expanded(
                 child: InkWell(
                   onTap: () {
-                    scopeSettings.updateWVScaleType(WVScaleTypes.percentage);
+                    scopeSettings.updateWVScaleType(WFScaleTypes.percentage);
                   },
                   child: Ink(
-                    color: scopeSettings.wVScaleType == WVScaleTypes.percentage ? cHighlight : cAccent,
+                    color: scopeSettings.wVScaleType == WFScaleTypes.percentage ? cHighlight : cAccent,
                     child: Center(child: Text("%", style: tBold)),
                   ),
                 ),
@@ -61,10 +60,10 @@ class Settings extends StatelessWidget {
               Expanded(
                 child: InkWell(
                   onTap: () {
-                    scopeSettings.updateWVScaleType(WVScaleTypes.bits);
+                    scopeSettings.updateWVScaleType(WFScaleTypes.bits);
                   },
                   child: Ink(
-                    color: scopeSettings.wVScaleType == WVScaleTypes.bits ? cHighlight : cAccent,
+                    color: scopeSettings.wVScaleType == WFScaleTypes.bits ? cHighlight : cAccent,
                     child: Center(child: Text("8Bit", style: tBold)),
                   ),
                 ),

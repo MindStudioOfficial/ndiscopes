@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 class ScopeSettings with ChangeNotifier {
   double _vScopeScale = 0.5;
   bool _showWVScale = true;
-  WVScaleTypes _wVScaleType = WVScaleTypes.percentage;
+  WFScaleTypes _wVScaleType = WFScaleTypes.percentage;
   bool _enableWVBackdrop = false;
   double _backdropOpacity = 0.3;
 
   double get vScopeScale => _vScopeScale;
   bool get showWVScale => _showWVScale;
-  WVScaleTypes get wVScaleType => _wVScaleType;
+  WFScaleTypes get wVScaleType => _wVScaleType;
   bool get enableWVBackdrop => _enableWVBackdrop;
   double get backdropOpacity => _backdropOpacity;
 
@@ -23,7 +23,7 @@ class ScopeSettings with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateWVScaleType(WVScaleTypes type) {
+  void updateWVScaleType(WFScaleTypes type) {
     _wVScaleType = type;
     notifyListeners();
   }
@@ -39,7 +39,7 @@ class ScopeSettings with ChangeNotifier {
   }
 }
 
-enum WVScaleTypes {
+enum WFScaleTypes {
   percentage,
   bits,
 }

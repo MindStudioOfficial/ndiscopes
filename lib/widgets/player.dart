@@ -63,6 +63,7 @@ class _FrameViewerState extends State<FrameViewer> {
   Widget build(BuildContext context) {
     final frame = context.watch<Frame>();
     final mask = context.watch<MaskProvider>();
+
     return Row(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -270,7 +271,7 @@ class _FrameViewerState extends State<FrameViewer> {
                 child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: IconButton(
-                    color: frame.gridEnabled ? Colors.blue : Colors.white,
+                    color: settingsOpen ? Colors.blue : Colors.white,
                     iconSize: 25,
                     icon: const Icon(FluentIcons.settings_24_filled),
                     onPressed: () {
