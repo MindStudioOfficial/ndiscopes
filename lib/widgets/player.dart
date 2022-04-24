@@ -177,7 +177,7 @@ class _FrameViewerState extends State<FrameViewer> {
                             padding: const EdgeInsets.all(8.0),
                             child: IconButton(
                               iconSize: 25,
-                              color: Colors.white,
+                              color: frame.flipSplit ? cHighlight : Colors.white,
                               onPressed: () {
                                 frame.updateFlipSplit(!frame.flipSplit);
                                 //flipSplit = !flipSplit;
@@ -221,7 +221,7 @@ class _FrameViewerState extends State<FrameViewer> {
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: IconButton(
-                        color: mask.active ? Colors.blue : Colors.white,
+                        color: mask.active ? cHighlight : Colors.white,
                         iconSize: 25,
                         icon: const Icon(FluentIcons.crop_24_filled),
                         onPressed: () {
@@ -257,7 +257,7 @@ class _FrameViewerState extends State<FrameViewer> {
                 child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: IconButton(
-                    color: frame.gridEnabled ? Colors.blue : Colors.white,
+                    color: frame.gridEnabled ? cHighlight : Colors.white,
                     iconSize: 25,
                     icon: const Icon(FluentIcons.tab_in_private_24_filled),
                     onPressed: () {
@@ -271,7 +271,7 @@ class _FrameViewerState extends State<FrameViewer> {
                 child: Padding(
                   padding: const EdgeInsets.all(8),
                   child: IconButton(
-                    color: settingsOpen ? Colors.blue : Colors.white,
+                    color: settingsOpen ? cHighlight : Colors.white,
                     iconSize: 25,
                     icon: const Icon(FluentIcons.settings_24_filled),
                     onPressed: () {

@@ -44,7 +44,7 @@ class ScopePainter extends CustomPainter {
       ..isAntiAlias = true
       ..filterQuality = FilterQuality.high;
 
-    Offset topLeft = const Offset(20, 10);
+    Offset topLeft = Offset(scopeSettings.showWFScale ? 20 : 10, 10);
 
     // if split horizontal put overlay with opacity in background
     if (overlay != null && overlayMode == OverlayMode.splitHorizontal) {
@@ -134,7 +134,7 @@ class ScopePainter extends CustomPainter {
     p = Paint()..color = Colors.white.withOpacity(.3);
 
     int increments = 0;
-    switch (scopeSettings.wVScaleType) {
+    switch (scopeSettings.wFScaleType) {
       case WFScaleTypes.percentage:
         increments = 10;
         break;
@@ -143,13 +143,13 @@ class ScopePainter extends CustomPainter {
         break;
     }
 
-    bool labels = scopeSettings.showWVScale;
+    bool labels = scopeSettings.showWFScale;
 
     for (int i = 0; i <= increments; i++) {
       double y = i * (img != null ? img!.height : 256) / increments;
       if (labels) {
         String label = "";
-        switch (scopeSettings.wVScaleType) {
+        switch (scopeSettings.wFScaleType) {
           case WFScaleTypes.percentage:
             label = (100 - (100 / increments * i)).toInt().toString();
             break;
@@ -177,8 +177,8 @@ class ScopePainter extends CustomPainter {
         );
       }
       canvas.drawLine(
-        Offset(20, y + 10),
-        Offset(img != null ? img!.width + 20 : 600, y + 10),
+        Offset(topLeft.dx, y + 10),
+        Offset(img != null ? img!.width + topLeft.dx : size.width - (20 - topLeft.dx), y + 10),
         p,
       );
     }

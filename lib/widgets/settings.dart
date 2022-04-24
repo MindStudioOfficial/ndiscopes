@@ -35,7 +35,7 @@ class Settings extends StatelessWidget {
         Text("Waveforms", style: tSmall.copyWith(fontSize: 20)),
         CheckboxListTile(
           title: Text("Labels", style: tSmall),
-          value: scopeSettings.showWVScale,
+          value: scopeSettings.showWFScale,
           onChanged: (v) {
             scopeSettings.toogleShowWVScale(show: v);
           },
@@ -52,7 +52,7 @@ class Settings extends StatelessWidget {
                     scopeSettings.updateWVScaleType(WFScaleTypes.percentage);
                   },
                   child: Ink(
-                    color: scopeSettings.wVScaleType == WFScaleTypes.percentage ? cHighlight : cAccent,
+                    color: scopeSettings.wFScaleType == WFScaleTypes.percentage ? cHighlight : cAccent,
                     child: Center(child: Text("%", style: tBold)),
                   ),
                 ),
@@ -63,7 +63,7 @@ class Settings extends StatelessWidget {
                     scopeSettings.updateWVScaleType(WFScaleTypes.bits);
                   },
                   child: Ink(
-                    color: scopeSettings.wVScaleType == WFScaleTypes.bits ? cHighlight : cAccent,
+                    color: scopeSettings.wFScaleType == WFScaleTypes.bits ? cHighlight : cAccent,
                     child: Center(child: Text("8Bit", style: tBold)),
                   ),
                 ),
@@ -72,7 +72,7 @@ class Settings extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        CheckboxListTile(
+        /*CheckboxListTile(
           title: Text("Backdrop", style: tSmall),
           value: scopeSettings.enableWVBackdrop,
           onChanged: (v) {
@@ -93,7 +93,7 @@ class Settings extends StatelessWidget {
           inactiveColor: cAccent,
           thumbColor: cHighlight,
           activeColor: cHighlight,
-        ),
+        ),*/
         Divider(color: cHighlight),
       ],
     );

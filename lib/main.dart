@@ -11,6 +11,7 @@ import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
 import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
+import 'package:ndiscopes/service/settings.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/framebrowser.dart';
 import 'package:ndiscopes/widgets/player.dart';
@@ -74,6 +75,7 @@ class _MainState extends State<Main> {
   void initState() {
     super.initState();
     checkGPU();
+    loadSettings();
   }
 
   void checkGPU() {
@@ -147,6 +149,12 @@ class _MainState extends State<Main> {
     }
     calloc.free(major);
     calloc.free(minor);
+  }
+
+  loadSettings() {
+    loadScopeSettings().then((s) {
+      context.read<ScopeSettings>().update(s);
+    });
   }
 
   @override
