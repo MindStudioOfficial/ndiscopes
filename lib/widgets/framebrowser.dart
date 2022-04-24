@@ -222,7 +222,11 @@ class _NDIFrameThumbnailState extends State<NDIFrameThumbnail> {
   void initState() {
     super.initState();
     // read the file and convert
-    frame = SavedInputFrame.fromJSON(jsonDecode(widget.file.readAsStringSync()));
+    init();
+  }
+
+  init() async {
+    frame = SavedInputFrame.fromJSON(jsonDecode(await widget.file.readAsString()));
     if (img == null) {
       frame.thumbnailImage().then(
             (i) => setState(() {
