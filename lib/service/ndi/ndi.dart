@@ -183,6 +183,7 @@ class NDI {
               data["pWFRgb"] != null &&
               data["pWFParade"] != null &&
               data["pVScope"] != null &&
+              data["pFalseC"] != null &&
               data["scopeWidth"] != null &&
               data["scopeHeight"] != null) {
             Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]!);
@@ -190,6 +191,7 @@ class NDI {
             Pointer<Uint8> pWFRgb = Pointer.fromAddress(data["pWFRgb"]!);
             Pointer<Uint8> pWFParade = Pointer.fromAddress(data["pWFParade"]!);
             Pointer<Uint8> pVscope = Pointer.fromAddress(data["pVScope"]!);
+            Pointer<Uint8> pFalseC = Pointer.fromAddress(data["pFalseC"]!);
 
             // convert every pointer to a Uint8List and convert that with wisth and height to a ui.Image
             // then free the pointers immediatly
@@ -214,8 +216,20 @@ class NDI {
                     ui.decodeImageFromPixels(pVscope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight,
                         scopeHeight, ui.PixelFormat.rgba8888, (iVScope) {
                       calloc.free(pVscope);
-                      onFrame(NDIOutputFrame(
-                          iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade, iVScope: iVScope));
+                      ui.decodeImageFromPixels(pFalseC.asTypedList(data["width"]! * data["height"]! * 4),
+                          data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (iFalseC) {
+                        calloc.free(pFalseC);
+                        onFrame(
+                          NDIOutputFrame(
+                            iRGBA: iRGBA,
+                            iWF: iWF,
+                            iWFRgb: iWFRgb,
+                            iWFParade: iWFParade,
+                            iVScope: iVScope,
+                            iFalseC: iFalseC,
+                          ),
+                        );
+                      });
                     });
                   });
                 });
@@ -326,6 +340,7 @@ class NDI {
           calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
       Pointer<Uint8> pVScope =
           calloc.call<Uint8>(object.scopeSize.height.toInt() * object.scopeSize.height.toInt() * 4);
+      Pointer<Uint8> pFalseC = calloc.call<Uint8>(width * height * 4);
 
       // convert to rgba pointers based on the format
       switch (pVideoFrame.ref.FourCC) {
@@ -347,6 +362,7 @@ class NDI {
             pWFRgb,
             pWFParade,
             pVScope,
+            pFalseC,
           );
           break;
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_BGRA:
@@ -367,6 +383,7 @@ class NDI {
             pWFRgb,
             pWFParade,
             pVScope,
+            pFalseC,
           );
           break;
         default:
@@ -385,6 +402,7 @@ class NDI {
         "pWFRgb": pWFRgb.address,
         "pWFParade": pWFParade.address,
         "pVScope": pVScope.address,
+        "pFalseC": pFalseC.address,
         "scopeWidth": object.scopeSize.width.toInt(),
         "scopeHeight": object.scopeSize.height.toInt(),
       });
@@ -524,12 +542,14 @@ class NDIOutputFrame {
   ui.Image iWFRgb;
   ui.Image iWFParade;
   ui.Image iVScope;
+  ui.Image iFalseC;
   NDIOutputFrame({
     required this.iRGBA,
     required this.iWF,
     required this.iWFRgb,
     required this.iWFParade,
     required this.iVScope,
+    required this.iFalseC,
   });
 }
 
@@ -637,6 +657,7 @@ class SavedInputFrame {
     Pointer<Uint8> pWFRgb = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
     Pointer<Uint8> pWFParade = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
     Pointer<Uint8> pVScope = calloc.call<Uint8>(scopeHeight * scopeHeight * 4);
+    Pointer<Uint8> pFalseC = calloc.call<Uint8>(width * height * 4);
 
     // copy source bytes into pointer
     pSrc.asTypedList(bytes.length).setAll(0, bytes);
@@ -646,12 +667,12 @@ class SavedInputFrame {
       case NDIInputFormat.uyvy:
         //! replace with CPU/GPU compatible
         pixconvertCUDA.uyvyToScopes(
-            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope);
+            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
         break;
       case NDIInputFormat.bgra:
         //! replace with CPU/GPU compatible
         pixconvertCUDA.bgraToScopes(
-            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope);
+            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
         break;
       default:
         c.complete(null);
@@ -676,8 +697,20 @@ class SavedInputFrame {
                 (iVScope) {
               calloc.free(pVScope);
               // return the finished frames
-              c.complete(
-                  NDIOutputFrame(iRGBA: iRGBA, iWF: iWF, iWFRgb: iWFRgb, iWFParade: iWFParade, iVScope: iVScope));
+              ui.decodeImageFromPixels(pFalseC.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888,
+                  (iFalseC) {
+                calloc.free(pFalseC);
+                c.complete(
+                  NDIOutputFrame(
+                    iRGBA: iRGBA,
+                    iWF: iWF,
+                    iWFRgb: iWFRgb,
+                    iWFParade: iWFParade,
+                    iVScope: iVScope,
+                    iFalseC: iFalseC,
+                  ),
+                );
+              });
             });
           });
         });

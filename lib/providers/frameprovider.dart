@@ -10,6 +10,7 @@ class Frame with ChangeNotifier {
   double _splitPos = 0.5;
   bool _flipSplit = false;
   bool _gridEnabled = false;
+  bool _falseColorEnabled = false;
 
   NDIOutputFrame? get imageFrame => _imageFrame;
   NDIOutputFrame? get overlayFrame => _overlayFrame;
@@ -18,6 +19,7 @@ class Frame with ChangeNotifier {
   double get splitPos => _splitPos;
   bool get flipSplit => _flipSplit;
   bool get gridEnabled => _gridEnabled;
+  bool get falseColorEnabled => _falseColorEnabled;
 
   void updateImageFrame(NDIOutputFrame? frame) {
     _imageFrame = frame;
@@ -51,6 +53,11 @@ class Frame with ChangeNotifier {
 
   void toogleGrid({bool? enabled}) {
     _gridEnabled = enabled ?? !_gridEnabled;
+    notifyListeners();
+  }
+
+  void toggleFalseColor({bool? enabled}) {
+    _falseColorEnabled = enabled ?? !_falseColorEnabled;
     notifyListeners();
   }
 }

@@ -267,6 +267,20 @@ class _FrameViewerState extends State<FrameViewer> {
                 ),
               ),
               DelayedCustomTooltip(
+                "Toogle False Color",
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton(
+                    color: frame.falseColorEnabled ? cHighlight : Colors.white,
+                    iconSize: 25,
+                    icon: const Icon(FluentIcons.color_24_filled),
+                    onPressed: () {
+                      frame.toggleFalseColor();
+                    },
+                  ),
+                ),
+              ),
+              DelayedCustomTooltip(
                 "Toogle Settings",
                 child: Padding(
                   padding: const EdgeInsets.all(8),
@@ -282,6 +296,47 @@ class _FrameViewerState extends State<FrameViewer> {
                 ),
               ),
             ],
+          ),
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          width: frame.falseColorEnabled ? 75 : 0,
+          child: SingleChildScrollView(
+            controller: ScrollController(),
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            child: SizedBox(
+              width: 75,
+              child: SingleChildScrollView(
+                controller: ScrollController(),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: ListView.builder(
+                    reverse: true,
+                    shrinkWrap: true,
+                    itemCount: falseColors.length,
+                    itemBuilder: (context, index) {
+                      Color c = falseColors.keys.elementAt(index);
+                      String label = falseColors.values.elementAt(index);
+
+                      return Container(
+                        color: c,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Text(
+                              label,
+                              style: tSmall.copyWith(color: c.computeLuminance() > 0.5 ? Colors.black : Colors.white),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
         //* frame viewer
@@ -306,8 +361,8 @@ class _FrameViewerState extends State<FrameViewer> {
                     //* NDI SOURCE IMAGE + Overlay
                     CustomPaint(
                       painter: ImagePainter(
-                        img: frame.imageFrame?.iRGBA,
-                        overlay: frame.overlayFrame?.iRGBA,
+                        img: frame.falseColorEnabled ? frame.imageFrame?.iFalseC : frame.imageFrame?.iRGBA,
+                        overlay: frame.falseColorEnabled ? frame.overlayFrame?.iFalseC : frame.overlayFrame?.iRGBA,
                         opacity: frame.overlayOpacity,
                         flipSplit: frame.flipSplit,
                         splitPos: frame.splitPos,
