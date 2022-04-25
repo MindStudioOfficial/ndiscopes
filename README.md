@@ -6,6 +6,7 @@ An open source Windows application to display several diffrent scopes/waveforms 
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/MindStudioOfficial/ndiscopes?style=flat-square)
 ![GitHub contributors](https://img.shields.io/github/contributors/MindStudioOfficial/ndiscopes?style=flat-square)
 
+![Screenshot](blob/sc5.jpg)
 ![Screenshot](blob/sc4.jpg)
 
 ## Requirements
@@ -28,6 +29,13 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] RGB Waveform
   - [x] RGB Parade
   - [x] UV Vectorscope  
+- [x] Settings
+  - [x] Scale vectorscope x0.5 to x5
+  - [x] Toggle waveform scale labels
+  - [x] Waveform scale as percentage
+  - [x] Waveform scale as 8Bit value
+  - [x] Save and load settings on startup
+- [x] False-Color display of source and reference overlay
 - [x] Reference Frame
   - [x] Save/Load
   - [x] Overlay on source as splitscreen
