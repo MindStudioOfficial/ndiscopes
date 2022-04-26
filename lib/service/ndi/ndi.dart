@@ -550,7 +550,7 @@ class NDI {
     NDIlib_recv_instance_t pNDIrecv = Pointer.fromAddress(object.pRecvA);
     //final pNDIRecv = Pointer.fromAddress(object.pRecvA).cast<NDIlib_recv_instance_t>();
     // get pointer of the desired source to receive from its address
-    Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA);
+    //Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA);
     // connect to the source
     //! no need since already connected by video frame isolate
     //_ndi.NDIlib_recv_connect(pNDIrecv, pSource);
@@ -561,7 +561,7 @@ class NDI {
 
     while (true) {
       await Future.delayed(const Duration(milliseconds: 100));
-      frame = _ndi.NDIlib_recv_capture_v2(pNDIrecv, nullptr, pAudioFrame, nullptr, 100);
+      frame = _ndi.NDIlib_recv_capture_v2(pNDIrecv, nullptr, pAudioFrame, nullptr, 1000);
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_audio) continue;
       int channels = pAudioFrame.ref.no_channels;
       int samples = pAudioFrame.ref.no_samples;

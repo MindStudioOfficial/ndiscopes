@@ -14,6 +14,7 @@ import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/settings.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
+import 'package:ndiscopes/widgets/audiometers.dart';
 import 'package:ndiscopes/widgets/framebrowser.dart';
 import 'package:ndiscopes/widgets/player.dart';
 import 'package:ndiscopes/widgets/scopes.dart';
@@ -159,7 +160,8 @@ class _MainState extends State<Main> {
       double aspect = constraints.maxWidth / constraints.maxHeight;
       portraitLayout = aspect < 1.3;
       int scopesCountX = portraitLayout ? 2 : 3;
-      double width = constraints.maxWidth - scopesCountX * 2;
+      double width = constraints.maxWidth;
+      if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) width -= 100;
       return Column(
         mainAxisSize: MainAxisSize.max,
         children: [
@@ -287,46 +289,71 @@ class _MainState extends State<Main> {
           //* bottom part
           Container(
             color: Colors.black,
-            child: IntrinsicHeight(
-              child: Wrap(
-                //mainAxisSize: MainAxisSize.max,
-                children: [
-                  SizedBox(
-                    width: width / scopesCountX,
-                    child: ScopeV2(
-                      title: "Luma Waveform",
-                      img: context.watch<Frame>().imageFrame?.iWF,
-                      ovl: context.watch<Frame>().overlayFrame?.iWF,
-                      isParade: false,
-                    ),
-                  ),
-                  SizedBox(
-                    width: width / scopesCountX,
-                    child: ScopeV2(
-                      title: "RGB Waveform",
-                      img: context.watch<Frame>().imageFrame?.iWFRgb,
-                      ovl: context.watch<Frame>().overlayFrame?.iWFRgb,
-                      isParade: false,
-                    ),
-                  ),
-                  SizedBox(
-                    width: width / scopesCountX,
-                    child: ScopeV2(
-                      title: "RGB Parade",
-                      img: context.watch<Frame>().imageFrame?.iWFParade,
-                      ovl: context.watch<Frame>().overlayFrame?.iWFParade,
-                      isParade: true,
-                    ),
-                  ),
-                  if (portraitLayout)
-                    SizedBox(
-                      width: width / scopesCountX / 2,
-                      child: const VscopeV2(
-                        title: "UV Vectorscope",
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IntrinsicHeight(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      SizedBox(
+                        width: width / scopesCountX,
+                        child: ScopeV2(
+                          title: "Luma Waveform",
+                          img: context.watch<Frame>().imageFrame?.iWF,
+                          ovl: context.watch<Frame>().overlayFrame?.iWF,
+                          isParade: false,
+                        ),
                       ),
-                    )
-                ],
-              ),
+                      SizedBox(
+                        width: width / scopesCountX,
+                        child: ScopeV2(
+                          title: "RGB Waveform",
+                          img: context.watch<Frame>().imageFrame?.iWFRgb,
+                          ovl: context.watch<Frame>().overlayFrame?.iWFRgb,
+                          isParade: false,
+                        ),
+                      ),
+                      if (!portraitLayout)
+                        SizedBox(
+                          width: width / scopesCountX,
+                          child: ScopeV2(
+                            title: "RGB Parade",
+                            img: context.watch<Frame>().imageFrame?.iWFParade,
+                            ovl: context.watch<Frame>().overlayFrame?.iWFParade,
+                            isParade: true,
+                          ),
+                        ),
+                      if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) const AudioMeters(),
+                    ],
+                  ),
+                ),
+                if (portraitLayout)
+                  IntrinsicHeight(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        SizedBox(
+                          width: width / scopesCountX,
+                          child: ScopeV2(
+                            title: "RGB Parade",
+                            img: context.watch<Frame>().imageFrame?.iWFParade,
+                            ovl: context.watch<Frame>().overlayFrame?.iWFParade,
+                            isParade: true,
+                          ),
+                        ),
+                        SizedBox(
+                          width: width / scopesCountX / 2,
+                          child: const VscopeV2(
+                            title: "UV Vectorscope",
+                          ),
+                        ),
+                        if (context.watch<ScopeSettings>().audioLevelEnabled) const AudioMeters(),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           )
         ],
