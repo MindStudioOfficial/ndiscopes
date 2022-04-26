@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
+import 'package:dart_discord_rpc/dart_discord_rpc.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:ndiscopes/providers/maskprovider.dart';
 import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/settings.dart';
+import 'package:ndiscopes/util/discordrpc.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/audiometers.dart';
 import 'package:ndiscopes/widgets/framebrowser.dart';
@@ -25,6 +27,8 @@ import 'package:provider/provider.dart';
 late NDI ndi;
 
 void main() {
+  DiscordRPC.initialize();
+  rpcInitialize();
   Paint.enableDithering = true;
   ndi = NDI();
   runApp(
@@ -195,6 +199,7 @@ class _MainState extends State<Main> {
                             },
                             onSelectSource: (index) {
                               final pS = ndi.getSourceAt(index);
+
                               if (pS != null) {
                                 ndi.stopGetFrames();
                                 ndi.stopGetAudio();
@@ -213,6 +218,7 @@ class _MainState extends State<Main> {
                                   context.read<AudioLevel>().setLevels(level.channelLevels);
                                 });
                               }
+                              rpcUpdate(selectedSource?.name);
                             },
                             onToggleFrameBrowser: (open) {
                               setState(() {

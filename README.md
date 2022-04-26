@@ -35,6 +35,7 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] Waveform scale as percentage
   - [x] Waveform scale as 8Bit value
   - [x] Save and load settings on startup
+  - [x] Enable Audiometer 
 - [x] False-Color display of source and reference overlay
 - [x] Reference Frame
   - [x] Save/Load
@@ -49,6 +50,7 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] UYVY (most common, fastest)
   - [x] BGRA (stills and alpha)
   - others are very uncommon IMO
+- [x] Audiometer for every audio channel of the NDI source in dBu scale
   
 
 ### GPU Support
