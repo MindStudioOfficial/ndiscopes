@@ -7,6 +7,7 @@ import 'package:ndiscopes/config.dart';
 import 'package:ndiscopes/models/buttonstyles.dart';
 import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
+import 'package:ndiscopes/providers/audiolevelprovider.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
 import 'package:ndiscopes/providers/scopesettingsprovider.dart';
@@ -28,15 +29,10 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => Frame(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => MaskProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ScopeSettings(),
-        ),
+        ChangeNotifierProvider(create: (_) => Frame()),
+        ChangeNotifierProvider(create: (_) => MaskProvider()),
+        ChangeNotifierProvider(create: (_) => ScopeSettings()),
+        ChangeNotifierProvider(create: (_) => AudioLevel()),
       ],
       child: MaterialApp(
         theme: ThemeData(unselectedWidgetColor: cHighlight, toggleableActiveColor: cHighlight),
@@ -197,9 +193,9 @@ class _MainState extends State<Main> {
                             },
                             onSelectSource: (index) {
                               final pS = ndi.getSourceAt(index);
-
                               if (pS != null) {
                                 ndi.stopGetFrames();
+                                ndi.stopGetAudio();
                                 selectedSource = NDISource(pS);
                                 setState(() {});
                                 ndi.getFrames(
@@ -211,6 +207,9 @@ class _MainState extends State<Main> {
                                   context.read<MaskProvider>().rect,
                                   context.read<MaskProvider>().active,
                                 );
+                                ndi.getAudio(pS, (level) {
+                                  context.read<AudioLevel>().setLevels(level.channelLevels);
+                                });
                               }
                             },
                             onToggleFrameBrowser: (open) {

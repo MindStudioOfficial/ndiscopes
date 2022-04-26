@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
@@ -20,6 +21,7 @@ class NDI {
     if (!_ndi.NDIlib_initialize()) {
       throw Exception("Could not initialize NDI");
     }
+    _pRecv = _ndi.NDIlib_recv_create_v3(nullptr);
   }
 
   /// The internal pointer to the available NDI souces.
@@ -27,6 +29,7 @@ class NDI {
   /// Update this by calling [await updateSources()].
   Pointer<NDIlib_source_t>? _pSources;
   NDIlib_find_instance_t? _pFind;
+  late Pointer<NDIlib_recv_instance_type> _pRecv;
 
   /// The List of [NDISource] containing available NDI sources.
   ///
@@ -57,6 +60,7 @@ class NDI {
         // the find instance if one already exists
         _pFind?.address,
       ),
+      debugName: "Source Isolate",
     );
 
     // listen for answers of the thread
@@ -250,7 +254,10 @@ class NDI {
     );
     // create the isolate that continously receives NDI frames and finishes once stopGetFrames() is called
     _fIsolate = await Isolate.spawn(
-        _getFrames, _FMObject(source.address, _fReceivePort!.sendPort, scopeSize, mask, maskActive));
+      _getFrames,
+      _FMObject(source.address, _pRecv.address, _fReceivePort!.sendPort, scopeSize, mask, maskActive),
+      debugName: "Video Frame Isolate",
+    );
     // return intermediate future until receiving has ended
     return completer.future;
   }
@@ -296,18 +303,20 @@ class NDI {
     );
 
     // Yey this got fixed by updating the NDI SDK to the most recent version
-
+    //! NOPE
     // create the receiver settings
-    Pointer<NDIlib_recv_create_v3_t> pCreateSettings = calloc.call<NDIlib_recv_create_v3_t>(1);
+    /*Pointer<NDIlib_recv_create_v3_t> pCreateSettings = calloc.call<NDIlib_recv_create_v3_t>(1);
     // request a certain preferred color format
     pCreateSettings.ref.color_format = NDIlib_recv_color_format_e.NDIlib_recv_color_format_UYVY_BGRA;
     pCreateSettings.ref.bandwidth = NDIlib_recv_bandwidth_e.NDIlib_recv_bandwidth_highest;
     pCreateSettings.ref.source_to_connect_to = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>()[0];
     pCreateSettings.ref.p_ndi_recv_name = "NDIScopes".toNativeUtf8().cast<Int8>();
-    pCreateSettings.ref.allow_video_fields = 0;
+    pCreateSettings.ref.allow_video_fields = 0;*/
 
     // create the receiver instance
-    NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
+    //NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
+    NDIlib_recv_instance_t pNDIrecv = Pointer.fromAddress(object.pRecvA);
+    //final pNDIRecv = Pointer.fromAddress(object.pRecvA).cast<NDIlib_recv_instance_t>();
     // get pointer of the desired source to receive from its address
     Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA);
     // connect to the source
@@ -424,7 +433,10 @@ class NDI {
     final completer = Completer();
     _sfReceivePort = ReceivePort();
     await Isolate.spawn(
-        _getSingleFrame, _FMObject(pSource.address, _sfReceivePort!.sendPort, scopeSize, mask, maskActive));
+      _getSingleFrame,
+      _FMObject(pSource.address, _pRecv.address, _sfReceivePort!.sendPort, scopeSize, mask, maskActive),
+      debugName: "get Single Frame Isolate",
+    );
     _sfReceivePort!.listen((data) {
       if (data is Map<String, int>) {
         if (data["width"] != null && data["height"] != null && data["pVideo"] != null && data["pNDIRecv"] != null) {
@@ -458,11 +470,12 @@ class NDI {
   }
 
   static void _getSingleFrame(_FMObject object) {
-    NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
+    NDIlib_recv_instance_t pNDIrecv = Pointer.fromAddress(object.pRecvA);
     Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>();
     _ndi.NDIlib_recv_connect(pNDIrecv, pSource);
 
     Pointer<NDIlib_video_frame_v2_t> pVideoFrame = calloc<NDIlib_video_frame_v2_t>();
+
     int width = 0;
     int height = 0;
 
@@ -473,6 +486,7 @@ class NDI {
     while (frame != NDIlib_frame_type_e.NDIlib_frame_type_video && i < 50) {
       i++;
       frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
+
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_video) continue;
       //if (pVideoFrame.ref.FourCC != NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY) continue;
       width = pVideoFrame.ref.xres;
@@ -497,6 +511,84 @@ class NDI {
       });
     }
   }
+
+  Isolate? _aIsolate;
+  ReceivePort? _aReceiveport;
+
+  Future<void> getAudio(
+    Pointer<NDIlib_source_t> source,
+    Function(NDIAudioLevelFrame level) onLevel,
+  ) async {
+    final completer = Completer();
+
+    _aReceiveport = ReceivePort();
+
+    _aReceiveport!.listen((data) {
+      if (data is NDIAudioLevelFrame) {
+        onLevel(data);
+      }
+    }, onDone: (() {
+      completer.complete();
+    }));
+
+    _aIsolate = await Isolate.spawn(
+      _getAudio,
+      _AMObject(_aReceiveport!.sendPort, source.address, _pRecv.address),
+    );
+
+    return completer.future;
+  }
+
+  void stopGetAudio() {
+    _aReceiveport?.close();
+    _aIsolate?.kill(priority: Isolate.immediate);
+    _aIsolate = null;
+    _aReceiveport = null;
+  }
+
+  static void _getAudio(_AMObject object) async {
+    NDIlib_recv_instance_t pNDIrecv = Pointer.fromAddress(object.pRecvA);
+    //final pNDIRecv = Pointer.fromAddress(object.pRecvA).cast<NDIlib_recv_instance_t>();
+    // get pointer of the desired source to receive from its address
+    Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA);
+    // connect to the source
+    //! no need since already connected by video frame isolate
+    //_ndi.NDIlib_recv_connect(pNDIrecv, pSource);
+
+    Pointer<NDIlib_audio_frame_v2_t> pAudioFrame = calloc<NDIlib_audio_frame_v2_t>();
+
+    int frame = -1;
+
+    while (true) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      frame = _ndi.NDIlib_recv_capture_v2(pNDIrecv, nullptr, pAudioFrame, nullptr, 100);
+      if (frame != NDIlib_frame_type_e.NDIlib_frame_type_audio) continue;
+      int channels = pAudioFrame.ref.no_channels;
+      int samples = pAudioFrame.ref.no_samples;
+      int stride = pAudioFrame.ref.channel_stride_in_bytes;
+      Pointer<Float> data = pAudioFrame.ref.p_data;
+      object.sendPort.send(
+        NDIAudioLevelFrame(
+          channelLevels: List<double>.generate(channels, (index) {
+            return data.elementAt(index * stride ~/ 4).asTypedList(samples).reduce(
+                  (a, b) => max(
+                    a.abs(),
+                    b.abs(),
+                  ),
+                );
+          }),
+        ),
+      );
+      _ndi.NDIlib_recv_free_audio_v2(pNDIrecv, pAudioFrame);
+    }
+  }
+}
+
+class _AMObject {
+  SendPort sendPort;
+  int pRecvA;
+  int pSourceA;
+  _AMObject(this.sendPort, this.pSourceA, this.pRecvA);
 }
 
 /// the object used for initializing thread with parameters to find new sources
@@ -509,11 +601,12 @@ class _SMObject {
 /// the object used for initializing thread with parameters to receive frames
 class _FMObject {
   int pSourceA;
+  int pRecvA;
   SendPort sendPort;
   Size scopeSize;
   Rect mask;
   bool maskActive;
-  _FMObject(this.pSourceA, this.sendPort, this.scopeSize, this.mask, this.maskActive);
+  _FMObject(this.pSourceA, this.pRecvA, this.sendPort, this.scopeSize, this.mask, this.maskActive);
 }
 
 /// A class wrapping around the internal [NDIlib_source_t] type.
@@ -745,4 +838,10 @@ class SavedInputFrame {
       thumbnail: json['thumbnail'] != null ? base64.decode(json['thumbnail']) : null,
     );
   }
+}
+
+class NDIAudioLevelFrame {
+  List<double> channelLevels;
+
+  NDIAudioLevelFrame({required this.channelLevels});
 }

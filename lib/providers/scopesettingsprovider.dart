@@ -8,12 +8,14 @@ class ScopeSettings with ChangeNotifier {
     WFScaleTypes? wfScaleType,
     bool? enableWFBackdrop,
     double? backdropOpacity,
+    bool? audioLevelEnabled,
   }) {
     _vScopeScale = vScopeScale ?? _vScopeScale;
     _showWFScale = showWFScale ?? _showWFScale;
     _wFScaleType = wfScaleType ?? _wFScaleType;
     _enableWFBackdrop = enableWFBackdrop ?? _enableWFBackdrop;
     _backdropOpacity = backdropOpacity ?? _backdropOpacity;
+    _audioLevelEnabled = audioLevelEnabled ?? _audioLevelEnabled;
   }
 
   double _vScopeScale = 0.5;
@@ -21,12 +23,14 @@ class ScopeSettings with ChangeNotifier {
   WFScaleTypes _wFScaleType = WFScaleTypes.percentage;
   bool _enableWFBackdrop = false;
   double _backdropOpacity = 0.3;
+  bool _audioLevelEnabled = true;
 
   double get vScopeScale => _vScopeScale;
   bool get showWFScale => _showWFScale;
   WFScaleTypes get wFScaleType => _wFScaleType;
   bool get enableWFBackdrop => _enableWFBackdrop;
   double get backdropOpacity => _backdropOpacity;
+  bool get audioLevelEnabled => _audioLevelEnabled;
 
   void updateVScopeScale(double scale) {
     _vScopeScale = scale;
@@ -53,12 +57,18 @@ class ScopeSettings with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleAudioLevel({bool? enable}) {
+    _audioLevelEnabled = enable ?? !_audioLevelEnabled;
+    notifyListeners();
+  }
+
   update(ScopeSettings n) {
     _backdropOpacity = n.backdropOpacity;
     _enableWFBackdrop = n.enableWFBackdrop;
     _showWFScale = n.showWFScale;
     _vScopeScale = n.vScopeScale;
     _wFScaleType = n.wFScaleType;
+    _audioLevelEnabled = n.audioLevelEnabled;
     notifyListeners();
   }
 
@@ -69,6 +79,7 @@ class ScopeSettings with ChangeNotifier {
       showWFScale: json["showWFScale"],
       vScopeScale: json["vScopeScale"],
       wfScaleType: WFScaleTypes.values.elementAt(json["wfScaleType"]),
+      audioLevelEnabled: json["audioLevelEnabled"],
     );
   }
 
@@ -79,6 +90,7 @@ class ScopeSettings with ChangeNotifier {
       "showWFScale": _showWFScale,
       "vScopeScale": _vScopeScale,
       "wfScaleType": _wFScaleType.index,
+      "audioLevelEnabled": _audioLevelEnabled,
     };
   }
 

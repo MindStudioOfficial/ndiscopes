@@ -82,6 +82,16 @@ class Settings extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+          Divider(color: cHighlight),
+          const SizedBox(height: 8),
+          Text("Audio", style: tSmall.copyWith(fontSize: 18)),
+          CheckboxListTile(
+            title: Text("Meters", style: tSmall),
+            value: scopeSettings.audioLevelEnabled,
+            onChanged: (v) {
+              scopeSettings.toggleAudioLevel(enable: v);
+            },
+          ),
           /*CheckboxListTile(
             title: Text("Backdrop", style: tSmall),
             value: scopeSettings.enableWVBackdrop,

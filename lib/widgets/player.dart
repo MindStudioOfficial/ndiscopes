@@ -5,6 +5,8 @@ import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
+import 'package:ndiscopes/providers/scopesettingsprovider.dart';
+import 'package:ndiscopes/widgets/audiometers.dart';
 import 'dart:ui' as ui;
 import 'package:ndiscopes/widgets/customtooltip.dart';
 import 'package:provider/provider.dart';
@@ -295,6 +297,10 @@ class _FrameViewerState extends State<FrameViewer> {
                   ),
                 ),
               ),
+              //* Audio Meters
+              if (context.read<ScopeSettings>().audioLevelEnabled)
+                //* make a Box to Align within
+                AudioMeters()
             ],
           ),
         ),
