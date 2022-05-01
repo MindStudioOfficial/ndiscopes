@@ -17,7 +17,7 @@ class AudioMeters extends StatelessWidget {
       child: Align(
         alignment: Alignment.topLeft,
         child: SizedBox(
-          width: 100,
+          width: 125,
           height: double.infinity,
           child: RepaintBoundary(
             child: CustomPaint(

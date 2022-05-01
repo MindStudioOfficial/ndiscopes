@@ -165,7 +165,7 @@ class _MainState extends State<Main> {
       portraitLayout = aspect < 1.3;
       int scopesCountX = portraitLayout ? 2 : 3;
       double width = constraints.maxWidth;
-      if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) width -= 100;
+      if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) width -= 125;
       return Column(
         mainAxisSize: MainAxisSize.max,
         children: [
