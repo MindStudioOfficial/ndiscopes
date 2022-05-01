@@ -1,10 +1,34 @@
-# NDIScopes
+<h1 align="center"> NDIScopes</h1>
+<p align="center">
+An open source Windows application to display several diffrent scopes/waveforms for an <a href="https://ndi.tv">NDI®</a> input built with <a href="https://flutter.dev">Flutter</a>. 
+</p>
 
-An open source Windows application to display several diffrent scopes/waveforms for an NDI® input built with [Flutter](https://flutter.dev). 
+<div align="center">
 
-![GitHub all releases](https://img.shields.io/github/downloads/MindStudioOfficial/ndiscopes/total?style=flat-square)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/MindStudioOfficial/ndiscopes?style=flat-square)
-![GitHub contributors](https://img.shields.io/github/contributors/MindStudioOfficial/ndiscopes?style=flat-square)
+<a href="https://github.com/MindStudioOfficial/ndiscopes/releases">
+<img src="https://img.shields.io/github/downloads-pre/MindStudioOfficial/ndiscopes/total?style=flat-square&label=Downloads"></a>
+<a href="https://github.com/MindStudioOfficial/ndiscopes/releases">
+<img src="https://img.shields.io/github/downloads-pre/MindStudioOfficial/ndiscopes/latest/total?style=flat-square&label=Downloads@latest"></a>
+<!--<a href="">
+<img src="https://img.shields.io/tokei/lines/github/MindStudioOfficial/ndiscopes"></a>-->
+
+</div>
+<div align="center">
+
+<a href="https://github.com/MindStudioOfficial/ndiscopes/releases">
+<img src="https://img.shields.io/github/v/release/MindStudioOfficial/ndiscopes?style=flat-square&include_prereleases&label=Version"></a>
+
+
+</div>
+<div align="center">
+
+<a href="https://github.com/MindStudioOfficial/ndiscopes">
+<img src="https://img.shields.io/github/stars/MindStudioOfficial/ndiscopes?style=flat-square"></a>
+<a href="https://github.com/MindStudioOfficial/ndiscopes">
+<img src="https://img.shields.io/github/watchers/MindStudioOfficial/ndiscopes?style=flat-square"></a>
+
+</div>
+<br>
 
 ![Screenshot](blob/sc5.jpg)
 ![Screenshot](blob/sc4.jpg)
