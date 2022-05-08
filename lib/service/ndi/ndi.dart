@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
+import 'package:ndiscopes/service/audio/audio.dart';
 
 NDIffi _ndi = NDIffi(DynamicLibrary.open("bin/Processing.NDI.Lib.x64.dll"));
 PixconvertCUDA pixconvertCUDA = PixconvertCUDA(DynamicLibrary.open("bin/pixconvert_cu.dll"));
@@ -558,15 +559,30 @@ class NDI {
     Pointer<NDIlib_audio_frame_v2_t> pAudioFrame = calloc<NDIlib_audio_frame_v2_t>();
 
     int frame = -1;
+    AudioPlayer player = AudioPlayer();
+    player.openDriver();
 
     while (true) {
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 0));
       frame = _ndi.NDIlib_recv_capture_v2(pNDIrecv, nullptr, pAudioFrame, nullptr, 1000);
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_audio) continue;
       int channels = pAudioFrame.ref.no_channels;
       int samples = pAudioFrame.ref.no_samples;
       int stride = pAudioFrame.ref.channel_stride_in_bytes;
+      int rate = pAudioFrame.ref.sample_rate;
       Pointer<Float> data = pAudioFrame.ref.p_data;
+      Pointer<NDIlib_audio_frame_interleaved_16s_t> p16AudioFrame = calloc.call<NDIlib_audio_frame_interleaved_16s_t>();
+      p16AudioFrame.ref.reference_level = 0;
+      p16AudioFrame.ref.p_data = calloc.call<Int16>(samples * channels);
+      _ndi.NDIlib_util_audio_to_interleaved_16s_v2(pAudioFrame, p16AudioFrame);
+      int bufferSize = 2 * channels * samples;
+      Pointer<Int16> pData = p16AudioFrame.ref.p_data;
+      Uint8List buffer = pData.cast<Uint8>().asTypedList(bufferSize);
+
+      player.play(buffer);
+      calloc.free(pData);
+      calloc.free(p16AudioFrame);
+
       object.sendPort.send(
         NDIAudioLevelFrame(
           channelLevels: List<double>.generate(channels, (index) {
