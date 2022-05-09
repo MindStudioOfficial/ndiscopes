@@ -23,6 +23,7 @@ import 'package:ndiscopes/widgets/scopes.dart';
 import 'package:ndiscopes/widgets/settings.dart';
 import 'package:ndiscopes/widgets/window.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 late NDI ndi;
 
@@ -67,16 +68,24 @@ class Main extends StatefulWidget {
   State<Main> createState() => _MainState();
 }
 
-class _MainState extends State<Main> {
+class _MainState extends State<Main> with WindowListener {
   NDISource? selectedSource;
   bool refOpen = false;
   bool settingsOpen = false;
   bool portraitLayout = false;
+
   @override
   void initState() {
+    windowManager.addListener(this);
     super.initState();
     checkGPU();
     loadSettings();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
   }
 
   void checkGPU() {
@@ -156,6 +165,12 @@ class _MainState extends State<Main> {
     loadScopeSettings().then((s) {
       context.read<ScopeSettings>().update(s);
     });
+  }
+
+  @override
+  void onWindowClose() {
+    super.onWindowClose();
+    print("Close please");
   }
 
   @override

@@ -563,26 +563,42 @@ class NDI {
     player.openDriver();
 
     while (true) {
-      await Future.delayed(const Duration(milliseconds: 0));
+      //await Future.delayed( Duration.zero);
+      // get frame typr
       frame = _ndi.NDIlib_recv_capture_v2(pNDIrecv, nullptr, pAudioFrame, nullptr, 1000);
+      // if frame is not audio return
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_audio) continue;
+      // get audio frame info
       int channels = pAudioFrame.ref.no_channels;
       int samples = pAudioFrame.ref.no_samples;
       int stride = pAudioFrame.ref.channel_stride_in_bytes;
       int rate = pAudioFrame.ref.sample_rate;
+      // update player based on new info (only updates if info is different to last)
+      player.updateDriver(channels, rate, 16);
+      // get the pointer to the 32 Float audio
       Pointer<Float> data = pAudioFrame.ref.p_data;
+
+      // create pointer for 16Bit PCM Audio data
       Pointer<NDIlib_audio_frame_interleaved_16s_t> p16AudioFrame = calloc.call<NDIlib_audio_frame_interleaved_16s_t>();
       p16AudioFrame.ref.reference_level = 0;
       p16AudioFrame.ref.p_data = calloc.call<Int16>(samples * channels);
+
+      // convert 32 Bit Audio to 16Bit audio
       _ndi.NDIlib_util_audio_to_interleaved_16s_v2(pAudioFrame, p16AudioFrame);
+
+      // create Uint8List from pointer to 16Bit audio
       int bufferSize = 2 * channels * samples;
       Pointer<Int16> pData = p16AudioFrame.ref.p_data;
       Uint8List buffer = pData.cast<Uint8>().asTypedList(bufferSize);
 
+      // play the buffer
       player.play(buffer);
+
+      // free the generated 16Bit audio
       calloc.free(pData);
       calloc.free(p16AudioFrame);
 
+      // send audio levels to UI
       object.sendPort.send(
         NDIAudioLevelFrame(
           channelLevels: List<double>.generate(channels, (index) {
@@ -595,6 +611,7 @@ class NDI {
           }),
         ),
       );
+      // free the received 32 Bit audio frame
       _ndi.NDIlib_recv_free_audio_v2(pNDIrecv, pAudioFrame);
     }
   }

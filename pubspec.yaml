@@ -45,6 +45,7 @@ dependencies:
   provider: ^6.0.2
   dart_discord_rpc: ^0.0.2
   libao: ^0.2.0
+  window_manager: ^0.2.3
 
 dev_dependencies:
   flutter_test:
