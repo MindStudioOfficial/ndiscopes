@@ -13,7 +13,6 @@ class AudioPlayer {
     _ao = Libao.open("bin/libao.dll");
     _ao.initialize();
     _driverId = _ao.defaultDriverId();
-    print(_ao.driverInfoList());
   }
 
   openDriver() {

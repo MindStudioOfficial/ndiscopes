@@ -29,7 +29,6 @@ class NDI {
   ///
   /// Update this by calling [await updateSources()].
   Pointer<NDIlib_source_t>? _pSources;
-  NDIlib_find_instance_t? _pFind;
   late Pointer<NDIlib_recv_instance_type> _pRecv;
 
   /// The List of [NDISource] containing available NDI sources.
@@ -59,7 +58,7 @@ class NDI {
       _SMObject(
         receivePort.sendPort,
         // the find instance if one already exists
-        _pFind?.address,
+        null,
       ),
       debugName: "Source Isolate",
     );
@@ -107,14 +106,7 @@ class NDI {
     Pointer<NDIlib_find_create_t> pCreateSettings = calloc.call<NDIlib_find_create_t>(1);
     pCreateSettings.ref.show_local_sources = 1;
 
-    late NDIlib_find_instance_t pNDIfind;
-
-    // either create new find instance or use one from previous searches if provided
-    if (object.pFindA == null) {
-      pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
-    } else {
-      pNDIfind = Pointer.fromAddress(object.pFindA!);
-    }
+    NDIlib_find_instance_t pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
 
     // wait for 10s for new sources
     // if none detected send results to main thread
@@ -265,9 +257,8 @@ class NDI {
 
   /// stops the receiving thread and closes communication
   void stopGetFrames() {
-    if (_fIsolate == null || _fReceivePort == null) return;
-    _fReceivePort!.close();
-    _fIsolate!.kill(priority: Isolate.immediate);
+    _fReceivePort?.close();
+    _fIsolate?.kill(priority: Isolate.immediate);
     _fIsolate = null;
     _fReceivePort = null;
     _fIsoSendport = null;
@@ -614,6 +605,17 @@ class NDI {
       // free the received 32 Bit audio frame
       _ndi.NDIlib_recv_free_audio_v2(pNDIrecv, pAudioFrame);
     }
+  }
+
+  void dispose() {
+    // stop all isolates
+    stopGetFrames();
+    stopGetAudio();
+    // destroy recv instance
+    _ndi.NDIlib_recv_destroy(_pRecv);
+    // free sources pointer
+    if (_pSources != null && _pSources != nullptr) calloc.free(_pSources!);
+    _ndi.NDIlib_destroy();
   }
 }
 

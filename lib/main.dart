@@ -2,6 +2,7 @@ import 'dart:ffi';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:dart_discord_rpc/dart_discord_rpc.dart';
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/config.dart';
@@ -77,6 +78,7 @@ class _MainState extends State<Main> with WindowListener {
   @override
   void initState() {
     windowManager.addListener(this);
+    windowManager.setPreventClose(true).then((value) => setState(() {}));
     super.initState();
     checkGPU();
     loadSettings();
@@ -169,8 +171,11 @@ class _MainState extends State<Main> with WindowListener {
 
   @override
   void onWindowClose() {
-    super.onWindowClose();
-    print("Close please");
+    ndi.dispose();
+    if (kDebugMode) {
+      print("NDI Destroyed");
+    }
+    windowManager.destroy();
   }
 
   @override
