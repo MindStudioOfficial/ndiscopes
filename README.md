@@ -48,19 +48,22 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 
 ### Features
 
-- [x] Waveforms
+- Waveforms/Scopes
   - [x] Luma Waveform
   - [x] RGB Waveform
   - [x] RGB Parade
-  - [x] UV Vectorscope  
-- [x] Settings
+  - [x] UV Vectorscope
+  - [x] False-Color display of source and reference overlay
+  - [ ] Color Space Coverage
+  - [ ] Histogram
+  - [ ] YUV Parade
+- Settings
   - [x] Scale vectorscope x0.5 to x5
   - [x] Toggle waveform scale labels
   - [x] Waveform scale as percentage
   - [x] Waveform scale as 8Bit value
   - [x] Save and load settings on startup
   - [x] Enable Audiometer 
-- [x] False-Color display of source and reference overlay
 - [x] Reference Frame
   - [x] Save/Load
   - [x] Overlay on source as splitscreen
@@ -68,13 +71,20 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] Overlay on scopes as splitscreen
   - [x] Show thumbnails in frame browse
 - [x] Draw Masks on source/reference frame
-- [ ] Record and graph RGBL ratio over time
+- Audio
+  - [x] Audiometer for every audio channel of the NDI source in dBu scale
+  - [x] Audio playback to default audio device (toggleable) 
+  - [ ] Audio channel routing
+  - [ ] Selectable audio device
+  - [ ] Audio waveform
+  - [ ] Audio spectrum
 - NDI Codec support
   - **This software now requests the frames to be in UYVY or BGRA format to maximize compatibility.**
   - [x] UYVY (most common, fastest)
   - [x] BGRA (stills and alpha)
   - others are very uncommon IMO
-- [x] Audiometer for every audio channel of the NDI source in dBu scale
+- [ ] NDI Output
+
   
 
 ### GPU Support
