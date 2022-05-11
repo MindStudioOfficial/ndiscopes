@@ -9,13 +9,19 @@ extension DateTimeString on DateTime {
     return s;
   }
 
+  String toTimeString() {
+    String s = "";
+    s += hour > 9 ? hour.toString() : "0" + hour.toString();
+    s += ":";
+    s += minute > 9 ? minute.toString() : "0" + minute.toString();
+    return s;
+  }
+
   String toDateTimeString(String seperator) {
     String s = "";
     s += toDateString();
     s += seperator;
-    s += hour > 9 ? hour.toString() : "0" + hour.toString();
-    s += ":";
-    s += minute > 9 ? minute.toString() : "0" + minute.toString();
+    s += toTimeString();
     return s;
   }
 

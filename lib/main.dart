@@ -64,6 +64,7 @@ class _MainState extends State<Main> with WindowListener {
   bool refOpen = false;
   bool settingsOpen = false;
   bool portraitLayout = false;
+  bool shutdown = false;
 
   @override
   void initState() {
@@ -160,11 +161,11 @@ class _MainState extends State<Main> with WindowListener {
   }
 
   @override
-  void onWindowClose() {
-    ndi.dispose();
-    if (kDebugMode) {
-      print("NDI Destroyed");
-    }
+  void onWindowClose() async {
+    setState(() {
+      shutdown = true;
+    });
+    await ndi.dispose();
     windowManager.destroy();
   }
 
@@ -181,12 +182,12 @@ class _MainState extends State<Main> with WindowListener {
     );
   }
 
-  void onSelectSource(int index) {
+  void onSelectSource(int index) async {
     final pS = ndi.getSourceAt(index);
 
     if (pS != null) {
-      ndi.stopGetFrames();
-      ndi.stopGetAudio();
+      await ndi.stopGetFrames();
+      await ndi.stopGetAudio();
       selectedSource = NDISource(pS);
       setState(() {});
       ndi.getFrames(
@@ -217,147 +218,111 @@ class _MainState extends State<Main> with WindowListener {
       int scopesCountX = portraitLayout ? 2 : 3;
       double width = constraints.maxWidth;
       if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) width -= 125;
-      return Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          WindowTitleBar(
-            sourceName: selectedSource?.name ?? "No Source",
-          ),
-          //* top part
-          Expanded(
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Flexible(
-                  flex: 2,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Expanded(
-                        child: RepaintBoundary(
-                          child: FrameViewer(
-                            onSaveFrame: () => onSaveFrame(),
-                            onSelectSource: (index) => onSelectSource(index),
-                            onToggleFrameBrowser: (open) {
-                              setState(() {
-                                refOpen = open;
-                              });
-                            },
-                            onToggleSettings: (open) {
-                              setState(() {
-                                settingsOpen = open;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        width: refOpen ? 175 : 0,
-                        curve: Curves.easeInOutQuad,
-                        child: const SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: NeverScrollableScrollPhysics(),
-                          child: SizedBox(
-                            width: 175,
-                            child: FrameBrowserV2(),
-                          ),
-                        ),
-                      ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        width: settingsOpen ? 175 : 0,
-                        curve: Curves.easeInOutQuad,
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const NeverScrollableScrollPhysics(),
-                          child: SizedBox(
-                            width: 175,
-                            child: Settings(
-                              onToggleAudioOut: (enabled) {
-                                ndi.updateAudio(enabled);
+      if (!shutdown) {
+        return Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            WindowTitleBar(
+              sourceName: selectedSource?.name ?? "No Source",
+            ),
+            //* top part
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Flexible(
+                    flex: 2,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Expanded(
+                          child: RepaintBoundary(
+                            child: FrameViewer(
+                              onSaveFrame: () => onSaveFrame(),
+                              onSelectSource: (index) => onSelectSource(index),
+                              onToggleFrameBrowser: (open) {
+                                setState(() {
+                                  refOpen = open;
+                                });
+                              },
+                              onToggleSettings: (open) {
+                                setState(() {
+                                  settingsOpen = open;
+                                });
                               },
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!portraitLayout)
-                  Flexible(
-                    flex: 1,
-                    child: Container(
-                      color: Colors.black,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          VerticalDivider(
-                            width: 2,
-                            thickness: 2,
-                            color: cPrimary,
-                            endIndent: 0,
-                            indent: 0,
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          width: refOpen ? 175 : 0,
+                          curve: Curves.easeInOutQuad,
+                          child: const SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: NeverScrollableScrollPhysics(),
+                            child: SizedBox(
+                              width: 175,
+                              child: FrameBrowserV2(),
+                            ),
                           ),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              controller: ScrollController(),
-                              child: const VscopeV2(
-                                title: "UV Vectorscope",
+                        ),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          width: settingsOpen ? 175 : 0,
+                          curve: Curves.easeInOutQuad,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const NeverScrollableScrollPhysics(),
+                            child: SizedBox(
+                              width: 175,
+                              child: Settings(
+                                onToggleAudioOut: (enabled) {
+                                  ndi.updateAudio(enabled);
+                                },
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                  if (!portraitLayout)
+                    Flexible(
+                      flex: 1,
+                      child: Container(
+                        color: Colors.black,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            VerticalDivider(
+                              width: 2,
+                              thickness: 2,
+                              color: cPrimary,
+                              endIndent: 0,
+                              indent: 0,
+                            ),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                controller: ScrollController(),
+                                child: const VscopeV2(
+                                  title: "UV Vectorscope",
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          //* bottom part
-          Container(
-            color: Colors.black,
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                IntrinsicHeight(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      SizedBox(
-                        width: width / scopesCountX,
-                        child: ScopeV2(
-                          title: "Luma Waveform",
-                          img: context.watch<Frame>().imageFrame?.iWF,
-                          ovl: context.watch<Frame>().overlayFrame?.iWF,
-                          isParade: false,
-                        ),
-                      ),
-                      SizedBox(
-                        width: width / scopesCountX,
-                        child: ScopeV2(
-                          title: "RGB Waveform",
-                          img: context.watch<Frame>().imageFrame?.iWFRgb,
-                          ovl: context.watch<Frame>().overlayFrame?.iWFRgb,
-                          isParade: false,
-                        ),
-                      ),
-                      if (!portraitLayout)
-                        SizedBox(
-                          width: width / scopesCountX,
-                          child: ScopeV2(
-                            title: "RGB Parade",
-                            img: context.watch<Frame>().imageFrame?.iWFParade,
-                            ovl: context.watch<Frame>().overlayFrame?.iWFParade,
-                            isParade: true,
-                          ),
-                        ),
-                      if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) const AudioMeters(),
-                    ],
-                  ),
-                ),
-                if (portraitLayout)
+            //* bottom part
+            Container(
+              color: Colors.black,
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   IntrinsicHeight(
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
@@ -365,27 +330,72 @@ class _MainState extends State<Main> with WindowListener {
                         SizedBox(
                           width: width / scopesCountX,
                           child: ScopeV2(
-                            title: "RGB Parade",
-                            img: context.watch<Frame>().imageFrame?.iWFParade,
-                            ovl: context.watch<Frame>().overlayFrame?.iWFParade,
-                            isParade: true,
+                            title: "Luma Waveform",
+                            img: context.watch<Frame>().imageFrame?.iWF,
+                            ovl: context.watch<Frame>().overlayFrame?.iWF,
+                            isParade: false,
                           ),
                         ),
                         SizedBox(
-                          width: width / scopesCountX / 2,
-                          child: const VscopeV2(
-                            title: "UV Vectorscope",
+                          width: width / scopesCountX,
+                          child: ScopeV2(
+                            title: "RGB Waveform",
+                            img: context.watch<Frame>().imageFrame?.iWFRgb,
+                            ovl: context.watch<Frame>().overlayFrame?.iWFRgb,
+                            isParade: false,
                           ),
                         ),
-                        if (context.watch<ScopeSettings>().audioLevelEnabled) const AudioMeters(),
+                        if (!portraitLayout)
+                          SizedBox(
+                            width: width / scopesCountX,
+                            child: ScopeV2(
+                              title: "RGB Parade",
+                              img: context.watch<Frame>().imageFrame?.iWFParade,
+                              ovl: context.watch<Frame>().overlayFrame?.iWFParade,
+                              isParade: true,
+                            ),
+                          ),
+                        if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) const AudioMeters(),
                       ],
                     ),
                   ),
-              ],
-            ),
-          )
-        ],
-      );
+                  if (portraitLayout)
+                    IntrinsicHeight(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          SizedBox(
+                            width: width / scopesCountX,
+                            child: ScopeV2(
+                              title: "RGB Parade",
+                              img: context.watch<Frame>().imageFrame?.iWFParade,
+                              ovl: context.watch<Frame>().overlayFrame?.iWFParade,
+                              isParade: true,
+                            ),
+                          ),
+                          SizedBox(
+                            width: width / scopesCountX / 2,
+                            child: const VscopeV2(
+                              title: "UV Vectorscope",
+                            ),
+                          ),
+                          if (context.watch<ScopeSettings>().audioLevelEnabled) const AudioMeters(),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            )
+          ],
+        );
+      } else {
+        return Center(
+          child: Text(
+            "Shutting down...",
+            style: tThin.copyWith(fontSize: 55),
+          ),
+        );
+      }
     });
   }
 }

@@ -5,11 +5,14 @@ import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
 import 'package:ndiscopes/service/audio/audio.dart';
+import 'package:ndiscopes/util/datetimetostring.dart';
+
 import 'package:ndiscopes/service/ndi/ndisource.dart';
 import 'package:ndiscopes/service/ndi/ndioutputframe.dart';
 import 'package:ndiscopes/service/ndi/savedinputframe.dart';
@@ -28,6 +31,8 @@ class NDI {
     if (!_ndi.NDIlib_initialize()) {
       throw Exception("Could not initialize NDI");
     }
+    _printNDI("Library initialized");
+
     _pRecv = _ndi.NDIlib_recv_create_v3(nullptr);
   }
 
@@ -245,6 +250,9 @@ class NDI {
         if (data is SendPort) {
           _fIsoSendport = data;
         }
+        if (data is String) {
+          if (data == "ended") _killFrameIsolate();
+        }
       },
       onDone: () {
         // complete the future once the Isolate has returned and receiving has stopped
@@ -262,7 +270,13 @@ class NDI {
   }
 
   /// stops the receiving thread and closes communication
-  void stopGetFrames() {
+  Future<void> stopGetFrames() async {
+    _fIsoSendport?.send("end");
+    await Future.delayed(const Duration(milliseconds: 500));
+    _killFrameIsolate();
+  }
+
+  _killFrameIsolate() {
     _fReceivePort?.close();
     _fIsolate?.kill(priority: Isolate.immediate);
     _fIsolate = null;
@@ -277,6 +291,7 @@ class NDI {
     ReceivePort rP = ReceivePort();
     Rect mask = object.mask;
     bool maskActive = object.maskActive;
+    bool end = false;
     // send back the sendport for bidirectional communication
     object.sendPort.send(rP.sendPort);
     // listen for incoming messages from the main thread
@@ -296,20 +311,12 @@ class NDI {
             maskActive = message["mActive"]!;
           }
         }
+        if (message is String) {
+          if (message == "end") end = true;
+        }
       },
       onDone: () {},
     );
-
-    // Yey this got fixed by updating the NDI SDK to the most recent version
-    //! NOPE
-    // create the receiver settings
-    /*Pointer<NDIlib_recv_create_v3_t> pCreateSettings = calloc.call<NDIlib_recv_create_v3_t>(1);
-    // request a certain preferred color format
-    pCreateSettings.ref.color_format = NDIlib_recv_color_format_e.NDIlib_recv_color_format_UYVY_BGRA;
-    pCreateSettings.ref.bandwidth = NDIlib_recv_bandwidth_e.NDIlib_recv_bandwidth_highest;
-    pCreateSettings.ref.source_to_connect_to = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>()[0];
-    pCreateSettings.ref.p_ndi_recv_name = "NDIScopes".toNativeUtf8().cast<Int8>();
-    pCreateSettings.ref.allow_video_fields = 0;*/
 
     // create the receiver instance
     //NDIlib_recv_instance_t pNDIrecv = _ndi.NDIlib_recv_create_v3(nullptr);
@@ -329,7 +336,7 @@ class NDI {
     int frame = -1;
 
     // receive until thread is killed
-    while (true) {
+    while (!end) {
       // give the async listener time to process incoming messages from main thread by interrupting the synchronous code
       await Future.delayed(Duration.zero);
 
@@ -394,8 +401,7 @@ class NDI {
           );
           break;
         default:
-          // ignore: avoid_print
-          print("unsupported format");
+          _printNDI("unsupported format");
       }
       // free the source pointer!!!
       _ndi.NDIlib_recv_free_video_v2(pNDIrecv, pVideoFrame);
@@ -416,6 +422,9 @@ class NDI {
 
       //receive next frame
     }
+
+    _printNDI("Ended Frame Isolate");
+    object.sendPort.send("ended");
   }
 
   ReceivePort? _sfReceivePort;
@@ -497,8 +506,7 @@ class NDI {
           format = NDIInputFormat.bgra;
           break;
         default:
-          // ignore: avoid_print
-          print("unsupported format");
+          _printNDI("unsupported format");
       }
       object.sendPort.send(<String, int>{
         "width": width,
@@ -528,6 +536,9 @@ class NDI {
         onLevel(data);
       }
       if (data is SendPort) _aSendport = data;
+      if (data is String) {
+        if (data == "ended") _killAudioIsolate();
+      }
     }, onDone: (() {
       completer.complete();
     }));
@@ -540,7 +551,13 @@ class NDI {
     return completer.future;
   }
 
-  void stopGetAudio() {
+  Future<void> stopGetAudio() async {
+    _aSendport?.send("end");
+    await Future.delayed(const Duration(milliseconds: 50));
+    _killAudioIsolate();
+  }
+
+  void _killAudioIsolate() {
     _aReceiveport?.close();
     _aIsolate?.kill(priority: Isolate.immediate);
     _aIsolate = null;
@@ -548,6 +565,7 @@ class NDI {
   }
 
   static void _getAudio(_AMObject object) async {
+    bool end = false;
     // create audio player instance
     AudioPlayer player = AudioPlayer();
 
@@ -559,6 +577,9 @@ class NDI {
     rP.listen((message) {
       if (message is bool) {
         outputEnabled = message;
+      }
+      if (message is String) {
+        if (message == "end") end = true;
       }
     });
 
@@ -578,7 +599,7 @@ class NDI {
 
     player.openDriver();
 
-    while (true) {
+    while (!end) {
       // async break to listen for receivport messages
       await Future.delayed(Duration.zero);
       // get frame typr
@@ -634,6 +655,9 @@ class NDI {
       // free the received 32 Bit audio frame
       _ndi.NDIlib_recv_free_audio_v2(pNDIrecv, pAudioFrame);
     }
+    player.dispose();
+    _printNDI("Ended Audio Isolate");
+    object.sendPort.send("ended");
   }
 
   /// Update the Audio Isolate with new value(s)
@@ -644,15 +668,16 @@ class NDI {
     _aSendport!.send(outputEnabled);
   }
 
-  void dispose() {
+  Future<void> dispose() async {
     // stop all isolates
-    stopGetFrames();
-    stopGetAudio();
+    await stopGetFrames();
+    await stopGetAudio();
     // destroy recv instance
     _ndi.NDIlib_recv_destroy(_pRecv);
     // free sources pointer
     if (_pSources != null && _pSources != nullptr) calloc.free(_pSources!);
     _ndi.NDIlib_destroy();
+    _printNDI("Library successfully disposed");
   }
 }
 
@@ -687,3 +712,11 @@ class NDIAudioLevelFrame {
 
   NDIAudioLevelFrame({required this.channelLevels});
 }
+
+void _printNDI(String m) {
+  if (kDebugMode) {
+    print("$_ndiLabel [\x1B[32m${DateTime.now().toTimeString()}\x1B[0m] $m");
+  }
+}
+
+const String _ndiLabel = "[\x1B[34;1mNDI\x1B[0m]";
