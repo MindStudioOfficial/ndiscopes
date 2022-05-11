@@ -5,7 +5,8 @@ import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'package:provider/provider.dart';
 
 class Settings extends StatelessWidget {
-  const Settings({Key? key}) : super(key: key);
+  final void Function(bool enabled) onToggleAudioOut;
+  const Settings({Key? key, required this.onToggleAudioOut}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +98,7 @@ class Settings extends StatelessWidget {
             value: scopeSettings.audioOutputEnabled,
             onChanged: (v) {
               scopeSettings.toggleAudioOutput(enable: v);
+              onToggleAudioOut(v ?? false);
             },
           ),
           /*CheckboxListTile(

@@ -512,10 +512,12 @@ class NDI {
 
   Isolate? _aIsolate;
   ReceivePort? _aReceiveport;
+  SendPort? _aSendport;
 
   Future<void> getAudio(
     Pointer<NDIlib_source_t> source,
     Function(NDIAudioLevelFrame level) onLevel,
+    bool outputEnabled,
   ) async {
     final completer = Completer();
 
@@ -525,13 +527,14 @@ class NDI {
       if (data is NDIAudioLevelFrame) {
         onLevel(data);
       }
+      if (data is SendPort) _aSendport = data;
     }, onDone: (() {
       completer.complete();
     }));
 
     _aIsolate = await Isolate.spawn(
       _getAudio,
-      _AMObject(_aReceiveport!.sendPort, source.address, _pRecv.address),
+      _AMObject(_aReceiveport!.sendPort, source.address, _pRecv.address, outputEnabled),
     );
 
     return completer.future;
@@ -545,6 +548,22 @@ class NDI {
   }
 
   static void _getAudio(_AMObject object) async {
+    // create audio player instance
+    AudioPlayer player = AudioPlayer();
+
+    // create message channel from main thread to this isolate
+    ReceivePort rP = ReceivePort();
+
+    bool outputEnabled = object.outputEnabled;
+    // listen for messages from main thread
+    rP.listen((message) {
+      if (message is bool) {
+        outputEnabled = message;
+      }
+    });
+
+    object.sendPort.send(rP.sendPort);
+
     NDIlib_recv_instance_t pNDIrecv = Pointer.fromAddress(object.pRecvA);
     //final pNDIRecv = Pointer.fromAddress(object.pRecvA).cast<NDIlib_recv_instance_t>();
     // get pointer of the desired source to receive from its address
@@ -556,11 +575,12 @@ class NDI {
     Pointer<NDIlib_audio_frame_v2_t> pAudioFrame = calloc<NDIlib_audio_frame_v2_t>();
 
     int frame = -1;
-    AudioPlayer player = AudioPlayer();
+
     player.openDriver();
 
     while (true) {
-      //await Future.delayed( Duration.zero);
+      // async break to listen for receivport messages
+      await Future.delayed(Duration.zero);
       // get frame typr
       frame = _ndi.NDIlib_recv_capture_v2(pNDIrecv, nullptr, pAudioFrame, nullptr, 1000);
       // if frame is not audio return
@@ -575,25 +595,28 @@ class NDI {
       // get the pointer to the 32 Float audio
       Pointer<Float> data = pAudioFrame.ref.p_data;
 
-      // create pointer for 16Bit PCM Audio data
-      Pointer<NDIlib_audio_frame_interleaved_16s_t> p16AudioFrame = calloc.call<NDIlib_audio_frame_interleaved_16s_t>();
-      p16AudioFrame.ref.reference_level = 0;
-      p16AudioFrame.ref.p_data = calloc.call<Int16>(samples * channels);
+      if (outputEnabled) {
+        // create pointer for 16Bit PCM Audio data
+        Pointer<NDIlib_audio_frame_interleaved_16s_t> p16AudioFrame =
+            calloc.call<NDIlib_audio_frame_interleaved_16s_t>();
+        p16AudioFrame.ref.reference_level = 0;
+        p16AudioFrame.ref.p_data = calloc.call<Int16>(samples * channels);
 
-      // convert 32 Bit Audio to 16Bit audio
-      _ndi.NDIlib_util_audio_to_interleaved_16s_v2(pAudioFrame, p16AudioFrame);
+        // convert 32 Bit Audio to 16Bit audio
+        _ndi.NDIlib_util_audio_to_interleaved_16s_v2(pAudioFrame, p16AudioFrame);
 
-      // create Uint8List from pointer to 16Bit audio
-      int bufferSize = 2 * channels * samples;
-      Pointer<Int16> pData = p16AudioFrame.ref.p_data;
-      Uint8List buffer = pData.cast<Uint8>().asTypedList(bufferSize);
+        // create Uint8List from pointer to 16Bit audio
+        int bufferSize = 2 * channels * samples;
+        Pointer<Int16> pData = p16AudioFrame.ref.p_data;
+        Uint8List buffer = pData.cast<Uint8>().asTypedList(bufferSize);
 
-      // play the buffer
-      player.play(buffer);
+        // play the buffer
+        player.play(buffer);
 
-      // free the generated 16Bit audio
-      calloc.free(pData);
-      calloc.free(p16AudioFrame);
+        // free the generated 16Bit audio
+        calloc.free(pData);
+        calloc.free(p16AudioFrame);
+      }
 
       // send audio levels to UI
       object.sendPort.send(
@@ -613,6 +636,14 @@ class NDI {
     }
   }
 
+  /// Update the Audio Isolate with new value(s)
+  ///
+  /// set [outputEnabled] to true if you want to play the audio
+  void updateAudio(bool outputEnabled) {
+    if (_aSendport == null) return;
+    _aSendport!.send(outputEnabled);
+  }
+
   void dispose() {
     // stop all isolates
     stopGetFrames();
@@ -629,7 +660,8 @@ class _AMObject {
   SendPort sendPort;
   int pRecvA;
   int pSourceA;
-  _AMObject(this.sendPort, this.pSourceA, this.pRecvA);
+  bool outputEnabled;
+  _AMObject(this.sendPort, this.pSourceA, this.pRecvA, this.outputEnabled);
 }
 
 /// the object used for initializing thread with parameters to find new sources

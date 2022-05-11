@@ -168,6 +168,47 @@ class _MainState extends State<Main> with WindowListener {
     windowManager.destroy();
   }
 
+  void onSaveFrame() {
+    if (selectedSource == null) return;
+    ndi.getSingleFrame(
+      selectedSource!.source,
+      const Size(580, 256),
+      (frame) {
+        saveInputFrame(frame);
+      },
+      context.read<MaskProvider>().rect,
+      context.read<MaskProvider>().active,
+    );
+  }
+
+  void onSelectSource(int index) {
+    final pS = ndi.getSourceAt(index);
+
+    if (pS != null) {
+      ndi.stopGetFrames();
+      ndi.stopGetAudio();
+      selectedSource = NDISource(pS);
+      setState(() {});
+      ndi.getFrames(
+        selectedSource!.source,
+        const Size(580, 256),
+        (frame) => setState(
+          () => context.read<Frame>().updateImageFrame(frame),
+        ),
+        context.read<MaskProvider>().rect,
+        context.read<MaskProvider>().active,
+      );
+      ndi.getAudio(
+        pS,
+        (level) {
+          context.read<AudioLevel>().setLevels(level.channelLevels);
+        },
+        context.read<ScopeSettings>().audioOutputEnabled,
+      );
+    }
+    rpcUpdate(selectedSource?.name);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
@@ -195,41 +236,8 @@ class _MainState extends State<Main> with WindowListener {
                       Expanded(
                         child: RepaintBoundary(
                           child: FrameViewer(
-                            onSaveFrame: () {
-                              if (selectedSource == null) return;
-                              ndi.getSingleFrame(
-                                selectedSource!.source,
-                                const Size(580, 256),
-                                (frame) {
-                                  saveInputFrame(frame);
-                                },
-                                context.read<MaskProvider>().rect,
-                                context.read<MaskProvider>().active,
-                              );
-                            },
-                            onSelectSource: (index) {
-                              final pS = ndi.getSourceAt(index);
-
-                              if (pS != null) {
-                                ndi.stopGetFrames();
-                                ndi.stopGetAudio();
-                                selectedSource = NDISource(pS);
-                                setState(() {});
-                                ndi.getFrames(
-                                  selectedSource!.source,
-                                  const Size(580, 256),
-                                  (frame) => setState(
-                                    () => context.read<Frame>().updateImageFrame(frame),
-                                  ),
-                                  context.read<MaskProvider>().rect,
-                                  context.read<MaskProvider>().active,
-                                );
-                                ndi.getAudio(pS, (level) {
-                                  context.read<AudioLevel>().setLevels(level.channelLevels);
-                                });
-                              }
-                              rpcUpdate(selectedSource?.name);
-                            },
+                            onSaveFrame: () => onSaveFrame(),
+                            onSelectSource: (index) => onSelectSource(index),
                             onToggleFrameBrowser: (open) {
                               setState(() {
                                 refOpen = open;
@@ -260,12 +268,16 @@ class _MainState extends State<Main> with WindowListener {
                         duration: const Duration(milliseconds: 250),
                         width: settingsOpen ? 175 : 0,
                         curve: Curves.easeInOutQuad,
-                        child: const SingleChildScrollView(
+                        child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          physics: NeverScrollableScrollPhysics(),
+                          physics: const NeverScrollableScrollPhysics(),
                           child: SizedBox(
                             width: 175,
-                            child: Settings(),
+                            child: Settings(
+                              onToggleAudioOut: (enabled) {
+                                ndi.updateAudio(enabled);
+                              },
+                            ),
                           ),
                         ),
                       ),
