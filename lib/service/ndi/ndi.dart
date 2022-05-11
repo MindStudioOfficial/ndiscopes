@@ -8,8 +8,15 @@ import 'package:ffi/ffi.dart';
 import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
+import 'package:ndiscopes/service/audio/audio.dart';
+import 'package:ndiscopes/service/ndi/ndisource.dart';
+import 'package:ndiscopes/service/ndi/ndioutputframe.dart';
+import 'package:ndiscopes/service/ndi/savedinputframe.dart';
+
+export 'package:ndiscopes/service/ndi/ndisource.dart';
+export 'package:ndiscopes/service/ndi/ndioutputframe.dart';
+export 'package:ndiscopes/service/ndi/savedinputframe.dart';
 
 NDIffi _ndi = NDIffi(DynamicLibrary.open("bin/Processing.NDI.Lib.x64.dll"));
 PixconvertCUDA pixconvertCUDA = PixconvertCUDA(DynamicLibrary.open("bin/pixconvert_cu.dll"));
@@ -28,7 +35,6 @@ class NDI {
   ///
   /// Update this by calling [await updateSources()].
   Pointer<NDIlib_source_t>? _pSources;
-  NDIlib_find_instance_t? _pFind;
   late Pointer<NDIlib_recv_instance_type> _pRecv;
 
   /// The List of [NDISource] containing available NDI sources.
@@ -58,7 +64,7 @@ class NDI {
       _SMObject(
         receivePort.sendPort,
         // the find instance if one already exists
-        _pFind?.address,
+        null,
       ),
       debugName: "Source Isolate",
     );
@@ -106,14 +112,7 @@ class NDI {
     Pointer<NDIlib_find_create_t> pCreateSettings = calloc.call<NDIlib_find_create_t>(1);
     pCreateSettings.ref.show_local_sources = 1;
 
-    late NDIlib_find_instance_t pNDIfind;
-
-    // either create new find instance or use one from previous searches if provided
-    if (object.pFindA == null) {
-      pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
-    } else {
-      pNDIfind = Pointer.fromAddress(object.pFindA!);
-    }
+    NDIlib_find_instance_t pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
 
     // wait for 10s for new sources
     // if none detected send results to main thread
@@ -264,9 +263,8 @@ class NDI {
 
   /// stops the receiving thread and closes communication
   void stopGetFrames() {
-    if (_fIsolate == null || _fReceivePort == null) return;
-    _fReceivePort!.close();
-    _fIsolate!.kill(priority: Isolate.immediate);
+    _fReceivePort?.close();
+    _fIsolate?.kill(priority: Isolate.immediate);
     _fIsolate = null;
     _fReceivePort = null;
     _fIsoSendport = null;
@@ -514,10 +512,12 @@ class NDI {
 
   Isolate? _aIsolate;
   ReceivePort? _aReceiveport;
+  SendPort? _aSendport;
 
   Future<void> getAudio(
     Pointer<NDIlib_source_t> source,
     Function(NDIAudioLevelFrame level) onLevel,
+    bool outputEnabled,
   ) async {
     final completer = Completer();
 
@@ -527,13 +527,14 @@ class NDI {
       if (data is NDIAudioLevelFrame) {
         onLevel(data);
       }
+      if (data is SendPort) _aSendport = data;
     }, onDone: (() {
       completer.complete();
     }));
 
     _aIsolate = await Isolate.spawn(
       _getAudio,
-      _AMObject(_aReceiveport!.sendPort, source.address, _pRecv.address),
+      _AMObject(_aReceiveport!.sendPort, source.address, _pRecv.address, outputEnabled),
     );
 
     return completer.future;
@@ -547,6 +548,22 @@ class NDI {
   }
 
   static void _getAudio(_AMObject object) async {
+    // create audio player instance
+    AudioPlayer player = AudioPlayer();
+
+    // create message channel from main thread to this isolate
+    ReceivePort rP = ReceivePort();
+
+    bool outputEnabled = object.outputEnabled;
+    // listen for messages from main thread
+    rP.listen((message) {
+      if (message is bool) {
+        outputEnabled = message;
+      }
+    });
+
+    object.sendPort.send(rP.sendPort);
+
     NDIlib_recv_instance_t pNDIrecv = Pointer.fromAddress(object.pRecvA);
     //final pNDIRecv = Pointer.fromAddress(object.pRecvA).cast<NDIlib_recv_instance_t>();
     // get pointer of the desired source to receive from its address
@@ -559,14 +576,49 @@ class NDI {
 
     int frame = -1;
 
+    player.openDriver();
+
     while (true) {
-      await Future.delayed(const Duration(milliseconds: 100));
+      // async break to listen for receivport messages
+      await Future.delayed(Duration.zero);
+      // get frame typr
       frame = _ndi.NDIlib_recv_capture_v2(pNDIrecv, nullptr, pAudioFrame, nullptr, 1000);
+      // if frame is not audio return
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_audio) continue;
+      // get audio frame info
       int channels = pAudioFrame.ref.no_channels;
       int samples = pAudioFrame.ref.no_samples;
       int stride = pAudioFrame.ref.channel_stride_in_bytes;
+      int rate = pAudioFrame.ref.sample_rate;
+      // update player based on new info (only updates if info is different to last)
+      player.updateDriver(channels, rate, 16);
+      // get the pointer to the 32 Float audio
       Pointer<Float> data = pAudioFrame.ref.p_data;
+
+      if (outputEnabled) {
+        // create pointer for 16Bit PCM Audio data
+        Pointer<NDIlib_audio_frame_interleaved_16s_t> p16AudioFrame =
+            calloc.call<NDIlib_audio_frame_interleaved_16s_t>();
+        p16AudioFrame.ref.reference_level = 0;
+        p16AudioFrame.ref.p_data = calloc.call<Int16>(samples * channels);
+
+        // convert 32 Bit Audio to 16Bit audio
+        _ndi.NDIlib_util_audio_to_interleaved_16s_v2(pAudioFrame, p16AudioFrame);
+
+        // create Uint8List from pointer to 16Bit audio
+        int bufferSize = 2 * channels * samples;
+        Pointer<Int16> pData = p16AudioFrame.ref.p_data;
+        Uint8List buffer = pData.cast<Uint8>().asTypedList(bufferSize);
+
+        // play the buffer
+        player.play(buffer);
+
+        // free the generated 16Bit audio
+        calloc.free(pData);
+        calloc.free(p16AudioFrame);
+      }
+
+      // send audio levels to UI
       object.sendPort.send(
         NDIAudioLevelFrame(
           channelLevels: List<double>.generate(channels, (index) {
@@ -579,8 +631,28 @@ class NDI {
           }),
         ),
       );
+      // free the received 32 Bit audio frame
       _ndi.NDIlib_recv_free_audio_v2(pNDIrecv, pAudioFrame);
     }
+  }
+
+  /// Update the Audio Isolate with new value(s)
+  ///
+  /// set [outputEnabled] to true if you want to play the audio
+  void updateAudio(bool outputEnabled) {
+    if (_aSendport == null) return;
+    _aSendport!.send(outputEnabled);
+  }
+
+  void dispose() {
+    // stop all isolates
+    stopGetFrames();
+    stopGetAudio();
+    // destroy recv instance
+    _ndi.NDIlib_recv_destroy(_pRecv);
+    // free sources pointer
+    if (_pSources != null && _pSources != nullptr) calloc.free(_pSources!);
+    _ndi.NDIlib_destroy();
   }
 }
 
@@ -588,7 +660,8 @@ class _AMObject {
   SendPort sendPort;
   int pRecvA;
   int pSourceA;
-  _AMObject(this.sendPort, this.pSourceA, this.pRecvA);
+  bool outputEnabled;
+  _AMObject(this.sendPort, this.pSourceA, this.pRecvA, this.outputEnabled);
 }
 
 /// the object used for initializing thread with parameters to find new sources
@@ -607,237 +680,6 @@ class _FMObject {
   Rect mask;
   bool maskActive;
   _FMObject(this.pSourceA, this.pRecvA, this.sendPort, this.scopeSize, this.mask, this.maskActive);
-}
-
-/// A class wrapping around the internal [NDIlib_source_t] type.
-///
-/// Access a sources name with the [name] property.
-class NDISource {
-  Pointer<NDIlib_source_t> source;
-  NDISource(this.source);
-
-  /// Access the name of the given NDI source.
-  String get name {
-    return source.ref.p_ndi_name.cast<Utf8>().toDartString();
-  }
-
-  @override
-  String toString() {
-    return name;
-  }
-}
-
-/// A class storing all [ui.Image]s required to paint the frame and all the scopes
-///
-class NDIOutputFrame {
-  ui.Image iRGBA;
-  ui.Image iWF;
-  ui.Image iWFRgb;
-  ui.Image iWFParade;
-  ui.Image iVScope;
-  ui.Image iFalseC;
-  NDIOutputFrame({
-    required this.iRGBA,
-    required this.iWF,
-    required this.iWFRgb,
-    required this.iWFParade,
-    required this.iVScope,
-    required this.iFalseC,
-  });
-}
-
-/// Enumarator to distinguish between different formats that incoming or outgoing NDI frames might appear in
-enum NDIInputFormat {
-  uyvy,
-  uyva,
-  rgba,
-  rgbx,
-  bgra,
-  i420,
-  nv12,
-  p216,
-  pa16,
-  yv12,
-}
-
-/// A class that represents a frame that can be stored as a file or read from a file (.ndis)
-///
-/// It contains the raw [bytes] of the frame provided from the NDI SDK in the specified [format]
-///
-/// It also stores the [width] and [height] of the frame to reconstruct it from a 1D list of bytes.
-class SavedInputFrame {
-  NDIInputFormat format;
-  Uint8List bytes;
-  int width;
-  int height;
-  DateTime timestamp;
-  Uint8List? thumbnail;
-
-  SavedInputFrame({
-    required this.bytes,
-    required this.width,
-    required this.height,
-    required this.format,
-    required this.timestamp,
-    this.thumbnail,
-  });
-
-  /// Renders a thumbnail image from the bytes of the frame if it's in UYVY format and stores it in the [thumbnail] property
-  ///
-  /// If [thumbnail] is already present it will not be rendered again and just returned as a [ui.Image].
-  Future<ui.Image?> thumbnailImage() {
-    final c = Completer<ui.Image?>();
-    if (format != NDIInputFormat.uyvy && format != NDIInputFormat.bgra) {
-      c.complete(null);
-      return c.future;
-    }
-    if (thumbnail == null) {
-      // allocate byte pointer with same length as bytes for srouce frame
-      Pointer<Uint8> pSrc = calloc.call<Uint8>(bytes.length);
-      // copy source bytes into pointer
-      pSrc.asTypedList(bytes.length).setAll(0, bytes);
-      // allocate byte pointer with dimensions of the thumbnail for thumbnail frame (*4 for RGBA)
-      Pointer<Uint8> pTn = calloc.call<Uint8>(160 * 90 * 4);
-      // create thumbnail from source in CUDA
-      //! replace with CPU/GPU compatible
-      switch (format) {
-        case NDIInputFormat.bgra:
-          pixconvertCUDA.thumbnailFromBgra(pSrc, width, height, pTn, 160, 90);
-          break;
-        case NDIInputFormat.uyvy:
-          pixconvertCUDA.thumbnailFromUyvy(pSrc, width, height, pTn, 160, 90);
-          break;
-        default:
-      }
-
-      // create ui.Image from rgba pointer
-      ui.decodeImageFromPixels(
-        pTn.asTypedList(160 * 90 * 4),
-        160,
-        90,
-        ui.PixelFormat.rgba8888,
-        (result) {
-          // store thumbnail bytes for later to prevent re-rendering
-          thumbnail = Uint8List.fromList(pTn.asTypedList(160 * 90 * 4));
-          // free all pointers (no memory leaks here)
-          calloc.free(pSrc);
-          calloc.free(pTn);
-          // return ui.Image of thumbnail
-          c.complete(result);
-        },
-      );
-    } else {
-      // if thumbnail bytes present just convert to ui.Image
-      ui.decodeImageFromPixels(thumbnail!, 160, 90, ui.PixelFormat.rgba8888, (result) {
-        // return ui.Image of thumbnail
-        c.complete(result);
-      });
-    }
-    // return intermediate future until completed above
-    return c.future;
-  }
-
-  /// Renders all frames necessary to draw the source and all scopes/waveforms
-  ///
-  /// provide desired width and height of the scopes
-  Future<NDIOutputFrame?> convertToScopes(int scopeWidth, int scopeHeight) {
-    final c = Completer<NDIOutputFrame?>();
-
-    // create all necessary pointers with desired dimesions *4 (4 Bytes RGBA)
-    Pointer<Uint8> pSrc = calloc.call<Uint8>(bytes.length);
-    Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
-    Pointer<Uint8> pWF = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
-    Pointer<Uint8> pWFRgb = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
-    Pointer<Uint8> pWFParade = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
-    Pointer<Uint8> pVScope = calloc.call<Uint8>(scopeHeight * scopeHeight * 4);
-    Pointer<Uint8> pFalseC = calloc.call<Uint8>(width * height * 4);
-
-    // copy source bytes into pointer
-    pSrc.asTypedList(bytes.length).setAll(0, bytes);
-
-    // use different convert method based on input frame format
-    switch (format) {
-      case NDIInputFormat.uyvy:
-        //! replace with CPU/GPU compatible
-        pixconvertCUDA.uyvyToScopes(
-            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
-        break;
-      case NDIInputFormat.bgra:
-        //! replace with CPU/GPU compatible
-        pixconvertCUDA.bgraToScopes(
-            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
-        break;
-      default:
-        c.complete(null);
-        return c.future;
-    }
-    // convert from rgba bytes in pointers to ui.Image then free the pointers
-    ui.decodeImageFromPixels(pRGBA.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888, (iRGBA) {
-      calloc.free(pRGBA);
-      ui.decodeImageFromPixels(
-          pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
-        calloc.free(pWF);
-        ui.decodeImageFromPixels(
-            pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-            (iWFRgb) {
-          calloc.free(pWFRgb);
-          ui.decodeImageFromPixels(
-              pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-              (iWFParade) {
-            calloc.free(pWFParade);
-            ui.decodeImageFromPixels(
-                pVScope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight, scopeHeight, ui.PixelFormat.rgba8888,
-                (iVScope) {
-              calloc.free(pVScope);
-              // return the finished frames
-              ui.decodeImageFromPixels(pFalseC.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888,
-                  (iFalseC) {
-                calloc.free(pFalseC);
-                c.complete(
-                  NDIOutputFrame(
-                    iRGBA: iRGBA,
-                    iWF: iWF,
-                    iWFRgb: iWFRgb,
-                    iWFParade: iWFParade,
-                    iVScope: iVScope,
-                    iFalseC: iFalseC,
-                  ),
-                );
-              });
-            });
-          });
-        });
-      });
-    });
-    // return intermediate future until completed above
-    return c.future;
-  }
-
-  /// Converts this to a json encodable map
-  ///
-  /// Get json String by using [json.encode(result)]
-  Map<String, dynamic> toJSON() {
-    return {
-      'timestamp': timestamp.millisecondsSinceEpoch,
-      'width': width,
-      'height': height,
-      'bytes': base64.encode(bytes),
-      'format': format.index,
-      'thumbnail': thumbnail != null ? base64.encode(thumbnail!) : null,
-    };
-  }
-
-  /// Creates instance from a json decoded map
-  factory SavedInputFrame.fromJSON(Map<String, dynamic> json) {
-    return SavedInputFrame(
-      bytes: json['bytes'] != null ? base64.decode(json['bytes']) : Uint8List.fromList([0]),
-      width: json['width'] ?? 0,
-      height: json['height'] ?? 0,
-      format: NDIInputFormat.values[json['format'] ?? 0],
-      timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] ?? 0),
-      thumbnail: json['thumbnail'] != null ? base64.decode(json['thumbnail']) : null,
-    );
-  }
 }
 
 class NDIAudioLevelFrame {

@@ -2,27 +2,19 @@ import 'dart:ffi';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:dart_discord_rpc/dart_discord_rpc.dart';
 import 'package:ffi/ffi.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/config.dart';
-import 'package:ndiscopes/models/buttonstyles.dart';
-import 'package:ndiscopes/models/colors.dart';
-import 'package:ndiscopes/models/textstyles.dart';
-import 'package:ndiscopes/providers/audiolevelprovider.dart';
-import 'package:ndiscopes/providers/frameprovider.dart';
-import 'package:ndiscopes/providers/maskprovider.dart';
-import 'package:ndiscopes/providers/scopesettingsprovider.dart';
+import 'package:ndiscopes/models/models.dart';
+import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/settings.dart';
 import 'package:ndiscopes/util/discordrpc.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
-import 'package:ndiscopes/widgets/audiometers.dart';
-import 'package:ndiscopes/widgets/framebrowser.dart';
-import 'package:ndiscopes/widgets/player.dart';
-import 'package:ndiscopes/widgets/scopes.dart';
-import 'package:ndiscopes/widgets/settings.dart';
-import 'package:ndiscopes/widgets/window.dart';
+import 'package:ndiscopes/widgets/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 late NDI ndi;
 
@@ -67,16 +59,25 @@ class Main extends StatefulWidget {
   State<Main> createState() => _MainState();
 }
 
-class _MainState extends State<Main> {
+class _MainState extends State<Main> with WindowListener {
   NDISource? selectedSource;
   bool refOpen = false;
   bool settingsOpen = false;
   bool portraitLayout = false;
+
   @override
   void initState() {
+    windowManager.addListener(this);
+    windowManager.setPreventClose(true).then((value) => setState(() {}));
     super.initState();
     checkGPU();
     loadSettings();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
   }
 
   void checkGPU() {
@@ -159,6 +160,56 @@ class _MainState extends State<Main> {
   }
 
   @override
+  void onWindowClose() {
+    ndi.dispose();
+    if (kDebugMode) {
+      print("NDI Destroyed");
+    }
+    windowManager.destroy();
+  }
+
+  void onSaveFrame() {
+    if (selectedSource == null) return;
+    ndi.getSingleFrame(
+      selectedSource!.source,
+      const Size(580, 256),
+      (frame) {
+        saveInputFrame(frame);
+      },
+      context.read<MaskProvider>().rect,
+      context.read<MaskProvider>().active,
+    );
+  }
+
+  void onSelectSource(int index) {
+    final pS = ndi.getSourceAt(index);
+
+    if (pS != null) {
+      ndi.stopGetFrames();
+      ndi.stopGetAudio();
+      selectedSource = NDISource(pS);
+      setState(() {});
+      ndi.getFrames(
+        selectedSource!.source,
+        const Size(580, 256),
+        (frame) => setState(
+          () => context.read<Frame>().updateImageFrame(frame),
+        ),
+        context.read<MaskProvider>().rect,
+        context.read<MaskProvider>().active,
+      );
+      ndi.getAudio(
+        pS,
+        (level) {
+          context.read<AudioLevel>().setLevels(level.channelLevels);
+        },
+        context.read<ScopeSettings>().audioOutputEnabled,
+      );
+    }
+    rpcUpdate(selectedSource?.name);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       double aspect = constraints.maxWidth / constraints.maxHeight;
@@ -185,41 +236,8 @@ class _MainState extends State<Main> {
                       Expanded(
                         child: RepaintBoundary(
                           child: FrameViewer(
-                            onSaveFrame: () {
-                              if (selectedSource == null) return;
-                              ndi.getSingleFrame(
-                                selectedSource!.source,
-                                const Size(580, 256),
-                                (frame) {
-                                  saveInputFrame(frame);
-                                },
-                                context.read<MaskProvider>().rect,
-                                context.read<MaskProvider>().active,
-                              );
-                            },
-                            onSelectSource: (index) {
-                              final pS = ndi.getSourceAt(index);
-
-                              if (pS != null) {
-                                ndi.stopGetFrames();
-                                ndi.stopGetAudio();
-                                selectedSource = NDISource(pS);
-                                setState(() {});
-                                ndi.getFrames(
-                                  selectedSource!.source,
-                                  const Size(580, 256),
-                                  (frame) => setState(
-                                    () => context.read<Frame>().updateImageFrame(frame),
-                                  ),
-                                  context.read<MaskProvider>().rect,
-                                  context.read<MaskProvider>().active,
-                                );
-                                ndi.getAudio(pS, (level) {
-                                  context.read<AudioLevel>().setLevels(level.channelLevels);
-                                });
-                              }
-                              rpcUpdate(selectedSource?.name);
-                            },
+                            onSaveFrame: () => onSaveFrame(),
+                            onSelectSource: (index) => onSelectSource(index),
                             onToggleFrameBrowser: (open) {
                               setState(() {
                                 refOpen = open;
@@ -250,12 +268,16 @@ class _MainState extends State<Main> {
                         duration: const Duration(milliseconds: 250),
                         width: settingsOpen ? 175 : 0,
                         curve: Curves.easeInOutQuad,
-                        child: const SingleChildScrollView(
+                        child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          physics: NeverScrollableScrollPhysics(),
+                          physics: const NeverScrollableScrollPhysics(),
                           child: SizedBox(
                             width: 175,
-                            child: Settings(),
+                            child: Settings(
+                              onToggleAudioOut: (enabled) {
+                                ndi.updateAudio(enabled);
+                              },
+                            ),
                           ),
                         ),
                       ),
