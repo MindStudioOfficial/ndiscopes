@@ -1,0 +1,8 @@
+export 'package:ndiscopes/widgets/audiometers.dart';
+export 'package:ndiscopes/widgets/customtooltip.dart';
+export 'package:ndiscopes/widgets/framebrowser.dart';
+export 'package:ndiscopes/widgets/player.dart';
+export 'package:ndiscopes/widgets/scopes.dart';
+export 'package:ndiscopes/widgets/settings.dart';
+export 'package:ndiscopes/widgets/versionchecker.dart';
+export 'package:ndiscopes/widgets/window.dart';

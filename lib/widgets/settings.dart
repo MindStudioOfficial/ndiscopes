@@ -92,6 +92,13 @@ class Settings extends StatelessWidget {
               scopeSettings.toggleAudioLevel(enable: v);
             },
           ),
+          CheckboxListTile(
+            title: Text("Output", style: tSmall),
+            value: scopeSettings.audioOutputEnabled,
+            onChanged: (v) {
+              scopeSettings.toggleAudioOutput(enable: v);
+            },
+          ),
           /*CheckboxListTile(
             title: Text("Backdrop", style: tSmall),
             value: scopeSettings.enableWVBackdrop,

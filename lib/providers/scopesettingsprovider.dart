@@ -9,6 +9,7 @@ class ScopeSettings with ChangeNotifier {
     bool? enableWFBackdrop,
     double? backdropOpacity,
     bool? audioLevelEnabled,
+    bool? audioOutputEnabled,
   }) {
     _vScopeScale = vScopeScale ?? _vScopeScale;
     _showWFScale = showWFScale ?? _showWFScale;
@@ -16,6 +17,7 @@ class ScopeSettings with ChangeNotifier {
     _enableWFBackdrop = enableWFBackdrop ?? _enableWFBackdrop;
     _backdropOpacity = backdropOpacity ?? _backdropOpacity;
     _audioLevelEnabled = audioLevelEnabled ?? _audioLevelEnabled;
+    _audioOutputEnabled = audioOutputEnabled ?? _audioOutputEnabled;
   }
 
   double _vScopeScale = 0.5;
@@ -24,6 +26,7 @@ class ScopeSettings with ChangeNotifier {
   bool _enableWFBackdrop = false;
   double _backdropOpacity = 0.3;
   bool _audioLevelEnabled = true;
+  bool _audioOutputEnabled = false;
 
   double get vScopeScale => _vScopeScale;
   bool get showWFScale => _showWFScale;
@@ -31,6 +34,7 @@ class ScopeSettings with ChangeNotifier {
   bool get enableWFBackdrop => _enableWFBackdrop;
   double get backdropOpacity => _backdropOpacity;
   bool get audioLevelEnabled => _audioLevelEnabled;
+  bool get audioOutputEnabled => _audioOutputEnabled;
 
   void updateVScopeScale(double scale) {
     _vScopeScale = scale;
@@ -62,6 +66,11 @@ class ScopeSettings with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleAudioOutput({bool? enable}) {
+    _audioOutputEnabled = enable ?? !_audioOutputEnabled;
+    notifyListeners();
+  }
+
   update(ScopeSettings n) {
     _backdropOpacity = n.backdropOpacity;
     _enableWFBackdrop = n.enableWFBackdrop;
@@ -69,6 +78,7 @@ class ScopeSettings with ChangeNotifier {
     _vScopeScale = n.vScopeScale;
     _wFScaleType = n.wFScaleType;
     _audioLevelEnabled = n.audioLevelEnabled;
+    _audioOutputEnabled = n.audioOutputEnabled;
     notifyListeners();
   }
 
@@ -80,6 +90,7 @@ class ScopeSettings with ChangeNotifier {
       vScopeScale: json["vScopeScale"],
       wfScaleType: WFScaleTypes.values.elementAt(json["wfScaleType"]),
       audioLevelEnabled: json["audioLevelEnabled"],
+      audioOutputEnabled: json["audioOutputEnabled"],
     );
   }
 
@@ -91,6 +102,7 @@ class ScopeSettings with ChangeNotifier {
       "vScopeScale": _vScopeScale,
       "wfScaleType": _wFScaleType.index,
       "audioLevelEnabled": _audioLevelEnabled,
+      "audioOutputEnabled": _audioOutputEnabled,
     };
   }
 
