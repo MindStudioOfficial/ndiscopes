@@ -1,13 +1,10 @@
-import 'dart:ffi';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:dart_discord_rpc/dart_discord_rpc.dart';
-import 'package:ffi/ffi.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:ndiscopes/config.dart';
 import 'package:ndiscopes/models/models.dart';
 import 'package:ndiscopes/providers/providers.dart';
+import 'package:ndiscopes/service/gfx/gfx.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/settings.dart';
 import 'package:ndiscopes/util/discordrpc.dart';
@@ -19,10 +16,9 @@ import 'package:window_manager/window_manager.dart';
 late NDI ndi;
 
 void main() {
-  DiscordRPC.initialize();
-  rpcInitialize();
-  Paint.enableDithering = true;
-  ndi = NDI();
+  // initialize components
+  init();
+
   runApp(
     MultiProvider(
       providers: [
@@ -52,6 +48,18 @@ void main() {
   });
 }
 
+void init() {
+  // initialize Discord Rich presence
+  DiscordRPC.initialize();
+  rpcInitialize();
+
+  // enable dithering for all painting (removes color banding)
+  Paint.enableDithering = true;
+
+  // initialize the ndi class
+  ndi = NDI();
+}
+
 class Main extends StatefulWidget {
   const Main({Key? key}) : super(key: key);
 
@@ -68,10 +76,17 @@ class _MainState extends State<Main> with WindowListener {
 
   @override
   void initState() {
+    // listen for window events
     windowManager.addListener(this);
+    // set to manually close the app in the onWindowClose handler
     windowManager.setPreventClose(true).then((value) => setState(() {}));
+
     super.initState();
-    checkGPU();
+
+    // check GPU version
+    checkGPU(context);
+
+    // load settings from file
     loadSettings();
   }
 
@@ -79,79 +94,6 @@ class _MainState extends State<Main> with WindowListener {
   void dispose() {
     windowManager.removeListener(this);
     super.dispose();
-  }
-
-  void checkGPU() {
-    final major = calloc<Int32>();
-    final minor = calloc<Int32>();
-    pixconvertCUDA.getDeviceProperties(major, minor);
-    // ignore: avoid_print
-    print("GPU version ${major.value}.${minor.value}");
-    if (major.value == 0) {
-      Future.delayed(const Duration(seconds: 1), () {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return SimpleDialog(
-              backgroundColor: cDialogBackground,
-              elevation: 0,
-              title: Text(
-                "Failed to check GPU version.",
-                style: tDefault,
-              ),
-              children: [
-                TextButton(
-                  style: bTextDefault,
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      "OK",
-                      style: tSmall,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      });
-    } else if (major.value < appConfig.minMajorCC) {
-      Future.delayed(const Duration(seconds: 1), () {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return SimpleDialog(
-              backgroundColor: cDialogBackground,
-              elevation: 0,
-              title: Text(
-                "Your GPU might not be supported",
-                style: tDefault,
-              ),
-              children: [
-                TextButton(
-                  style: bTextDefault,
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      "OK",
-                      style: tSmall,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      });
-    }
-    calloc.free(major);
-    calloc.free(minor);
   }
 
   loadSettings() {
