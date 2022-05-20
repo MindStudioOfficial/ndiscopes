@@ -39,6 +39,10 @@ class _FrameViewerState extends State<FrameViewer> {
   bool frameBrowserOpen = false;
   bool settingsOpen = false;
 
+  final ScrollController _buttonListScrollController = ScrollController();
+  final ScrollController _falseColorOuterScollController = ScrollController();
+  final ScrollController _falseColorInnerScollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +50,14 @@ class _FrameViewerState extends State<FrameViewer> {
     Future.delayed(const Duration(milliseconds: 50), () {
       context.read<MaskProvider>().updateRect(defaultMask());
     });
+  }
+
+  @override
+  void dispose() {
+    _buttonListScrollController.dispose();
+    _falseColorInnerScollController.dispose();
+    _falseColorOuterScollController.dispose();
+    super.dispose();
   }
 
   // construct default rectangle for mask
@@ -71,7 +83,7 @@ class _FrameViewerState extends State<FrameViewer> {
       children: [
         //* button sidebar
         SingleChildScrollView(
-          controller: ScrollController(),
+          controller: _buttonListScrollController,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.start,
@@ -303,13 +315,13 @@ class _FrameViewerState extends State<FrameViewer> {
           curve: Curves.easeInOut,
           width: frame.falseColorEnabled ? 75 : 0,
           child: SingleChildScrollView(
-            controller: ScrollController(),
+            controller: _falseColorOuterScollController,
             scrollDirection: Axis.horizontal,
             physics: const NeverScrollableScrollPhysics(),
             child: SizedBox(
               width: 75,
               child: SingleChildScrollView(
-                controller: ScrollController(),
+                controller: _falseColorInnerScollController,
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
                   child: ListView.builder(

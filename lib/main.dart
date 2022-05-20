@@ -74,6 +74,8 @@ class _MainState extends State<Main> with WindowListener {
   bool portraitLayout = false;
   bool shutdown = false;
 
+  final ScrollController _vScopeScroll = ScrollController();
+
   @override
   void initState() {
     // listen for window events
@@ -93,6 +95,8 @@ class _MainState extends State<Main> with WindowListener {
   @override
   void dispose() {
     windowManager.removeListener(this);
+
+    _vScopeScroll.dispose();
     super.dispose();
   }
 
@@ -245,7 +249,7 @@ class _MainState extends State<Main> with WindowListener {
                             ),
                             Expanded(
                               child: SingleChildScrollView(
-                                controller: ScrollController(),
+                                controller: _vScopeScroll,
                                 child: const VscopeV2(
                                   title: "UV Vectorscope",
                                 ),

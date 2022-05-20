@@ -4,15 +4,28 @@ import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'package:provider/provider.dart';
 
-class Settings extends StatelessWidget {
+class Settings extends StatefulWidget {
   final void Function(bool enabled) onToggleAudioOut;
   const Settings({Key? key, required this.onToggleAudioOut}) : super(key: key);
+
+  @override
+  State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  final ScrollController _settingsScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _settingsScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final scopeSettings = context.watch<ScopeSettings>();
     return SingleChildScrollView(
-      controller: ScrollController(),
+      controller: _settingsScrollController,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -98,7 +111,7 @@ class Settings extends StatelessWidget {
             value: scopeSettings.audioOutputEnabled,
             onChanged: (v) {
               scopeSettings.toggleAudioOutput(enable: v);
-              onToggleAudioOut(v ?? false);
+              widget.onToggleAudioOut(v ?? false);
             },
           ),
           /*CheckboxListTile(
