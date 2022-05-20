@@ -102,7 +102,7 @@ class _VersionCheckerState extends State<VersionChecker> {
               Ink(
                 child: InkWell(
                   onTap: () {
-                    urll.launch(releaseURL!);
+                    urll.launchUrl(Uri.parse(releaseURL!));
                   },
                   child: Text(
                     "Update Available! - $releaseVersion",

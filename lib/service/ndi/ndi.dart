@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:ffi/ffi.dart';
+import 'package:ffi/ffi.dart' as ffi;
 import 'package:flutter/foundation.dart';
 import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
 import 'dart:ui' as ui;
@@ -114,7 +114,7 @@ class NDI {
   /// Invoked by the isolate in [updateSources()] to get a pointer to the new available ndi sources
   static void _updateSourcePointer(_SMObject object) {
     // create settings pointer with options
-    Pointer<NDIlib_find_create_t> pCreateSettings = calloc.call<NDIlib_find_create_t>(1);
+    Pointer<NDIlib_find_create_t> pCreateSettings = ffi.calloc.call<NDIlib_find_create_t>(1);
     pCreateSettings.ref.show_local_sources = 1;
 
     NDIlib_find_instance_t pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
@@ -122,7 +122,7 @@ class NDI {
     // wait for 10s for new sources
     // if none detected send results to main thread
     if (!_ndi.NDIlib_find_wait_for_sources(pNDIfind, 10000)) {
-      calloc.free(pCreateSettings);
+      ffi.calloc.free(pCreateSettings);
       object.sendPort.send(<String, int>{
         "pSources": 0,
         "sourceCount": 0,
@@ -134,7 +134,7 @@ class NDI {
     sleep(const Duration(seconds: 1));
 
     // retrieve all found sources from the sdk
-    final pSourceCount = calloc.call<Uint32>(1);
+    final pSourceCount = ffi.calloc.call<Uint32>(1);
     final pSources = _ndi.NDIlib_find_get_current_sources(pNDIfind, pSourceCount);
 
     // send back results and pointer address to later free it
@@ -142,8 +142,8 @@ class NDI {
       "pSources": pSources.address,
       "sourceCount": pSourceCount.value,
     });
-    calloc.free(pCreateSettings);
-    calloc.free(pSourceCount);
+    ffi.calloc.free(pCreateSettings);
+    ffi.calloc.free(pSourceCount);
   }
 
   ReceivePort? _fReceivePort;
@@ -171,7 +171,7 @@ class NDI {
   /// A stream yielding the NDI Frames converted to an ui.Image.
   Future<void> getFrames(
     Pointer<NDIlib_source_t> source,
-    Size scopeSize,
+    ui.Size scopeSize,
     Function(NDIOutputFrame frame) onFrame,
     Rect mask,
     bool maskActive,
@@ -209,24 +209,24 @@ class NDI {
             int scopeHeight = data["scopeHeight"]!;
 
             ui.decodeImageFromPixels(pxs, data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (iRGBA) {
-              calloc.free(pRGBA);
+              ffi.calloc.free(pRGBA);
               ui.decodeImageFromPixels(
                   pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
                   (iWF) {
-                calloc.free(pWF);
+                ffi.calloc.free(pWF);
                 ui.decodeImageFromPixels(
                     pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
                     (iWFRgb) {
-                  calloc.free(pWFRgb);
+                  ffi.calloc.free(pWFRgb);
                   ui.decodeImageFromPixels(pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight,
                       ui.PixelFormat.rgba8888, (iWFParade) {
-                    calloc.free(pWFParade);
+                    ffi.calloc.free(pWFParade);
                     ui.decodeImageFromPixels(pVscope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight,
                         scopeHeight, ui.PixelFormat.rgba8888, (iVScope) {
-                      calloc.free(pVscope);
+                      ffi.calloc.free(pVscope);
                       ui.decodeImageFromPixels(pFalseC.asTypedList(data["width"]! * data["height"]! * 4),
                           data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (iFalseC) {
-                        calloc.free(pFalseC);
+                        ffi.calloc.free(pFalseC);
                         onFrame(
                           NDIOutputFrame(
                             iRGBA: iRGBA,
@@ -327,7 +327,7 @@ class NDI {
     // connect to the source
     _ndi.NDIlib_recv_connect(pNDIrecv, pSource);
     // allocate the NDI video frame
-    Pointer<NDIlib_video_frame_v2_t> pVideoFrame = calloc<NDIlib_video_frame_v2_t>();
+    Pointer<NDIlib_video_frame_v2_t> pVideoFrame = ffi.calloc<NDIlib_video_frame_v2_t>();
 
     // initialize variables that are reused each loop
     int width = 0;
@@ -347,14 +347,15 @@ class NDI {
       width = pVideoFrame.ref.xres;
       height = pVideoFrame.ref.yres;
       // allocate memory for the rgba frame and all the scopes/waveforms
-      Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
-      Pointer<Uint8> pWF = calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
-      Pointer<Uint8> pWFRgb = calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
+      Pointer<Uint8> pRGBA = ffi.calloc.call<Uint8>(width * height * 4);
+      Pointer<Uint8> pWF = ffi.calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
+      Pointer<Uint8> pWFRgb =
+          ffi.calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
       Pointer<Uint8> pWFParade =
-          calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
+          ffi.calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
       Pointer<Uint8> pVScope =
-          calloc.call<Uint8>(object.scopeSize.height.toInt() * object.scopeSize.height.toInt() * 4);
-      Pointer<Uint8> pFalseC = calloc.call<Uint8>(width * height * 4);
+          ffi.calloc.call<Uint8>(object.scopeSize.height.toInt() * object.scopeSize.height.toInt() * 4);
+      Pointer<Uint8> pFalseC = ffi.calloc.call<Uint8>(width * height * 4);
 
       // convert to rgba pointers based on the format
       switch (pVideoFrame.ref.FourCC) {
@@ -362,7 +363,7 @@ class NDI {
           // apply mask if active to source to reflect it on all scopes
           if (maskActive) {
             //! replace with CPU/GPU compatible
-            pixconvertCUDA.rectMaskFrame(Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 1);
+            pixconvertCUDA.rectMaskFrame(ui.Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 1);
           }
           //! replace with CPU/GPU compatible
           pixconvertCUDA.uyvyToScopes(
@@ -383,7 +384,7 @@ class NDI {
           // apply mask if active to source to reflect it on all scopes
           if (maskActive) {
             //! replace with CPU/GPU compatible
-            pixconvertCUDA.rectMaskFrame(Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 2);
+            pixconvertCUDA.rectMaskFrame(ui.Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 2);
           }
           //! replace with CPU/GPU compatible
           pixconvertCUDA.bgraToScopes(
@@ -432,7 +433,7 @@ class NDI {
   /// the same as getFrames but doesn't loop so only returns one frame as SavedInputFrame to be stored in a file
   Future<void> getSingleFrame(
     Pointer<NDIlib_source_t> pSource,
-    Size scopeSize,
+    ui.Size scopeSize,
     Function(SavedInputFrame frame) onFrameReady,
     Rect mask,
     bool maskActive,
@@ -481,7 +482,7 @@ class NDI {
     Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>();
     _ndi.NDIlib_recv_connect(pNDIrecv, pSource);
 
-    Pointer<NDIlib_video_frame_v2_t> pVideoFrame = calloc<NDIlib_video_frame_v2_t>();
+    Pointer<NDIlib_video_frame_v2_t> pVideoFrame = ffi.calloc<NDIlib_video_frame_v2_t>();
 
     int width = 0;
     int height = 0;
@@ -593,7 +594,7 @@ class NDI {
     //! no need since already connected by video frame isolate
     //_ndi.NDIlib_recv_connect(pNDIrecv, pSource);
 
-    Pointer<NDIlib_audio_frame_v2_t> pAudioFrame = calloc<NDIlib_audio_frame_v2_t>();
+    Pointer<NDIlib_audio_frame_v2_t> pAudioFrame = ffi.calloc<NDIlib_audio_frame_v2_t>();
 
     int frame = -1;
 
@@ -619,9 +620,9 @@ class NDI {
       if (outputEnabled) {
         // create pointer for 16Bit PCM Audio data
         Pointer<NDIlib_audio_frame_interleaved_16s_t> p16AudioFrame =
-            calloc.call<NDIlib_audio_frame_interleaved_16s_t>();
+            ffi.calloc.call<NDIlib_audio_frame_interleaved_16s_t>();
         p16AudioFrame.ref.reference_level = 0;
-        p16AudioFrame.ref.p_data = calloc.call<Int16>(samples * channels);
+        p16AudioFrame.ref.p_data = ffi.calloc.call<Int16>(samples * channels);
 
         // convert 32 Bit Audio to 16Bit audio
         _ndi.NDIlib_util_audio_to_interleaved_16s_v2(pAudioFrame, p16AudioFrame);
@@ -635,8 +636,8 @@ class NDI {
         player.play(buffer);
 
         // free the generated 16Bit audio
-        calloc.free(pData);
-        calloc.free(p16AudioFrame);
+        ffi.calloc.free(pData);
+        ffi.calloc.free(p16AudioFrame);
       }
 
       // send audio levels to UI
@@ -675,7 +676,7 @@ class NDI {
     // destroy recv instance
     _ndi.NDIlib_recv_destroy(_pRecv);
     // free sources pointer
-    if (_pSources != null && _pSources != nullptr) calloc.free(_pSources!);
+    if (_pSources != null && _pSources != nullptr) ffi.calloc.free(_pSources!);
     _ndi.NDIlib_destroy();
     _printNDI("Library successfully disposed");
   }
@@ -701,7 +702,7 @@ class _FMObject {
   int pSourceA;
   int pRecvA;
   SendPort sendPort;
-  Size scopeSize;
+  ui.Size scopeSize;
   Rect mask;
   bool maskActive;
   _FMObject(this.pSourceA, this.pRecvA, this.sendPort, this.scopeSize, this.mask, this.maskActive);

@@ -12,7 +12,7 @@
 #define EXTERNC
 #endif
 
-#define THREADS 256
+#define THREADS 192
 
 typedef struct Color8
 {
@@ -27,12 +27,12 @@ __device__ Color8_t falseColors[] = {
     {133, 133, 133, 255}, // 24 bis 43
     {98, 185, 70, 255},   // 43 bis 47
     {159, 159, 159, 255}, // 47 bis 54
-    {236, 181, 188, 255},  // 54 bis 58
+    {236, 181, 188, 255}, // 54 bis 58
     {209, 209, 209, 255}, // 58 bis 77
     {240, 231, 140, 255}, // 77 bis 84
-    {255, 255, 1, 255},  // 84 bis 93
-    {255, 139, 0, 255},  // 93 bis 100
-    {255, 0, 0, 255},    // 100 bis 109
+    {255, 255, 1, 255},   // 84 bis 93
+    {255, 139, 0, 255},   // 93 bis 100
+    {255, 0, 0, 255},     // 100 bis 109
 };
 
 __device__ Color8_t getFalseColor(int y)
@@ -441,7 +441,7 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     d_falceC[pixb + 3] = a;
 }
 
-EXTERNC void bgraToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *dest, int scopeWidth, int scopeHeight, uint8_t *wf, uint8_t *wfRgb, uint8_t *wfParade, uint8_t *vScope,uint8_t *falseC)
+EXTERNC void bgraToScopes(int srcWidth, int srcHeight, uint8_t *src, uint8_t *dest, int scopeWidth, int scopeHeight, uint8_t *wf, uint8_t *wfRgb, uint8_t *wfParade, uint8_t *vScope, uint8_t *falseC)
 {
     int pixcount = srcWidth * srcHeight;
     int srcSize = 4 * pixcount;
@@ -691,13 +691,15 @@ EXTERNC void thumbnailFromBgra(uint8_t *src, int srcWidth, int srcHeight, uint8_
 
 int main()
 {
-    int width = 1920;
-    int height = 1080;
+    int width = 3840;
+    int height = 2160;
     uint8_t *pUYVY = (uint8_t *)calloc(width * height * 2, sizeof(uint8_t));
     memset(pUYVY, 200, width * height * 2);
 
     uint8_t *pRGBA = (uint8_t *)calloc(width * height * 4, sizeof(uint8_t));
     memset(pRGBA, 128, width * height * 4);
+
+    uint8_t *pFColor = (uint8_t *)calloc(width * height * 4, sizeof(uint8_t));
 
     int wfWidth = 580;
     int wfHeight = 256;
@@ -705,7 +707,8 @@ int main()
     uint8_t *pWFRgb = (uint8_t *)calloc(wfHeight * wfWidth * 4, sizeof(uint8_t));
     uint8_t *pWFParade = (uint8_t *)calloc(wfHeight * wfWidth * 4, sizeof(uint8_t));
     uint8_t *pvScope = (uint8_t *)calloc(wfHeight * wfHeight * 4, sizeof(uint8_t));
-    // uyvyToScopes(width, height, pUYVY, pRGBA, wfWidth, wfHeight, pWF, pWFRgb, pWFParade, pvScope);
+    uyvyToScopes(width, height, pUYVY, pRGBA, wfWidth, wfHeight, pWF, pWFRgb, pWFParade, pvScope, pFColor);
+    printf("Done %d",pRGBA[0]);
 
     free(pUYVY);
     free(pRGBA);
@@ -713,4 +716,5 @@ int main()
     free(pWFRgb);
     free(pWFParade);
     free(pvScope);
+    free(pFColor);
 }

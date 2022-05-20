@@ -47,7 +47,12 @@ app.*.map.json
 /android/app/release
 
 bin/src/initcomp.bat
+bin/src/initcomp22.bat
 .VSCodeCounter
 bin/src/compile.bat
+bin/src/compileExe.bat
+bin/pixconvert_cu.lib
+bin/pixconvert_cu.exp
+bin/pixconvert_cu.exe
 
 bin/Processing.NDI.Lib.x64.dll
