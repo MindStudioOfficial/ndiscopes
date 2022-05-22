@@ -180,85 +180,17 @@ class NDI {
     _fReceivePort = ReceivePort();
 
     // create the listener before starting the isolate to prevent missing the first messages
+
     _fReceivePort!.listen(
       (data) {
-        if (data is Map<String, int>) {
-          // check for data integrity and retreive pointers to frames from their addresses
-          if (data["pRGBA"] != null &&
-              data["width"] != null &&
-              data["height"] != null &&
-              data["pWF"] != null &&
-              data["pWFRgb"] != null &&
-              data["pWFParade"] != null &&
-              data["pVScope"] != null &&
-              data["pFalseC"] != null &&
-              data["scopeWidth"] != null &&
-              data["scopeHeight"] != null) {
-            Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]!);
-            Pointer<Uint8> pWF = Pointer.fromAddress(data["pWF"]!);
-            Pointer<Uint8> pWFRgb = Pointer.fromAddress(data["pWFRgb"]!);
-            Pointer<Uint8> pWFParade = Pointer.fromAddress(data["pWFParade"]!);
-            Pointer<Uint8> pVscope = Pointer.fromAddress(data["pVScope"]!);
-            Pointer<Uint8> pFalseC = Pointer.fromAddress(data["pFalseC"]!);
-
-            // convert every pointer to a Uint8List and convert that with wisth and height to a ui.Image
-            // then free the pointers immediatly
-
-            Uint8List pxs = pRGBA.asTypedList(data["width"]! * data["height"]! * 4);
-            int scopeWidth = data["scopeWidth"]!;
-            int scopeHeight = data["scopeHeight"]!;
-
-            ui.decodeImageFromPixels(pxs, data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (iRGBA) {
-              ffi.calloc.free(pRGBA);
-              ui.decodeImageFromPixels(
-                  pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-                  (iWF) {
-                ffi.calloc.free(pWF);
-                ui.decodeImageFromPixels(
-                    pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-                    (iWFRgb) {
-                  ffi.calloc.free(pWFRgb);
-                  ui.decodeImageFromPixels(pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight,
-                      ui.PixelFormat.rgba8888, (iWFParade) {
-                    ffi.calloc.free(pWFParade);
-                    ui.decodeImageFromPixels(pVscope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight,
-                        scopeHeight, ui.PixelFormat.rgba8888, (iVScope) {
-                      ffi.calloc.free(pVscope);
-                      ui.decodeImageFromPixels(pFalseC.asTypedList(data["width"]! * data["height"]! * 4),
-                          data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (iFalseC) {
-                        ffi.calloc.free(pFalseC);
-                        onFrame(
-                          NDIOutputFrame(
-                            iRGBA: iRGBA,
-                            iWF: iWF,
-                            iWFRgb: iWFRgb,
-                            iWFParade: iWFParade,
-                            iVScope: iVScope,
-                            iFalseC: iFalseC,
-                          ),
-                        );
-                      });
-                    });
-                  });
-                });
-              });
-            });
-          }
-        }
-        // if the isolate send us its sendport for bidirectional communication store its reference
-        // used for updating the mask inside the receiver thread
-        if (data is SendPort) {
-          _fIsoSendport = data;
-        }
-        if (data is String) {
-          if (data == "ended") _killFrameIsolate();
-        }
+        listenCallback(data, onFrame);
       },
       onDone: () {
         // complete the future once the Isolate has returned and receiving has stopped
         completer.complete();
       },
     );
+
     // create the isolate that continously receives NDI frames and finishes once stopGetFrames() is called
     _fIsolate = await Isolate.spawn(
       _getFrames,
@@ -267,6 +199,82 @@ class NDI {
     );
     // return intermediate future until receiving has ended
     return completer.future;
+  }
+
+  void listenCallback(dynamic data, Function(NDIOutputFrame frame) onFrame) {
+    if (data is Map<String, int>) {
+      // check for data integrity and retreive pointers to frames from their addresses
+      if (data["pRGBA"] != null &&
+          data["width"] != null &&
+          data["height"] != null &&
+          data["pWF"] != null &&
+          data["pWFRgb"] != null &&
+          data["pWFParade"] != null &&
+          data["pVScope"] != null &&
+          data["pFalseC"] != null &&
+          data["scopeWidth"] != null &&
+          data["scopeHeight"] != null) {
+        _fIsoSendport?.send("pause");
+        Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]!);
+        Pointer<Uint8> pWF = Pointer.fromAddress(data["pWF"]!);
+        Pointer<Uint8> pWFRgb = Pointer.fromAddress(data["pWFRgb"]!);
+        Pointer<Uint8> pWFParade = Pointer.fromAddress(data["pWFParade"]!);
+        Pointer<Uint8> pVscope = Pointer.fromAddress(data["pVScope"]!);
+        Pointer<Uint8> pFalseC = Pointer.fromAddress(data["pFalseC"]!);
+
+        // convert every pointer to a Uint8List and convert that with wisth and height to a ui.Image
+        // then free the pointers immediatly
+
+        Uint8List pxs = pRGBA.asTypedList(data["width"]! * data["height"]! * 4);
+        int scopeWidth = data["scopeWidth"]!;
+        int scopeHeight = data["scopeHeight"]!;
+
+        ui.decodeImageFromPixels(pxs, data["width"]!, data["height"]!, ui.PixelFormat.rgba8888, (iRGBA) {
+          ffi.calloc.free(pRGBA);
+          ui.decodeImageFromPixels(
+              pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
+            ffi.calloc.free(pWF);
+            ui.decodeImageFromPixels(
+                pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
+                (iWFRgb) {
+              ffi.calloc.free(pWFRgb);
+              ui.decodeImageFromPixels(
+                  pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
+                  (iWFParade) {
+                ffi.calloc.free(pWFParade);
+                ui.decodeImageFromPixels(pVscope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight, scopeHeight,
+                    ui.PixelFormat.rgba8888, (iVScope) {
+                  ffi.calloc.free(pVscope);
+                  ui.decodeImageFromPixels(pFalseC.asTypedList(data["width"]! * data["height"]! * 4), data["width"]!,
+                      data["height"]!, ui.PixelFormat.rgba8888, (iFalseC) {
+                    ffi.calloc.free(pFalseC);
+                    onFrame(
+                      NDIOutputFrame(
+                        iRGBA: iRGBA,
+                        iWF: iWF,
+                        iWFRgb: iWFRgb,
+                        iWFParade: iWFParade,
+                        iVScope: iVScope,
+                        iFalseC: iFalseC,
+                      ),
+                    );
+                    _fIsoSendport?.send("resume");
+                  });
+                });
+              });
+            });
+          });
+        });
+      }
+    }
+    // if the isolate send us its sendport for bidirectional communication store its reference
+    // used for updating the mask inside the receiver thread
+    if (data is SendPort) {
+      _fIsoSendport = data;
+    }
+    if (data is String) {
+      if (data == "ended") _killFrameIsolate();
+    }
   }
 
   /// stops the receiving thread and closes communication
@@ -292,6 +300,7 @@ class NDI {
     Rect mask = object.mask;
     bool maskActive = object.maskActive;
     bool end = false;
+    bool pause = false;
     // send back the sendport for bidirectional communication
     object.sendPort.send(rP.sendPort);
     // listen for incoming messages from the main thread
@@ -313,6 +322,8 @@ class NDI {
         }
         if (message is String) {
           if (message == "end") end = true;
+          if (message == "pause") pause = true;
+          if (message == "resume") pause = false;
         }
       },
       onDone: () {},
@@ -339,7 +350,7 @@ class NDI {
     while (!end) {
       // give the async listener time to process incoming messages from main thread by interrupting the synchronous code
       await Future.delayed(Duration.zero);
-
+      if (pause) continue;
       // get the frame type -> NDIlib_frame_type_e
       frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
       // ignore the frame if it is not a video frame
@@ -408,6 +419,7 @@ class NDI {
       _ndi.NDIlib_recv_free_video_v2(pNDIrecv, pVideoFrame);
 
       // send results back to main thread that will free the rgba pointers
+
       object.sendPort.send(<String, int>{
         "width": width,
         "height": height,
