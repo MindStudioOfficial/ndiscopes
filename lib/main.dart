@@ -114,7 +114,7 @@ class _MainState extends State<Main> with WindowListener {
       shutdown = true;
     });
     await ndi.dispose();
-    windowManager.destroy();
+    await windowManager.destroy();
   }
 
   void onSaveFrame() {
@@ -166,13 +166,18 @@ class _MainState extends State<Main> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    final frame = context.watch<Frame>();
+    final settings = context.watch<ScopeSettings>();
+
     return LayoutBuilder(builder: (context, constraints) {
       double aspect = constraints.maxWidth / constraints.maxHeight;
       portraitLayout = aspect < 1.3;
       int scopesCountX = portraitLayout ? 2 : 3;
       double width = constraints.maxWidth;
-      if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout)
+      if (settings.audioLevelEnabled && !portraitLayout) {
         width -= 125;
+      }
+
       if (!shutdown) {
         return Column(
           mainAxisSize: MainAxisSize.max,
@@ -286,8 +291,8 @@ class _MainState extends State<Main> with WindowListener {
                           width: width / scopesCountX,
                           child: ScopeV2(
                             title: "Luma Waveform",
-                            img: context.watch<Frame>().imageFrame?.iWF,
-                            ovl: context.watch<Frame>().overlayFrame?.iWF,
+                            img: frame.imageFrame?.iWF,
+                            ovl: frame.overlayFrame?.iWF,
                             isParade: false,
                           ),
                         ),
@@ -295,8 +300,8 @@ class _MainState extends State<Main> with WindowListener {
                           width: width / scopesCountX,
                           child: ScopeV2(
                             title: "RGB Waveform",
-                            img: context.watch<Frame>().imageFrame?.iWFRgb,
-                            ovl: context.watch<Frame>().overlayFrame?.iWFRgb,
+                            img: frame.imageFrame?.iWFRgb,
+                            ovl: frame.overlayFrame?.iWFRgb,
                             isParade: false,
                           ),
                         ),
@@ -305,16 +310,12 @@ class _MainState extends State<Main> with WindowListener {
                             width: width / scopesCountX,
                             child: ScopeV2(
                               title: "RGB Parade",
-                              img: context.watch<Frame>().imageFrame?.iWFParade,
-                              ovl: context
-                                  .watch<Frame>()
-                                  .overlayFrame
-                                  ?.iWFParade,
+                              img: frame.imageFrame?.iWFParade,
+                              ovl: frame.overlayFrame?.iWFParade,
                               isParade: true,
                             ),
                           ),
-                        if (context.watch<ScopeSettings>().audioLevelEnabled &&
-                            !portraitLayout)
+                        if (settings.audioLevelEnabled && !portraitLayout)
                           const AudioMeters(),
                       ],
                     ),
@@ -328,11 +329,8 @@ class _MainState extends State<Main> with WindowListener {
                             width: width / scopesCountX,
                             child: ScopeV2(
                               title: "RGB Parade",
-                              img: context.watch<Frame>().imageFrame?.iWFParade,
-                              ovl: context
-                                  .watch<Frame>()
-                                  .overlayFrame
-                                  ?.iWFParade,
+                              img: frame.imageFrame?.iWFParade,
+                              ovl: frame.overlayFrame?.iWFParade,
                               isParade: true,
                             ),
                           ),
@@ -342,8 +340,7 @@ class _MainState extends State<Main> with WindowListener {
                               title: "UV Vectorscope",
                             ),
                           ),
-                          if (context.watch<ScopeSettings>().audioLevelEnabled)
-                            const AudioMeters(),
+                          if (settings.audioLevelEnabled) const AudioMeters(),
                         ],
                       ),
                     ),
