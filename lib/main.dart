@@ -26,11 +26,13 @@ void main() {
         ChangeNotifierProvider(create: (_) => MaskProvider()),
         ChangeNotifierProvider(create: (_) => ScopeSettings()),
         ChangeNotifierProvider(create: (_) => AudioLevel()),
+        ChangeNotifierProvider(create: (_) => Statistics()),
       ],
       child: MaterialApp(
-        theme: ThemeData(unselectedWidgetColor: cHighlight, toggleableActiveColor: cHighlight),
-        scrollBehavior:
-            const MaterialScrollBehavior().copyWith(dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch}),
+        theme: thDefault,
+        scrollBehavior: const MaterialScrollBehavior().copyWith(
+          dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch},
+        ),
         debugShowCheckedModeBanner: false,
         home: Scaffold(
           backgroundColor: cAppBackground,
@@ -139,8 +141,14 @@ class _MainState extends State<Main> with WindowListener {
       ndi.getFrames(
         selectedSource!.source,
         const Size(580, 256),
-        (frame) => setState(
-          () => context.read<Frame>().updateImageFrame(frame),
+        (frame, rate, delay) => setState(
+          () {
+            context.read<Frame>().updateImageFrame(frame);
+            final stats = context.read<Statistics>();
+            stats.updateFrameRate(rate);
+            stats.updateRenderDelay(delay);
+            stats.calculateRenderFrameRate();
+          },
         ),
         context.read<MaskProvider>().rect,
         context.read<MaskProvider>().active,
@@ -163,7 +171,8 @@ class _MainState extends State<Main> with WindowListener {
       portraitLayout = aspect < 1.3;
       int scopesCountX = portraitLayout ? 2 : 3;
       double width = constraints.maxWidth;
-      if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) width -= 125;
+      if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout)
+        width -= 125;
       if (!shutdown) {
         return Column(
           mainAxisSize: MainAxisSize.max,
@@ -297,11 +306,16 @@ class _MainState extends State<Main> with WindowListener {
                             child: ScopeV2(
                               title: "RGB Parade",
                               img: context.watch<Frame>().imageFrame?.iWFParade,
-                              ovl: context.watch<Frame>().overlayFrame?.iWFParade,
+                              ovl: context
+                                  .watch<Frame>()
+                                  .overlayFrame
+                                  ?.iWFParade,
                               isParade: true,
                             ),
                           ),
-                        if (context.watch<ScopeSettings>().audioLevelEnabled && !portraitLayout) const AudioMeters(),
+                        if (context.watch<ScopeSettings>().audioLevelEnabled &&
+                            !portraitLayout)
+                          const AudioMeters(),
                       ],
                     ),
                   ),
@@ -315,7 +329,10 @@ class _MainState extends State<Main> with WindowListener {
                             child: ScopeV2(
                               title: "RGB Parade",
                               img: context.watch<Frame>().imageFrame?.iWFParade,
-                              ovl: context.watch<Frame>().overlayFrame?.iWFParade,
+                              ovl: context
+                                  .watch<Frame>()
+                                  .overlayFrame
+                                  ?.iWFParade,
                               isParade: true,
                             ),
                           ),
@@ -325,7 +342,8 @@ class _MainState extends State<Main> with WindowListener {
                               title: "UV Vectorscope",
                             ),
                           ),
-                          if (context.watch<ScopeSettings>().audioLevelEnabled) const AudioMeters(),
+                          if (context.watch<ScopeSettings>().audioLevelEnabled)
+                            const AudioMeters(),
                         ],
                       ),
                     ),

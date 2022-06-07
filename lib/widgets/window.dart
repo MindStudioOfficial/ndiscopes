@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:ndiscopes/models/colors.dart';
-import 'package:ndiscopes/providers/frameprovider.dart';
+import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/widgets/versionchecker.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +24,7 @@ class WindowTitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final frame = context.watch<Frame>();
+    final stats = context.watch<Statistics>();
     return Container(
       width: MediaQuery.of(context).size.width,
       height: 32.0,
@@ -36,9 +37,10 @@ class WindowTitleBar extends StatelessWidget {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Text(
-                    "NDI Scopes by MindStudio  -  $sourceName ${frame.imageFrame != null ? frame.imageFrame!.iRGBA.width.toString() + " x " + frame.imageFrame!.iRGBA.height.toString() : ""}",
+                    "NDI Scopes by MindStudio  -  $sourceName ${frame.imageFrame != null ? frame.imageFrame!.iRGBA.width.toString() + " x " + frame.imageFrame!.iRGBA.height.toString() : ""} ${stats.renderFrameRate.clamp(0, stats.frameRate).toStringAsFixed(1)}/${stats.frameRate.toStringAsFixed(1)}fps ${(stats.renderDelay.inMicroseconds / 1000).toStringAsFixed(2)}ms",
                     style: TextStyle(color: Colors.white.withOpacity(.2)),
                     overflow: TextOverflow.visible,
                     maxLines: 1,
