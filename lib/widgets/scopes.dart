@@ -427,3 +427,49 @@ class VscopeV2 extends StatelessWidget {
     );
   }
 }
+
+class Scope extends StatelessWidget {
+  final ScopeTypes type;
+  const Scope({
+    Key? key,
+    required this.type,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final f = context.watch<Frame>();
+    ui.Image? img;
+    ui.Image? ovl;
+    bool parade = false;
+    switch (type) {
+      case ScopeTypes.histogram:
+        img = f.imageFrame?.iWF;
+        ovl = f.overlayFrame?.iWF;
+        break;
+      case ScopeTypes.luma:
+        img = f.imageFrame?.iWF;
+        ovl = f.overlayFrame?.iWF;
+        break;
+      case ScopeTypes.parade:
+        img = f.imageFrame?.iWFParade;
+        ovl = f.overlayFrame?.iWFParade;
+        parade = true;
+        break;
+      case ScopeTypes.rgb:
+        img = f.imageFrame?.iWFRgb;
+        ovl = f.overlayFrame?.iWFRgb;
+        break;
+
+      default:
+        img = f.imageFrame?.iWF;
+        ovl = f.overlayFrame?.iWF;
+        break;
+    }
+    return ScopeV2(
+      img: img,
+      ovl: ovl,
+      isParade: parade,
+      title: scopeTypeNames[type] ?? "Unknown",
+    );
+  }
+}

@@ -289,34 +289,24 @@ class _MainState extends State<Main> with WindowListener {
                       children: [
                         SizedBox(
                           width: width / scopesCountX,
-                          child: ScopeV2(
-                            title: "Luma Waveform",
-                            img: frame.imageFrame?.iWF,
-                            ovl: frame.overlayFrame?.iWF,
-                            isParade: false,
+                          child: Scope(
+                            type: settings.scopeLayout[0],
                           ),
                         ),
                         SizedBox(
                           width: width / scopesCountX,
-                          child: ScopeV2(
-                            title: "RGB Waveform",
-                            img: frame.imageFrame?.iWFRgb,
-                            ovl: frame.overlayFrame?.iWFRgb,
-                            isParade: false,
+                          child: Scope(
+                            type: settings.scopeLayout[1],
                           ),
                         ),
                         if (!portraitLayout)
                           SizedBox(
                             width: width / scopesCountX,
-                            child: ScopeV2(
-                              title: "RGB Parade",
-                              img: frame.imageFrame?.iWFParade,
-                              ovl: frame.overlayFrame?.iWFParade,
-                              isParade: true,
+                            child: Scope(
+                              type: settings.scopeLayout[2],
                             ),
                           ),
-                        if (settings.audioLevelEnabled && !portraitLayout)
-                          const AudioMeters(),
+                        if (settings.audioLevelEnabled && !portraitLayout) const AudioMeters(),
                       ],
                     ),
                   ),
@@ -327,11 +317,8 @@ class _MainState extends State<Main> with WindowListener {
                         children: [
                           SizedBox(
                             width: width / scopesCountX,
-                            child: ScopeV2(
-                              title: "RGB Parade",
-                              img: frame.imageFrame?.iWFParade,
-                              ovl: frame.overlayFrame?.iWFParade,
-                              isParade: true,
+                            child: Scope(
+                              type: settings.scopeLayout[2],
                             ),
                           ),
                           SizedBox(

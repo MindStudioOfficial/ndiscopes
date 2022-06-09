@@ -10,6 +10,7 @@ class ScopeSettings with ChangeNotifier {
     double? backdropOpacity,
     bool? audioLevelEnabled,
     bool? audioOutputEnabled,
+    List<ScopeTypes>? scopeLayout,
   }) {
     _vScopeScale = vScopeScale ?? _vScopeScale;
     _showWFScale = showWFScale ?? _showWFScale;
@@ -18,6 +19,7 @@ class ScopeSettings with ChangeNotifier {
     _backdropOpacity = backdropOpacity ?? _backdropOpacity;
     _audioLevelEnabled = audioLevelEnabled ?? _audioLevelEnabled;
     _audioOutputEnabled = audioOutputEnabled ?? _audioOutputEnabled;
+    _scopeLayout = scopeLayout ?? _scopeLayout;
   }
 
   double _vScopeScale = 0.5;
@@ -27,6 +29,10 @@ class ScopeSettings with ChangeNotifier {
   double _backdropOpacity = 0.3;
   bool _audioLevelEnabled = true;
   bool _audioOutputEnabled = false;
+  List<ScopeTypes> _scopeLayout = List.from(
+    [ScopeTypes.luma, ScopeTypes.rgb, ScopeTypes.parade],
+    growable: false,
+  );
 
   double get vScopeScale => _vScopeScale;
   bool get showWFScale => _showWFScale;
@@ -35,6 +41,7 @@ class ScopeSettings with ChangeNotifier {
   double get backdropOpacity => _backdropOpacity;
   bool get audioLevelEnabled => _audioLevelEnabled;
   bool get audioOutputEnabled => _audioOutputEnabled;
+  List<ScopeTypes> get scopeLayout => _scopeLayout;
 
   void updateVScopeScale(double scale) {
     _vScopeScale = scale;
@@ -71,6 +78,12 @@ class ScopeSettings with ChangeNotifier {
     notifyListeners();
   }
 
+  void updateScopeLayout(int index, ScopeTypes type) {
+    if (index >= _scopeLayout.length || index < 0) return;
+    _scopeLayout[index] = type;
+    notifyListeners();
+  }
+
   update(ScopeSettings n) {
     _backdropOpacity = n.backdropOpacity;
     _enableWFBackdrop = n.enableWFBackdrop;
@@ -79,6 +92,7 @@ class ScopeSettings with ChangeNotifier {
     _wFScaleType = n.wFScaleType;
     _audioLevelEnabled = n.audioLevelEnabled;
     _audioOutputEnabled = n.audioOutputEnabled;
+    _scopeLayout = n.scopeLayout;
     notifyListeners();
   }
 
@@ -91,6 +105,10 @@ class ScopeSettings with ChangeNotifier {
       wfScaleType: WFScaleTypes.values.elementAt(json["wfScaleType"]),
       audioLevelEnabled: json["audioLevelEnabled"],
       audioOutputEnabled: json["audioOutputEnabled"],
+      scopeLayout: List<ScopeTypes>.generate(
+        3,
+        (index) => ScopeTypes.values[json["scopeLayout"]?[index] ?? 0],
+      ),
     );
   }
 
@@ -103,6 +121,10 @@ class ScopeSettings with ChangeNotifier {
       "wfScaleType": _wFScaleType.index,
       "audioLevelEnabled": _audioLevelEnabled,
       "audioOutputEnabled": _audioOutputEnabled,
+      "scopeLayout": List<int>.generate(
+        3,
+        (index) => _scopeLayout[index].index,
+      ),
     };
   }
 
@@ -117,3 +139,19 @@ enum WFScaleTypes {
   percentage,
   bits,
 }
+
+enum ScopeTypes {
+  luma,
+  rgb,
+  parade,
+  histogram,
+  vector,
+}
+
+Map<ScopeTypes, String> scopeTypeNames = {
+  ScopeTypes.histogram: "Histogram",
+  ScopeTypes.luma: "Luminance Waveform",
+  ScopeTypes.parade: "RGB Parade",
+  ScopeTypes.rgb: "RGB Waveform",
+  ScopeTypes.vector: "UV Vectorscope",
+};
