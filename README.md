@@ -103,15 +103,19 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 
 Download the latest build under [Releases](https://github.com/MindStudioOfficial/ndiscopes/releases).
 
+## Contribute
+
+Please read [Contributing](https://github.com/MindStudioOfficial/ndiscopes/blob/main/CONTRIBUTING.md)
+
 ## Getting Started
 
 For licensing reasons I am not able to provide the **SDK Files** directly. You have to source them yourself from [here](https://www.ndi.tv/sdk/#download).
 
-The `.dll` file from the SDK goes into the bin folder once you have downloaded it.
+The `.dll` file from the SDK goes into the `bin` folder once you have downloaded it.
 
 This application uses the cross-platform [Flutter](https://flutter.dev/) framework written in [Dart](https://dart.dev/).
 
-Upon building flutter puts the bin folder containing the necessary libraries in an assets folder which is incorrect. You will have to manually move the bin folder back to the root of the release folder once built.
+While building, flutter puts the `bin` folder containing the necessary libraries in an assets folder which is incorrect. You will have to manually move the `bin` folder back to the root of the release folder once built.
 
 ### Run in Debug-Mode
 
