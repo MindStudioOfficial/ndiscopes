@@ -166,7 +166,6 @@ class _MainState extends State<Main> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    final frame = context.watch<Frame>();
     final settings = context.watch<ScopeSettings>();
 
     return LayoutBuilder(builder: (context, constraints) {
