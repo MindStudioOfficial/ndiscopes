@@ -151,9 +151,7 @@ class _MainState extends State<Main> with WindowListener {
             //print("onFrame");
             //context.read<Frame>().updateImageFrame(frame);
             final stats = context.read<Statistics>();
-            stats.updateFrameRate(rate);
-            stats.updateRenderDelay(delay);
-            stats.updateFrameSize(size);
+            stats.update(frameRate: rate, renderDelay: delay, frameSize: size);
             stats.calculateRenderFrameRate();
           },
         ),
