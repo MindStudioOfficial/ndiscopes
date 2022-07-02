@@ -270,8 +270,10 @@ class _MainState extends State<Main> with WindowListener {
                             Expanded(
                               child: SingleChildScrollView(
                                 controller: _vScopeScroll,
-                                child: const VscopeV2(
+                                child: const VScopeV3(
                                   title: "UV Vectorscope",
+                                  imgId: texVscope,
+                                  ovlId: texVscopeO,
                                 ),
                               ),
                             ),
@@ -329,8 +331,10 @@ class _MainState extends State<Main> with WindowListener {
                           ),
                           SizedBox(
                             width: width / scopesCountX / 2,
-                            child: const VscopeV2(
+                            child: const VScopeV3(
                               title: "UV Vectorscope",
+                              imgId: texVscope,
+                              ovlId: texVscopeO,
                             ),
                           ),
                           if (settings.audioLevelEnabled) const AudioMeters(),

@@ -556,18 +556,22 @@ class ScopeV3 extends StatelessWidget {
             ),
             SizedBox(
               width: 600,
-              height: 275,
+              height: 276,
               child: Stack(
                 children: [
                   Padding(
                     padding: scopePadding,
                     child: imgw,
                   ),
+                  Padding(
+                    padding: scopePadding,
+                    child: ovlw,
+                  ),
                   CustomPaint(
                     painter: ScopeLabelPainter(
                       scopeSettings: scopeSettings,
                     ),
-                    size: const Size(600, 275),
+                    size: const Size(600, 276),
                   )
                 ],
               ),
@@ -651,5 +655,147 @@ class ScopeLabelPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
+  }
+}
+
+class VScopeV3 extends StatelessWidget {
+  final String title;
+  final int imgId;
+  final int ovlId;
+  const VScopeV3({
+    Key? key,
+    required this.imgId,
+    required this.ovlId,
+    required this.title,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    Widget imgw = texturesInitialized ? tr.widget(imgId) : Container();
+    Widget ovlw = texturesInitialized ? tr.widget(ovlId) : Container();
+    final scopeSettings = context.watch<ScopeSettings>();
+
+    double offset = (276 - 256 * scopeSettings.vScopeScale) / 2;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Text(
+            title,
+            style: tSmall,
+          ),
+        ),
+        AspectRatio(
+          aspectRatio: 1,
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: 276,
+              height: 276,
+              child: Stack(
+                children: [
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOutCubic,
+                    left: offset,
+                    top: offset,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOutCubic,
+                      width: 256 * scopeSettings.vScopeScale,
+                      height: 256 * scopeSettings.vScopeScale,
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: SizedBox(
+                          child: Stack(
+                            children: [
+                              imgw,
+                              ovlw,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  CustomPaint(
+                    painter: VScopeOverlayPainter(scopeScale: scopeSettings.vScopeScale),
+                    size: const Size(276, 276),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class VScopeOverlayPainter extends CustomPainter {
+  double scopeScale;
+
+  VScopeOverlayPainter({required this.scopeScale});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // fills the background with black
+    // doesn't account for canvas borders
+    // surrounding this painter with cliprect is necessary
+    //canvas.drawColor(Colors.black, BlendMode.srcATop);
+
+    // save the topleft corner because it gets used very often
+    Offset topleft = const Offset(10, 10);
+
+    Paint pLine = Paint()
+      // only draw the outlines with 30% opacity and 0.5px width
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = .5
+      ..isAntiAlias = true
+      ..color = Colors.white.withOpacity(.3);
+    // draw the
+    canvas.drawLine(topleft + const Offset(128, 0), topleft + const Offset(128, 256), pLine);
+    canvas.drawLine(topleft + const Offset(0, 128), topleft + const Offset(256, 128), pLine);
+    // move to the center
+    canvas.translate(138, 138);
+    // rotate -34° around the center
+    canvas.rotate(-2.164208);
+    // draw the skintone line at -34° -90°
+    canvas.drawLine(const Offset(0, 0), const Offset(128, 0), pLine);
+    // rotate back
+    canvas.rotate(2.164208);
+    // reuse the paint for the colored rectangles
+    pLine.strokeWidth = 1;
+    // draw a rectangle for every color in scopeColors at its uv coordinate
+    for (Color c in scopeColors) {
+      // color at 100% saturation
+      pLine.color = c.withOpacity(.9);
+      // rotate to the vector of the uv coordiante so that the resulting rectangle gets also rotated
+      canvas.rotate((uvFromRGB(pLine.color) - const Offset(128, 128)).direction);
+      // draw the rectangle for the color
+      canvas.drawRect(
+        Offset((uvFromRGB(pLine.color) - const Offset(128, 128)).distance - 5, 0 - 5) & const Size(10, 10),
+        pLine,
+      );
+      // interpolate between black and the color at 1-0.25 = 75% saturation
+      pLine.color = Color.lerp(c.withOpacity(.7), Colors.black.withOpacity(.7), .25) ?? c;
+      // draw the rectangle for the color at 75% saturation
+      canvas.drawRect(
+        Offset((uvFromRGB(pLine.color) - const Offset(128, 128)).distance - 2.5, 0 - 2.5) & const Size(5, 5),
+        pLine,
+      );
+      // rotate back
+      canvas.rotate(-(uvFromRGB(pLine.color) - const Offset(128, 128)).direction);
+    }
+    // move back to 0,0
+    canvas.translate(-138, -138);
+
+    canvas.scale(scopeScale);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    if (oldDelegate is VScopeOverlayPainter && oldDelegate.scopeScale != scopeScale) return true;
+    return false;
   }
 }
