@@ -5,6 +5,8 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_windows
   dart_discord_rpc
+  screen_retriever
+  texturerender
   url_launcher_windows
   window_manager
 )

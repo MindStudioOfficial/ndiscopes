@@ -7,6 +7,7 @@ import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/service/gfx/gfx.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/settings.dart';
+import 'package:ndiscopes/service/textures/textures.dart';
 import 'package:ndiscopes/util/discordrpc.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/widgets.dart';
@@ -92,6 +93,9 @@ class _MainState extends State<Main> with WindowListener {
 
     // load settings from file
     loadSettings();
+    initTextures().then((success) {
+      if (success) setState(() {});
+    });
   }
 
   @override
@@ -114,6 +118,7 @@ class _MainState extends State<Main> with WindowListener {
       shutdown = true;
     });
     await ndi.dispose();
+    await tr.dispose();
     await windowManager.destroy();
   }
 
@@ -141,12 +146,14 @@ class _MainState extends State<Main> with WindowListener {
       ndi.getFrames(
         selectedSource!.source,
         const Size(580, 256),
-        (frame, rate, delay) => setState(
+        (/*frame,*/ rate, delay, size) => setState(
           () {
-            context.read<Frame>().updateImageFrame(frame);
+            //print("onFrame");
+            //context.read<Frame>().updateImageFrame(frame);
             final stats = context.read<Statistics>();
             stats.updateFrameRate(rate);
             stats.updateRenderDelay(delay);
+            stats.updateFrameSize(size);
             stats.calculateRenderFrameRate();
           },
         ),
@@ -288,20 +295,20 @@ class _MainState extends State<Main> with WindowListener {
                       children: [
                         SizedBox(
                           width: width / scopesCountX,
-                          child: Scope(
+                          child: ScopeSelector(
                             type: settings.scopeLayout[0],
                           ),
                         ),
                         SizedBox(
                           width: width / scopesCountX,
-                          child: Scope(
+                          child: ScopeSelector(
                             type: settings.scopeLayout[1],
                           ),
                         ),
                         if (!portraitLayout)
                           SizedBox(
                             width: width / scopesCountX,
-                            child: Scope(
+                            child: ScopeSelector(
                               type: settings.scopeLayout[2],
                             ),
                           ),
@@ -316,7 +323,7 @@ class _MainState extends State<Main> with WindowListener {
                         children: [
                           SizedBox(
                             width: width / scopesCountX,
-                            child: Scope(
+                            child: ScopeSelector(
                               type: settings.scopeLayout[2],
                             ),
                           ),

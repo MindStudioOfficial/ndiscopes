@@ -5,6 +5,7 @@ import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
+import 'package:ndiscopes/service/textures/textures.dart';
 import 'dart:ui' as ui;
 import 'package:ndiscopes/widgets/customtooltip.dart';
 import 'package:provider/provider.dart';
@@ -75,6 +76,9 @@ class _FrameViewerState extends State<FrameViewer> {
   Widget build(BuildContext context) {
     final frame = context.watch<Frame>();
     final mask = context.watch<MaskProvider>();
+
+    Widget imgw = texturesInitialized && !frame.falseColorEnabled ? tr.widget(0) : Container();
+    Widget falsew = texturesInitialized && frame.falseColorEnabled ? tr.widget(2) : Container();
 
     return Row(
       mainAxisSize: MainAxisSize.max,
@@ -371,6 +375,9 @@ class _FrameViewerState extends State<FrameViewer> {
                         ),
                       ),
                     //* NDI SOURCE IMAGE + Overlay
+                    imgw,
+                    falsew,
+                    /*
                     CustomPaint(
                       painter: ImagePainter(
                         img: frame.falseColorEnabled ? frame.imageFrame?.iFalseC : frame.imageFrame?.iRGBA,
@@ -385,6 +392,7 @@ class _FrameViewerState extends State<FrameViewer> {
                         frame.imageFrame?.iRGBA.height.toDouble() ?? 1080,
                       ),
                     ),
+                    */
                     //* Mask Overlay
                     if (mask.active)
                       Mask(

@@ -11,10 +11,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
 import 'package:ndiscopes/service/audio/audio.dart';
+import 'package:ndiscopes/service/textures/textures.dart';
 import 'package:ndiscopes/util/datetimetostring.dart';
 
 import 'package:ndiscopes/service/ndi/ndisource.dart';
-import 'package:ndiscopes/service/ndi/ndioutputframe.dart';
 import 'package:ndiscopes/service/ndi/savedinputframe.dart';
 
 export 'package:ndiscopes/service/ndi/ndisource.dart';
@@ -173,9 +173,9 @@ class NDI {
     Pointer<NDIlib_source_t> source,
     ui.Size scopeSize,
     Function(
-      NDIOutputFrame frame,
       double frameRate,
       Duration renderDelay,
+      ui.Size frameSize,
     )
         onFrame,
     Rect mask,
@@ -209,9 +209,9 @@ class NDI {
   void listenCallback(
     dynamic data,
     Function(
-      NDIOutputFrame frame,
       double frameRate,
       Duration renderDelay,
+      ui.Size frameSize,
     )
         onFrame,
   ) {
@@ -244,12 +244,29 @@ class NDI {
         // convert every pointer to a Uint8List and convert that with width and height to a ui.Image
         // then free the pointers immediatly
 
-        Uint8List pxs = pRGBA.asTypedList(width * height * 4);
+        //Uint8List pxs = pRGBA.asTypedList(width * height * 4);
         int scopeWidth = data["scopeWidth"]! as int;
         int scopeHeight = data["scopeHeight"]! as int;
 
+        tr.update(texRGBA, pRGBA, width, height);
+        tr.update(texFalseC, pFalseC, width, height);
+        tr.update(texWF, pWF, scopeWidth, scopeHeight);
+        tr.update(texWFRgb, pWFRgb, scopeWidth, scopeHeight);
+        tr.update(texWFParade, pWFParade, scopeWidth, scopeHeight);
+        tr.update(texVscope, pVscope, scopeHeight, scopeHeight);
+
+        onFrame(
+          frameRate,
+          DateTime.now().difference(
+            DateTime.fromMicrosecondsSinceEpoch(renderStartTime),
+          ),
+          ui.Size(width.toDouble(), height.toDouble()),
+        );
+        _fIsoSendport?.send("resume");
+        /*
+
         ui.decodeImageFromPixels(pxs, width, height, ui.PixelFormat.rgba8888, (iRGBA) {
-          ffi.calloc.free(pRGBA);
+          //ffi.calloc.free(pRGBA);
           ui.decodeImageFromPixels(
               pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
             ffi.calloc.free(pWF);
@@ -288,6 +305,8 @@ class NDI {
             });
           });
         });
+
+        */
       }
     }
     // if the isolate send us its sendport for bidirectional communication store its reference

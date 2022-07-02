@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/scopesettingsprovider.dart';
+import 'package:ndiscopes/service/textures/textures.dart';
 import 'dart:ui' as ui;
 import 'package:ndiscopes/util/colorconversion.dart';
 import 'package:ndiscopes/widgets/player.dart';
-
 import 'package:provider/provider.dart';
 
 /// paints a scope provided in [img]
@@ -471,5 +471,185 @@ class Scope extends StatelessWidget {
       isParade: parade,
       title: scopeTypeNames[type] ?? "Unknown",
     );
+  }
+}
+
+class ScopeSelector extends StatelessWidget {
+  final ScopeTypes type;
+  const ScopeSelector({
+    Key? key,
+    required this.type,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    int imgId;
+    int ovlId;
+    bool parade = false;
+    switch (type) {
+      case ScopeTypes.histogram:
+        imgId = texWF;
+        ovlId = texWFO;
+        break;
+      case ScopeTypes.luma:
+        imgId = texWF;
+        ovlId = texWFO;
+        break;
+      case ScopeTypes.parade:
+        imgId = texWFParade;
+        ovlId = texWFParadeO;
+        parade = true;
+        break;
+      case ScopeTypes.rgb:
+        imgId = texWFRgb;
+        ovlId = texWFRgbO;
+        break;
+
+      default:
+        imgId = texWF;
+        ovlId = texWFO;
+        break;
+    }
+    return ScopeV3(
+      imgId: imgId,
+      ovlId: ovlId,
+      isParade: parade,
+      title: scopeTypeNames[type] ?? "Unknown",
+    );
+  }
+}
+
+class ScopeV3 extends StatelessWidget {
+  final String title;
+  final bool isParade;
+  final int imgId;
+  final int ovlId;
+
+  const ScopeV3({
+    Key? key,
+    required this.imgId,
+    required this.ovlId,
+    required this.isParade,
+    required this.title,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    Widget imgw = texturesInitialized ? tr.widget(imgId) : Container();
+    Widget ovlw = texturesInitialized ? tr.widget(ovlId) : Container();
+    final scopeSettings = context.watch<ScopeSettings>();
+    EdgeInsets scopePadding =
+        scopeSettings.showWFScale ? const EdgeInsets.fromLTRB(20, 10, 0, 10) : const EdgeInsets.all(10);
+    return AspectRatio(
+      aspectRatio: 600 / 306,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Text(
+                title,
+                style: tSmall,
+              ),
+            ),
+            SizedBox(
+              width: 600,
+              height: 275,
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: scopePadding,
+                    child: imgw,
+                  ),
+                  CustomPaint(
+                    painter: ScopeLabelPainter(
+                      scopeSettings: scopeSettings,
+                    ),
+                    size: const Size(600, 275),
+                  )
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ScopeLabelPainter extends CustomPainter {
+  final bool? isParade;
+  final ScopeSettings scopeSettings;
+
+  const ScopeLabelPainter({
+    this.isParade,
+    required this.scopeSettings,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint p;
+
+    // draw horizontal level depending on percentage or 8bit
+    p = Paint()..color = Colors.white.withOpacity(.3);
+
+    // calculate the amount of lines/labels
+    int increments = 0;
+    switch (scopeSettings.wFScaleType) {
+      case WFScaleTypes.percentage:
+        increments = 10;
+        break;
+      case WFScaleTypes.bits:
+        increments = 8;
+        break;
+    }
+
+    bool labels = scopeSettings.showWFScale;
+
+    for (int i = 0; i <= increments; i++) {
+      double y = i * 256 / increments;
+      if (labels) {
+        String label = "";
+        switch (scopeSettings.wFScaleType) {
+          case WFScaleTypes.percentage:
+            label = (100 - (100 / increments * i)).toInt().toString();
+            break;
+          case WFScaleTypes.bits:
+            label = (256 - y).toInt().toString();
+            break;
+        }
+
+        final pb = ui.ParagraphBuilder(
+          ui.ParagraphStyle(
+            fontSize: 11,
+            textAlign: TextAlign.center,
+            fontWeight: FontWeight.w100,
+          ),
+        )
+          ..pushStyle(ui.TextStyle(color: Colors.grey))
+          ..addText(label);
+
+        final paragraph = pb.build();
+        paragraph.layout(const ui.ParagraphConstraints(width: 18));
+
+        canvas.drawParagraph(
+          paragraph,
+          Offset(1, y),
+        );
+      }
+      double leftOffset = scopeSettings.showWFScale ? 20 : 10;
+      canvas.drawLine(
+        Offset(leftOffset, y + 10),
+        Offset(size.width - (20 - leftOffset), y + 10),
+        p,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }

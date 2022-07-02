@@ -46,6 +46,11 @@ dependencies:
   dart_discord_rpc: ^0.0.2
   libao: ^0.2.0
   window_manager: ^0.2.3
+  texturerender:
+    #git:
+    #  url: https://github.com/MindStudioOfficial/texturerender.git
+    #  ref: main
+    path: "D:/DEV/.Projects/20211007 ndi test 2/texturerender"
 
 dev_dependencies:
   flutter_test:
