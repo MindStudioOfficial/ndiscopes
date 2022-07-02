@@ -181,7 +181,7 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     // make wF
     int x = pix % srcWidth;
     int ox = minInt((int)round(scopeWidth * (x / (double)srcWidth)), scopeWidth - 1);
-    int oy = minInt((int)round(scopeHeight * (1 - (y / (double)255))), scopeHeight - 1);
+    int oy = minInt((int)round(scopeHeight * (1 - ((y-16) / (double)220))), scopeHeight - 1);
 
     int destI = 4 * (oy * scopeWidth + ox);
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
@@ -356,7 +356,7 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     // map x position to x position in destination scope
     int ox = minInt((int)round(scopeWidth * (x / (float)srcWidth)), scopeWidth - 1);
     // calculate y position from luminance (y)
-    int oy = minInt((int)roundf(scopeHeight * (1 - (y / (float)255))), scopeHeight - 1);
+    int oy = minInt((int)roundf(scopeHeight * (1 - ((y-16) / (float)220))), scopeHeight - 1);
 
     int destI = 4 * (oy * scopeWidth + ox);
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
