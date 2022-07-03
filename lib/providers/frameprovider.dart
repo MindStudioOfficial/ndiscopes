@@ -3,8 +3,9 @@ import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/widgets/player.dart';
 
 class Frame with ChangeNotifier {
-  NDIOutputFrame? _imageFrame;
-  NDIOutputFrame? _overlayFrame;
+  //NDIOutputFrame? _imageFrame;
+  //NDIOutputFrame? _overlayFrame;
+  bool _overlayEnabled = false;
   double _overlayOpacity = 1;
   OverlayMode _overlayMode = OverlayMode.splitVertical;
   double _splitPos = 0.5;
@@ -12,8 +13,9 @@ class Frame with ChangeNotifier {
   bool _gridEnabled = false;
   bool _falseColorEnabled = false;
 
-  NDIOutputFrame? get imageFrame => _imageFrame;
-  NDIOutputFrame? get overlayFrame => _overlayFrame;
+  //NDIOutputFrame? get imageFrame => _imageFrame;
+  //NDIOutputFrame? get overlayFrame => _overlayFrame;
+  bool get overlayEnabled => _overlayEnabled;
   double get overlayOpacity => _overlayOpacity;
   OverlayMode get overlayMode => _overlayMode;
   double get splitPos => _splitPos;
@@ -21,13 +23,19 @@ class Frame with ChangeNotifier {
   bool get gridEnabled => _gridEnabled;
   bool get falseColorEnabled => _falseColorEnabled;
 
+  /*
   void updateImageFrame(NDIOutputFrame? frame) {
     _imageFrame = frame;
     notifyListeners();
-  }
-
+  }*/
+  /*
   void updateOverlayFrame(NDIOutputFrame? frame) {
     _overlayFrame = frame;
+    notifyListeners();
+  }*/
+
+  void toggleOverlay({bool? enabled}) {
+    _overlayEnabled = enabled ?? !_overlayEnabled;
     notifyListeners();
   }
 

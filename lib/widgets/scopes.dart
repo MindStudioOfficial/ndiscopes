@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/textstyles.dart';
-import 'package:ndiscopes/providers/frameprovider.dart';
-import 'package:ndiscopes/providers/scopesettingsprovider.dart';
+import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
 import 'dart:ui' as ui;
 import 'package:ndiscopes/util/colorconversion.dart';
@@ -381,6 +380,7 @@ class _ScopeV2State extends State<ScopeV2> {
   }
 }
 
+/*
 class VscopeV2 extends StatelessWidget {
   final String title;
   const VscopeV2({
@@ -473,7 +473,7 @@ class Scope extends StatelessWidget {
     );
   }
 }
-
+*/
 class ScopeSelector extends StatelessWidget {
   final ScopeTypes type;
   const ScopeSelector({
@@ -538,8 +538,11 @@ class ScopeV3 extends StatelessWidget {
     Widget imgw = texturesInitialized ? tr.widget(imgId) : Container();
     Widget ovlw = texturesInitialized ? tr.widget(ovlId) : Container();
     final scopeSettings = context.watch<ScopeSettings>();
+    final frame = context.watch<Frame>();
+
     EdgeInsets scopePadding =
         scopeSettings.showWFScale ? const EdgeInsets.fromLTRB(20, 10, 0, 10) : const EdgeInsets.all(10);
+
     return AspectRatio(
       aspectRatio: 600 / 306,
       child: FittedBox(
@@ -563,10 +566,11 @@ class ScopeV3 extends StatelessWidget {
                     padding: scopePadding,
                     child: imgw,
                   ),
-                  Padding(
-                    padding: scopePadding,
-                    child: ovlw,
-                  ),
+                  if (frame.overlayEnabled)
+                    Padding(
+                      padding: scopePadding,
+                      child: ovlw,
+                    ),
                   CustomPaint(
                     painter: ScopeLabelPainter(
                       scopeSettings: scopeSettings,
@@ -674,6 +678,7 @@ class VScopeV3 extends StatelessWidget {
     Widget imgw = texturesInitialized ? tr.widget(imgId) : Container();
     Widget ovlw = texturesInitialized ? tr.widget(ovlId) : Container();
     final scopeSettings = context.watch<ScopeSettings>();
+    final frame = context.watch<Frame>();
 
     double offset = (276 - 256 * scopeSettings.vScopeScale) / 2;
     return Column(
@@ -711,7 +716,7 @@ class VScopeV3 extends StatelessWidget {
                           child: Stack(
                             children: [
                               imgw,
-                              ovlw,
+                              if (frame.overlayEnabled) ovlw,
                             ],
                           ),
                         ),

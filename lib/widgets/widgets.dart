@@ -6,3 +6,4 @@ export 'package:ndiscopes/widgets/scopes.dart';
 export 'package:ndiscopes/widgets/settings.dart';
 export 'package:ndiscopes/widgets/versionchecker.dart';
 export 'package:ndiscopes/widgets/window.dart';
+export 'package:ndiscopes/widgets/falsecolorscale.dart';

@@ -1,4 +1,5 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/main.dart';
 import 'package:ndiscopes/models/colors.dart';
@@ -7,8 +8,9 @@ import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
 import 'dart:ui' as ui;
-import 'package:ndiscopes/widgets/customtooltip.dart';
+import 'package:ndiscopes/widgets/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:texturerender/texturerender.dart';
 
 enum OverlayMode {
   splitVertical,
@@ -49,7 +51,7 @@ class _FrameViewerState extends State<FrameViewer> {
     super.initState();
     // initiate mask with default value
     Future.delayed(const Duration(milliseconds: 50), () {
-      context.read<MaskProvider>().updateRect(defaultMask());
+      context.read<MaskProvider>().updateRect(defaultMask(const Size(1920, 1080)));
     });
   }
 
@@ -62,11 +64,14 @@ class _FrameViewerState extends State<FrameViewer> {
   }
 
   // construct default rectangle for mask
-  Rect defaultMask() {
+  Rect defaultMask(Size frameSize) {
+    /*
     Size frameSize = context.read<Frame>().imageFrame != null
-        ? Size(context.read<Frame>().imageFrame!.iRGBA.width.toDouble(),
-            context.read<Frame>().imageFrame!.iRGBA.height.toDouble())
-        : const Size(1920, 1080);
+        ? Size(
+            context.read<Frame>().imageFrame!.iRGBA.width.toDouble(),
+            context.read<Frame>().imageFrame!.iRGBA.height.toDouble(),
+          )
+        : const Size(1920, 1080);*/
     Size maskSize = frameSize / 3;
     Offset maskOffset = Offset(frameSize.width / 3, frameSize.height / 3);
     return maskOffset & maskSize;
@@ -77,8 +82,12 @@ class _FrameViewerState extends State<FrameViewer> {
     final frame = context.watch<Frame>();
     final mask = context.watch<MaskProvider>();
 
-    Widget imgw = texturesInitialized && !frame.falseColorEnabled ? tr.widget(0) : Container();
-    Widget falsew = texturesInitialized && frame.falseColorEnabled ? tr.widget(2) : Container();
+    Widget imgw = texturesInitialized && !frame.falseColorEnabled ? tr.widget(texRGBA) : Container();
+    Widget ovlw = texturesInitialized && !frame.falseColorEnabled ? tr.widget(texRGBAO) : Container();
+    Widget falsew = texturesInitialized && frame.falseColorEnabled ? tr.widget(texFalseC) : Container();
+    Widget falseovlw = texturesInitialized && frame.falseColorEnabled ? tr.widget(texFalseCO) : Container();
+
+    ValueListenable<Tex>? texInfo = tr.textureInfo(texRGBA);
 
     return Row(
       mainAxisSize: MainAxisSize.max,
@@ -121,7 +130,7 @@ class _FrameViewerState extends State<FrameViewer> {
               //* colored container for all reference frame related buttons
               Container(
                 // changes color when reference frame is selected
-                color: context.watch<Frame>().overlayFrame != null ? cAccent : cPrimary,
+                color: context.watch<Frame>().overlayEnabled ? cAccent : cPrimary,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -144,7 +153,7 @@ class _FrameViewerState extends State<FrameViewer> {
                       ),
                     ),
                     //* disable overlay button
-                    if (context.watch<Frame>().overlayFrame != null) ...[
+                    if (context.watch<Frame>().overlayEnabled) ...[
                       DelayedCustomTooltip(
                         "Disable Overlay",
                         child: Padding(
@@ -153,7 +162,7 @@ class _FrameViewerState extends State<FrameViewer> {
                             iconSize: 25,
                             color: Colors.white,
                             onPressed: () {
-                              frame.updateOverlayFrame(null);
+                              frame.toggleOverlay(enabled: false);
                             },
                             icon: const Icon(FluentIcons.dismiss_24_filled),
                           ),
@@ -253,17 +262,35 @@ class _FrameViewerState extends State<FrameViewer> {
                       "Reset Mask",
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: IconButton(
-                          onPressed: () {
-                            mask.updateRect(defaultMask());
-                            ndi.updateMask(defaultMask(), mask.active);
-                          },
-                          color: Colors.white,
-                          iconSize: 25,
-                          icon: const Icon(
-                            FluentIcons.arrow_reset_24_filled,
-                          ),
-                        ),
+                        child: texInfo != null
+                            ? ValueListenableBuilder<Tex>(
+                                valueListenable: texInfo,
+                                builder: (context, tex, _) {
+                                  return IconButton(
+                                    onPressed: () {
+                                      Rect m = defaultMask(tex.size);
+                                      mask.updateRect(m);
+                                      ndi.updateMask(m, mask.active);
+                                    },
+                                    color: Colors.white,
+                                    iconSize: 25,
+                                    icon: const Icon(
+                                      FluentIcons.arrow_reset_24_filled,
+                                    ),
+                                  );
+                                })
+                            : IconButton(
+                                onPressed: () {
+                                  Rect m = defaultMask(const Size(1920, 1080));
+                                  mask.updateRect(m);
+                                  ndi.updateMask(m, mask.active);
+                                },
+                                color: Colors.white,
+                                iconSize: 25,
+                                icon: const Icon(
+                                  FluentIcons.arrow_reset_24_filled,
+                                ),
+                              ),
                       ),
                     ),
                 ],
@@ -314,161 +341,136 @@ class _FrameViewerState extends State<FrameViewer> {
             ],
           ),
         ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          width: frame.falseColorEnabled ? 75 : 0,
-          child: SingleChildScrollView(
-            controller: _falseColorOuterScollController,
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            child: SizedBox(
-              width: 75,
-              child: SingleChildScrollView(
-                controller: _falseColorInnerScollController,
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: ListView.builder(
-                    reverse: true,
-                    shrinkWrap: true,
-                    itemCount: falseColors.length,
-                    itemBuilder: (context, index) {
-                      Color c = falseColors.keys.elementAt(index);
-                      String label = falseColors.values.elementAt(index);
-
-                      return Container(
-                        color: c,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Text(
-                              label,
-                              style: tSmall.copyWith(color: c.computeLuminance() > 0.5 ? Colors.black : Colors.white),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
+        //* False Color Scale
+        FalseColorScale(
+          falseColorInnerScollController: _falseColorInnerScollController,
+          falseColorOuterScollController: _falseColorOuterScollController,
         ),
         //* frame viewer
-        Expanded(
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: ClipRect(
-                child: Stack(
-                  children: [
-                    if (frame.gridEnabled)
-                      SizedBox(
-                        width: frame.imageFrame?.iRGBA.width.toDouble() ?? 1920,
-                        height: frame.imageFrame?.iRGBA.height.toDouble() ?? 1080,
-                        child: Image.asset(
-                          "graphics/transparency500.png",
-                          repeat: ImageRepeat.repeat,
-                          alignment: Alignment.topLeft,
+        texInfo != null
+            ? ValueListenableBuilder<Tex>(
+                valueListenable: texInfo,
+                builder: (context, tex, _) {
+                  return Expanded(
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: ClipRect(
+                          child: Stack(
+                            children: [
+                              if (frame.gridEnabled)
+                                SizedBox(
+                                  width: tex.size.width,
+                                  height: tex.size.height,
+                                  child: Image.asset(
+                                    "graphics/transparency500.png",
+                                    repeat: ImageRepeat.repeat,
+                                    alignment: Alignment.topLeft,
+                                  ),
+                                ),
+
+                              //* NDI SOURCE IMAGE + Overlay
+                              imgw,
+                              if (frame.overlayEnabled)
+                                SizedBox(
+                                  width: tex.size.width,
+                                  height: tex.size.height,
+                                  child: FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: ovlw,
+                                  ),
+                                ),
+                              falsew,
+                              if (frame.overlayEnabled)
+                                SizedBox(
+                                  width: tex.size.width,
+                                  height: tex.size.height,
+                                  child: FittedBox(
+                                    fit: BoxFit.contain,
+                                    child: falseovlw,
+                                  ),
+                                ),
+
+                              //* Mask Overlay
+                              if (mask.active)
+                                Mask(
+                                  frameSize: Size(
+                                    tex.size.width,
+                                    tex.size.height,
+                                  ),
+                                ),
+                              //* Overlay slider vertical
+                              if (frame.overlayEnabled && frame.overlayMode == OverlayMode.splitVertical)
+                                Positioned(
+                                  left: (tex.size.width) * frame.splitPos - 22.5,
+                                  top: (tex.size.height) / 2 - 22.5,
+                                  child: Listener(
+                                    onPointerMove: (event) {
+                                      frame.updateSplitPos(
+                                        (frame.splitPos + event.localDelta.dx / (tex.size.width)).clamp(0, 1),
+                                      );
+
+                                      //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                                    },
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(22.5),
+                                      child: Container(
+                                        width: 45,
+                                        height: 45,
+                                        color: Colors.black.withOpacity(.7),
+                                        child: const Center(
+                                          child: Icon(
+                                            FluentIcons.auto_fit_width_24_filled,
+                                            color: Colors.white,
+                                            size: 35,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              //* Overlay slider horizontal
+                              if (frame.overlayEnabled && frame.overlayMode == OverlayMode.splitHorizontal)
+                                Positioned(
+                                  left: (tex.size.width) / 2 - 22.5,
+                                  top: (tex.size.height) * frame.splitPos - 22.5,
+                                  child: Listener(
+                                    onPointerMove: (event) {
+                                      frame.updateSplitPos(
+                                        (frame.splitPos + event.localDelta.dy / (tex.size.height)).clamp(0, 1),
+                                      );
+
+                                      //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
+                                    },
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(22.5),
+                                      child: Container(
+                                        width: 45,
+                                        height: 45,
+                                        color: Colors.black.withOpacity(.7),
+                                        child: const Center(
+                                          child: Icon(
+                                            FluentIcons.auto_fit_height_24_filled,
+                                            color: Colors.white,
+                                            size: 35,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    //* NDI SOURCE IMAGE + Overlay
-                    imgw,
-                    falsew,
-                    /*
-                    CustomPaint(
-                      painter: ImagePainter(
-                        img: frame.falseColorEnabled ? frame.imageFrame?.iFalseC : frame.imageFrame?.iRGBA,
-                        overlay: frame.falseColorEnabled ? frame.overlayFrame?.iFalseC : frame.overlayFrame?.iRGBA,
-                        opacity: frame.overlayOpacity,
-                        flipSplit: frame.flipSplit,
-                        splitPos: frame.splitPos,
-                        overlayMode: frame.overlayMode,
-                      ),
-                      size: Size(
-                        frame.imageFrame?.iRGBA.width.toDouble() ?? 1920,
-                        frame.imageFrame?.iRGBA.height.toDouble() ?? 1080,
                       ),
                     ),
-                    */
-                    //* Mask Overlay
-                    if (mask.active)
-                      Mask(
-                        frameSize: Size(
-                          frame.imageFrame?.iRGBA.width.toDouble() ?? 1920,
-                          frame.imageFrame?.iRGBA.height.toDouble() ?? 1080,
-                        ),
-                      ),
-                    //* Overlay slider vertical
-                    if (frame.overlayFrame != null && frame.overlayMode == OverlayMode.splitVertical)
-                      Positioned(
-                        left: (frame.imageFrame?.iRGBA.width ?? 1920) * frame.splitPos - 22.5,
-                        top: (frame.imageFrame?.iRGBA.height ?? 1080) / 2 - 22.5,
-                        child: Listener(
-                          onPointerMove: (event) {
-                            frame.updateSplitPos(
-                              (frame.splitPos + event.localDelta.dx / (frame.imageFrame?.iRGBA.width ?? 1920))
-                                  .clamp(0, 1),
-                            );
-
-                            //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
-                          },
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(22.5),
-                            child: Container(
-                              width: 45,
-                              height: 45,
-                              color: Colors.black.withOpacity(.7),
-                              child: const Center(
-                                child: Icon(
-                                  FluentIcons.auto_fit_width_24_filled,
-                                  color: Colors.white,
-                                  size: 35,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    //* Overlay slider horizontal
-                    if (frame.overlayFrame != null && frame.overlayMode == OverlayMode.splitHorizontal)
-                      Positioned(
-                        left: (frame.imageFrame?.iRGBA.width ?? 1920) / 2 - 22.5,
-                        top: (frame.imageFrame?.iRGBA.height ?? 1080) * frame.splitPos - 22.5,
-                        child: Listener(
-                          onPointerMove: (event) {
-                            frame.updateSplitPos(
-                              (frame.splitPos + event.localDelta.dy / (frame.imageFrame?.iRGBA.height ?? 1080))
-                                  .clamp(0, 1),
-                            );
-
-                            //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
-                          },
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(22.5),
-                            child: Container(
-                              width: 45,
-                              height: 45,
-                              color: Colors.black.withOpacity(.7),
-                              child: const Center(
-                                child: Icon(
-                                  FluentIcons.auto_fit_height_24_filled,
-                                  color: Colors.white,
-                                  size: 35,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  );
+                },
+              )
+            : Expanded(
+                child: Container(),
               ),
-            ),
-          ),
-        ),
       ],
     );
   }

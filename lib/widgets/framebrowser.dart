@@ -8,6 +8,7 @@ import 'package:ndiscopes/models/decorations.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
+import 'package:ndiscopes/service/textures/textures.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -416,11 +417,9 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
                           jsonDecode(
                             fse.readAsStringSync(),
                           ),
-                        ).convertToScopes(580, 256).then(
-                          (frame) {
-                            if (frame != null) context.read<Frame>().updateOverlayFrame(frame);
-                          },
-                        );
+                        ).convertToScopesPointer(580, 256).then(
+                              (value) => context.read<Frame>().toggleOverlay(enabled: true),
+                            );
                       },
                       child: Ink(
                         width: 96,
