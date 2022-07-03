@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/widgets/player.dart';
 
 class Frame with ChangeNotifier {

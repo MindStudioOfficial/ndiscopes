@@ -569,7 +569,7 @@ class ScopeV3 extends StatelessWidget {
                   if (frame.overlayEnabled)
                     Padding(
                       padding: scopePadding,
-                      child: ovlw,
+                      child: isParade ? ParadeScopeSplit(child: ovlw) : ScopeSplit(child: ovlw),
                     ),
                   CustomPaint(
                     painter: ScopeLabelPainter(
@@ -802,5 +802,118 @@ class VScopeOverlayPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     if (oldDelegate is VScopeOverlayPainter && oldDelegate.scopeScale != scopeScale) return true;
     return false;
+  }
+}
+
+class ScopeSplit extends StatelessWidget {
+  final Widget child;
+  const ScopeSplit({Key? key, required this.child}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final frame = context.watch<Frame>();
+
+    double width = 580;
+    double height = 256;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Align(
+        alignment: splitAlignment(frame.overlayMode, frame.flipSplit),
+        child: ClipRect(
+          child: Align(
+            alignment: splitAlignment(frame.overlayMode, frame.flipSplit),
+            widthFactor: frame.overlayMode == OverlayMode.splitVertical
+                ? (frame.flipSplit ? 1 - frame.splitPos : frame.splitPos)
+                : null,
+            child: Container(
+              color: frame.overlayMode == OverlayMode.splitVertical ? Colors.black : Colors.black.withOpacity(.3),
+              width: width,
+              height: height,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Alignment splitAlignment(OverlayMode mode, bool flip) {
+    switch (mode) {
+      case OverlayMode.splitHorizontal:
+        if (flip) return Alignment.bottomCenter;
+        return Alignment.topCenter;
+      case OverlayMode.splitVertical:
+        if (flip) return Alignment.centerRight;
+        return Alignment.centerLeft;
+      default:
+        return Alignment.center;
+    }
+  }
+}
+
+class ParadeScopeSplit extends StatelessWidget {
+  final Widget child;
+  const ParadeScopeSplit({Key? key, required this.child}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final frame = context.watch<Frame>();
+
+    double width = 580;
+    double height = 256;
+
+    return ClipPath(
+      clipper: ParadeClipper(
+        flip: frame.flipSplit,
+        height: height,
+        width: width,
+        splitPos: frame.splitPos,
+        clip: frame.overlayMode == OverlayMode.splitVertical,
+      ),
+      child: Container(
+        color: frame.overlayMode == OverlayMode.splitVertical ? Colors.black : Colors.black.withOpacity(.3),
+        child: child,
+      ),
+    );
+  }
+}
+
+class ParadeClipper extends CustomClipper<Path> {
+  double splitPos;
+  bool flip;
+  double width;
+  double height;
+  bool clip;
+
+  ParadeClipper({
+    required this.splitPos,
+    required this.flip,
+    required this.height,
+    required this.width,
+    required this.clip,
+  });
+
+  @override
+  Path getClip(Size size) {
+    if (!clip) return Path()..addRect(Offset.zero & Size(width, height));
+    Path p = Path();
+    double thirdwidth = width / 3;
+    Rect third = Offset.zero & Size(thirdwidth * (flip ? 1 - splitPos : splitPos), height);
+
+    for (int i = 0; i < 3; i++) {
+      p.addRect(third.translate(i * thirdwidth + (flip ? (splitPos) * thirdwidth : 0), 0));
+    }
+    return p;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper oldClipper) {
+    return oldClipper is ParadeClipper &&
+        (oldClipper.flip != flip || oldClipper.splitPos != splitPos || oldClipper.clip != clip);
   }
 }

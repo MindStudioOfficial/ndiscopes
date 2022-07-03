@@ -8,7 +8,6 @@ import 'package:ndiscopes/models/decorations.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
-import 'package:ndiscopes/service/textures/textures.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
