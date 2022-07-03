@@ -1,8 +1,9 @@
+import 'dart:ffi' as ffi;
+import 'package:ffi/ffi.dart' as ffi;
+
 import 'package:texturerender/texturerender.dart';
 
 late Texturerender tr;
-
-bool texturesInitialized = false;
 
 const int texRGBA = 0;
 const int texRGBAO = 1;
@@ -21,9 +22,9 @@ Future<bool> initTextures() async {
   tr = Texturerender();
   bool succ = true;
   for (int i = 0; i < 12; i++) {
-    if (!await tr.register(i)) succ = false;
+    if (!(await tr.register(i))) succ = false;
+    tr.update(i, ffi.calloc.call<ffi.Uint8>(4), 1, 1);
   }
-  texturesInitialized = true;
   return succ;
 }
 

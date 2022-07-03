@@ -82,6 +82,8 @@ class _FrameViewerState extends State<FrameViewer> {
     final frame = context.watch<Frame>();
     final mask = context.watch<MaskProvider>();
 
+    bool texturesInitialized = frame.texturesInitialized;
+
     Widget imgw =
         texturesInitialized ? (frame.falseColorEnabled ? tr.widget(texFalseC) : tr.widget(texRGBA)) : Container();
     Widget ovlw =

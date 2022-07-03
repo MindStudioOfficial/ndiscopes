@@ -24,38 +24,40 @@ class WindowTitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = context.watch<Statistics>();
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: 32.0,
-      color: cWindowTitleBar,
-      child: MoveWindow(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Text(
-                    "NDI Scopes by MindStudio  -  $sourceName ${stats.frameSize.width.toInt().toString() + " x " + stats.frameSize.height.toInt().toString()} ${stats.renderFrameRate.clamp(0, stats.frameRate).toStringAsFixed(1)}/${stats.frameRate.toStringAsFixed(1)}fps ${(stats.renderDelay.inMicroseconds / 1000).toStringAsFixed(2)}ms",
-                    style: TextStyle(color: Colors.white.withOpacity(.2)),
-                    overflow: TextOverflow.visible,
-                    maxLines: 1,
+    return RepaintBoundary(
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+        height: 32.0,
+        color: cWindowTitleBar,
+        child: MoveWindow(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Text(
+                      "NDI Scopes by MindStudio  -  $sourceName ${stats.frameSize.width.toInt().toString() + " x " + stats.frameSize.height.toInt().toString()} ${stats.renderFrameRate.clamp(0, stats.frameRate).toStringAsFixed(1)}/${stats.frameRate.toStringAsFixed(1)}fps ${(stats.renderDelay.inMicroseconds / 1000).toStringAsFixed(2)}ms",
+                      style: TextStyle(color: Colors.white.withOpacity(.2)),
+                      overflow: TextOverflow.visible,
+                      maxLines: 1,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const VersionChecker(),
-            MinimizeWindowButton(colors: bc),
-            MaximizeWindowButton(colors: bc),
-            CloseWindowButton(
-              onPressed: () {
-                appWindow.close();
-              },
-              colors: bc,
-            ),
-          ],
+              const VersionChecker(),
+              MinimizeWindowButton(colors: bc),
+              MaximizeWindowButton(colors: bc),
+              CloseWindowButton(
+                onPressed: () {
+                  appWindow.close();
+                },
+                colors: bc,
+              ),
+            ],
+          ),
         ),
       ),
     );

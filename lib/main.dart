@@ -93,8 +93,10 @@ class _MainState extends State<Main> with WindowListener {
 
     // load settings from file
     loadSettings();
+
+    // register all textures and update the ui after that
     initTextures().then((success) {
-      if (success) setState(() {});
+      context.read<Frame>().toggleTexturesInitialized(initialized: true);
     });
   }
 
@@ -146,15 +148,11 @@ class _MainState extends State<Main> with WindowListener {
       ndi.getFrames(
         selectedSource!.source,
         const Size(580, 256),
-        (/*frame,*/ rate, delay, size) => setState(
-          () {
-            //print("onFrame");
-            //context.read<Frame>().updateImageFrame(frame);
-            final stats = context.read<Statistics>();
-            stats.update(frameRate: rate, renderDelay: delay, frameSize: size);
-            stats.calculateRenderFrameRate();
-          },
-        ),
+        (rate, delay, size) {
+          final stats = context.read<Statistics>();
+          stats.update(frameRate: rate, renderDelay: delay, frameSize: size);
+          stats.calculateRenderFrameRate();
+        },
         context.read<MaskProvider>().rect,
         context.read<MaskProvider>().active,
       );
@@ -199,6 +197,7 @@ class _MainState extends State<Main> with WindowListener {
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
+                        //* FRAME VIEWER
                         Expanded(
                           child: RepaintBoundary(
                             child: FrameViewer(
@@ -217,6 +216,7 @@ class _MainState extends State<Main> with WindowListener {
                             ),
                           ),
                         ),
+                        //* FRAME BROWSER
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           width: refOpen ? 175 : 0,
@@ -230,6 +230,7 @@ class _MainState extends State<Main> with WindowListener {
                             ),
                           ),
                         ),
+                        //* SETTINGS
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           width: settingsOpen ? 175 : 0,
@@ -250,6 +251,7 @@ class _MainState extends State<Main> with WindowListener {
                       ],
                     ),
                   ),
+                  //* VSCOPE in portrait layout
                   if (!portraitLayout)
                     Flexible(
                       flex: 1,
@@ -268,7 +270,7 @@ class _MainState extends State<Main> with WindowListener {
                             Expanded(
                               child: SingleChildScrollView(
                                 controller: _vScopeScroll,
-                                child: const VScopeV3(
+                                child: VScope(
                                   title: "UV Vectorscope",
                                   imgId: texVscope,
                                   ovlId: texVscopeO,
@@ -329,7 +331,7 @@ class _MainState extends State<Main> with WindowListener {
                           ),
                           SizedBox(
                             width: width / scopesCountX / 2,
-                            child: const VScopeV3(
+                            child: VScope(
                               title: "UV Vectorscope",
                               imgId: texVscope,
                               ovlId: texVscopeO,

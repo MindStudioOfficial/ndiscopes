@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:ndiscopes/widgets/player.dart';
 
 class Frame with ChangeNotifier {
-  //NDIOutputFrame? _imageFrame;
-  //NDIOutputFrame? _overlayFrame;
   bool _overlayEnabled = false;
   double _overlayOpacity = 1;
   OverlayMode _overlayMode = OverlayMode.splitVertical;
@@ -11,9 +9,8 @@ class Frame with ChangeNotifier {
   bool _flipSplit = false;
   bool _gridEnabled = false;
   bool _falseColorEnabled = false;
+  bool _texturesInitialized = false;
 
-  //NDIOutputFrame? get imageFrame => _imageFrame;
-  //NDIOutputFrame? get overlayFrame => _overlayFrame;
   bool get overlayEnabled => _overlayEnabled;
   double get overlayOpacity => _overlayOpacity;
   OverlayMode get overlayMode => _overlayMode;
@@ -21,17 +18,7 @@ class Frame with ChangeNotifier {
   bool get flipSplit => _flipSplit;
   bool get gridEnabled => _gridEnabled;
   bool get falseColorEnabled => _falseColorEnabled;
-
-  /*
-  void updateImageFrame(NDIOutputFrame? frame) {
-    _imageFrame = frame;
-    notifyListeners();
-  }*/
-  /*
-  void updateOverlayFrame(NDIOutputFrame? frame) {
-    _overlayFrame = frame;
-    notifyListeners();
-  }*/
+  bool get texturesInitialized => _texturesInitialized;
 
   void toggleOverlay({bool? enabled}) {
     _overlayEnabled = enabled ?? !_overlayEnabled;
@@ -65,6 +52,11 @@ class Frame with ChangeNotifier {
 
   void toggleFalseColor({bool? enabled}) {
     _falseColorEnabled = enabled ?? !_falseColorEnabled;
+    notifyListeners();
+  }
+
+  void toggleTexturesInitialized({bool? initialized}) {
+    _texturesInitialized = initialized ?? !_texturesInitialized;
     notifyListeners();
   }
 }

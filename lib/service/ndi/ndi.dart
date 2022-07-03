@@ -263,50 +263,6 @@ class NDI {
           ui.Size(width.toDouble(), height.toDouble()),
         );
         _fIsoSendport?.send("resume");
-        /*
-
-        ui.decodeImageFromPixels(pxs, width, height, ui.PixelFormat.rgba8888, (iRGBA) {
-          //ffi.calloc.free(pRGBA);
-          ui.decodeImageFromPixels(
-              pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
-            ffi.calloc.free(pWF);
-            ui.decodeImageFromPixels(
-                pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-                (iWFRgb) {
-              ffi.calloc.free(pWFRgb);
-              ui.decodeImageFromPixels(
-                  pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-                  (iWFParade) {
-                ffi.calloc.free(pWFParade);
-                ui.decodeImageFromPixels(pVscope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight, scopeHeight,
-                    ui.PixelFormat.rgba8888, (iVScope) {
-                  ffi.calloc.free(pVscope);
-                  ui.decodeImageFromPixels(
-                      pFalseC.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888, (iFalseC) {
-                    ffi.calloc.free(pFalseC);
-                    onFrame(
-                      NDIOutputFrame(
-                        iRGBA: iRGBA,
-                        iWF: iWF,
-                        iWFRgb: iWFRgb,
-                        iWFParade: iWFParade,
-                        iVScope: iVScope,
-                        iFalseC: iFalseC,
-                      ),
-                      frameRate,
-                      DateTime.now().difference(
-                        DateTime.fromMicrosecondsSinceEpoch(renderStartTime),
-                      ),
-                    );
-                    _fIsoSendport?.send("resume");
-                  });
-                });
-              });
-            });
-          });
-        });
-
-        */
       }
     }
     // if the isolate send us its sendport for bidirectional communication store its reference
