@@ -38,7 +38,7 @@ class WindowTitleBar extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Text(
-                    "NDI Scopes by MindStudio  -  $sourceName ${stats.frameSize.width.toString() + " x " + stats.frameSize.height.toString()} ${stats.renderFrameRate.clamp(0, stats.frameRate).toStringAsFixed(1)}/${stats.frameRate.toStringAsFixed(1)}fps ${(stats.renderDelay.inMicroseconds / 1000).toStringAsFixed(2)}ms",
+                    "NDI Scopes by MindStudio  -  $sourceName ${stats.frameSize.width.toInt().toString() + " x " + stats.frameSize.height.toInt().toString()} ${stats.renderFrameRate.clamp(0, stats.frameRate).toStringAsFixed(1)}/${stats.frameRate.toStringAsFixed(1)}fps ${(stats.renderDelay.inMicroseconds / 1000).toStringAsFixed(2)}ms",
                     style: TextStyle(color: Colors.white.withOpacity(.2)),
                     overflow: TextOverflow.visible,
                     maxLines: 1,
