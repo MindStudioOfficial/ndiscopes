@@ -82,10 +82,10 @@ class _FrameViewerState extends State<FrameViewer> {
     final frame = context.watch<Frame>();
     final mask = context.watch<MaskProvider>();
 
-    Widget imgw = texturesInitialized && !frame.falseColorEnabled ? tr.widget(texRGBA) : Container();
-    Widget ovlw = texturesInitialized && !frame.falseColorEnabled ? tr.widget(texRGBAO) : Container();
-    Widget falsew = texturesInitialized && frame.falseColorEnabled ? tr.widget(texFalseC) : Container();
-    Widget falseovlw = texturesInitialized && frame.falseColorEnabled ? tr.widget(texFalseCO) : Container();
+    Widget imgw =
+        texturesInitialized ? (frame.falseColorEnabled ? tr.widget(texFalseC) : tr.widget(texRGBA)) : Container();
+    Widget ovlw =
+        texturesInitialized ? (frame.falseColorEnabled ? tr.widget(texFalseCO) : tr.widget(texRGBAO)) : Container();
 
     ValueListenable<Tex>? texInfo = tr.textureInfo(texRGBA);
 
@@ -373,23 +373,9 @@ class _FrameViewerState extends State<FrameViewer> {
                               //* NDI SOURCE IMAGE + Overlay
                               imgw,
                               if (frame.overlayEnabled)
-                                SizedBox(
-                                  width: tex.size.width,
-                                  height: tex.size.height,
-                                  child: FittedBox(
-                                    fit: BoxFit.contain,
-                                    child: ovlw,
-                                  ),
-                                ),
-                              falsew,
-                              if (frame.overlayEnabled)
-                                SizedBox(
-                                  width: tex.size.width,
-                                  height: tex.size.height,
-                                  child: FittedBox(
-                                    fit: BoxFit.contain,
-                                    child: falseovlw,
-                                  ),
+                                Split(
+                                  child: ovlw,
+                                  tex: tex,
                                 ),
 
                               //* Mask Overlay
@@ -854,5 +840,56 @@ class MaskPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return false;
+  }
+}
+
+class Split extends StatelessWidget {
+  final Widget child;
+  final Tex tex;
+  const Split({Key? key, required this.child, required this.tex}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final frame = context.watch<Frame>();
+
+    return SizedBox(
+      width: tex.size.width,
+      height: tex.size.height,
+      child: Align(
+        alignment: splitAlignment(frame.overlayMode, frame.flipSplit),
+        child: ClipRect(
+          child: Align(
+            alignment: splitAlignment(frame.overlayMode, frame.flipSplit),
+            widthFactor: frame.overlayMode == OverlayMode.splitVertical
+                ? (frame.flipSplit ? 1 - frame.splitPos : frame.splitPos)
+                : null,
+            heightFactor: frame.overlayMode == OverlayMode.splitHorizontal
+                ? (frame.flipSplit ? 1 - frame.splitPos : frame.splitPos)
+                : null,
+            child: SizedBox(
+              width: tex.size.width,
+              height: tex.size.height,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Alignment splitAlignment(OverlayMode mode, bool flip) {
+    switch (mode) {
+      case OverlayMode.splitHorizontal:
+        if (flip) return Alignment.bottomCenter;
+        return Alignment.topCenter;
+      case OverlayMode.splitVertical:
+        if (flip) return Alignment.centerRight;
+        return Alignment.centerLeft;
+      default:
+        return Alignment.center;
+    }
   }
 }
