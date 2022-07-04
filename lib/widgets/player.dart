@@ -65,13 +65,6 @@ class _FrameViewerState extends State<FrameViewer> {
 
   // construct default rectangle for mask
   Rect defaultMask(Size frameSize) {
-    /*
-    Size frameSize = context.read<Frame>().imageFrame != null
-        ? Size(
-            context.read<Frame>().imageFrame!.iRGBA.width.toDouble(),
-            context.read<Frame>().imageFrame!.iRGBA.height.toDouble(),
-          )
-        : const Size(1920, 1080);*/
     Size maskSize = frameSize / 3;
     Offset maskOffset = Offset(frameSize.width / 3, frameSize.height / 3);
     return maskOffset & maskSize;
@@ -398,8 +391,6 @@ class _FrameViewerState extends State<FrameViewer> {
                                       frame.updateSplitPos(
                                         (frame.splitPos + event.localDelta.dx / (tex.size.width)).clamp(0, 1),
                                       );
-
-                                      //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                                     },
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(22.5),
@@ -428,8 +419,6 @@ class _FrameViewerState extends State<FrameViewer> {
                                       frame.updateSplitPos(
                                         (frame.splitPos + event.localDelta.dy / (tex.size.height)).clamp(0, 1),
                                       );
-
-                                      //widget.onOverlayChanged(overlayMode, splitPos, flipSplit);
                                     },
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(22.5),

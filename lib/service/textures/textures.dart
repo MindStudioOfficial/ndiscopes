@@ -1,6 +1,3 @@
-import 'dart:ffi' as ffi;
-import 'package:ffi/ffi.dart' as ffi;
-
 import 'package:texturerender/texturerender.dart';
 
 late Texturerender tr;
@@ -23,7 +20,6 @@ Future<bool> initTextures() async {
   bool succ = true;
   for (int i = 0; i < 12; i++) {
     if (!(await tr.register(i))) succ = false;
-    tr.update(i, ffi.calloc.call<ffi.Uint8>(4), 1, 1);
   }
   return succ;
 }

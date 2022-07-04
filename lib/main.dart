@@ -94,7 +94,7 @@ class _MainState extends State<Main> with WindowListener {
     // load settings from file
     loadSettings();
 
-    // register all textures and update the ui after that
+    // register all textures and notify parts of the ui when completed
     initTextures().then((success) {
       context.read<Frame>().toggleTexturesInitialized(initialized: true);
     });
@@ -270,7 +270,7 @@ class _MainState extends State<Main> with WindowListener {
                             Expanded(
                               child: SingleChildScrollView(
                                 controller: _vScopeScroll,
-                                child: VScope(
+                                child: const VScope(
                                   title: "UV Vectorscope",
                                   imgId: texVscope,
                                   ovlId: texVscopeO,
@@ -331,7 +331,7 @@ class _MainState extends State<Main> with WindowListener {
                           ),
                           SizedBox(
                             width: width / scopesCountX / 2,
-                            child: VScope(
+                            child: const VScope(
                               title: "UV Vectorscope",
                               imgId: texVscope,
                               ovlId: texVscopeO,
