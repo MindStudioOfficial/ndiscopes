@@ -229,10 +229,17 @@ class _NDIFrameThumbnailState extends State<NDIFrameThumbnail> {
     frame = SavedInputFrame.fromJSON(jsonDecode(await widget.file.readAsString()));
     if (img == null) {
       frame.thumbnailImage().then(
-            (i) => setState(() {
+        (i) {
+          // only setState if the frame Browser is still open/"mounted"
+          // otherwise it would call setState after dispose
+          // causes unhandled Exception
+          if (mounted) {
+            setState(() {
               img = i;
-            }),
-          );
+            });
+          }
+        },
+      );
     }
   }
 

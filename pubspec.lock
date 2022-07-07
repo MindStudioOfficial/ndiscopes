@@ -399,7 +399,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: f3626d08ed6f7551235ce470e9d4dc44d314ee8f
+      resolved-ref: "6a6dad346afbd7417c3f1446698534377c29d787"
       url: "https://github.com/MindStudioOfficial/texturerender.git"
     source: git
     version: "0.0.1"

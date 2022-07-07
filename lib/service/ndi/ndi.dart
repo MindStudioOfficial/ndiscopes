@@ -6,7 +6,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart' as ffi;
 import 'package:flutter/foundation.dart';
-import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
+import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v3.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
@@ -115,7 +115,7 @@ class NDI {
   static void _updateSourcePointer(_SMObject object) {
     // create settings pointer with options
     Pointer<NDIlib_find_create_t> pCreateSettings = ffi.calloc.call<NDIlib_find_create_t>(1);
-    pCreateSettings.ref.show_local_sources = 1;
+    pCreateSettings.ref.show_local_sources = true;
 
     NDIlib_find_instance_t pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
 

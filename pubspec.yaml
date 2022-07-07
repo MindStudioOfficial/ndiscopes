@@ -116,9 +116,9 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
 
 ffigen:
-  output: "lib/ndi_ffi_bindigs_v2.dart"
+  output: "lib/ndi_ffi_bindigs_v3.dart"
   headers:
     entry-points:
-      - 'C:/Program Files/NDI/NDI 5 SDK V2/Include/Processing.NDI.Lib.h'
+      - 'C:/Program Files/NDI/NDI 5 SDK/Include/Processing.NDI.Lib.h'
   name: "NDIffi"
   description: "NDI FFI Bindings"
