@@ -46,15 +46,27 @@ class AudioMeterPainter extends CustomPainter {
     double barWidth = width / (c + 1);
     double barPad = barWidth / (c + 1);
 
-    Paint p = Paint()..color = cHighlight.withOpacity(.75);
+    Paint p = Paint(); //..color = cHighlight;
+
     for (int i = 0; i < c; i++) {
       double dbU = dBUfromFloat(audio.levels[i]);
 
       double barHeight = (height * ((dbU + 60) / 84)).clamp(0, height);
       Offset topleft = Offset(i * barWidth + (i + 1) * barPad, height - barHeight + 8);
       Size barSize = Size(barWidth, barHeight);
-
-      canvas.drawRect(topleft & barSize, p);
+      Rect r = topleft & barSize;
+      p.shader = ui.Gradient.linear(r.bottomCenter, r.topCenter - Offset(0, height - barHeight), [
+        const Color.fromRGBO(0, 16, 0, 1),
+        const Color.fromRGBO(0, 255, 0, 1),
+        Colors.amber,
+        const Color.fromRGBO(255, 0, 0, 1),
+      ], [
+        0.0,
+        .7,
+        0.8,
+        1.0
+      ]);
+      canvas.drawRect(r, p);
     }
     double y = height - (height * (60 / 84) - 8);
     canvas.drawLine(Offset(0, y), Offset(width, y), Paint()..color = Colors.white.withOpacity(.75));
