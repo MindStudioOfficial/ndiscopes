@@ -36,37 +36,42 @@ class AudioMeterPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (audio.levels.isEmpty) return;
-    int c = audio.levels.length;
     double height = size.height - 16;
 
     double width = size.width - 30;
 
-    double barWidth = width / (c + 1);
-    double barPad = barWidth / (c + 1);
+    // draw bars only if audio data is present
+    if (audio.levels.isNotEmpty) {
+      int c = audio.levels.length;
 
-    Paint p = Paint(); //..color = cHighlight;
+      double barWidth = width / (c + 1);
+      double barPad = barWidth / (c + 1);
 
-    for (int i = 0; i < c; i++) {
-      double dbU = dBUfromFloat(audio.levels[i]);
+      Paint p = Paint(); //..color = cHighlight;
 
-      double barHeight = (height * ((dbU + 60) / 84)).clamp(0, height);
-      Offset topleft = Offset(i * barWidth + (i + 1) * barPad, height - barHeight + 8);
-      Size barSize = Size(barWidth, barHeight);
-      Rect r = topleft & barSize;
-      p.shader = ui.Gradient.linear(r.bottomCenter, r.topCenter - Offset(0, height - barHeight), [
-        const Color.fromRGBO(0, 16, 0, 1),
-        const Color.fromRGBO(0, 255, 0, 1),
-        Colors.amber,
-        const Color.fromRGBO(255, 0, 0, 1),
-      ], [
-        0.0,
-        .7,
-        0.8,
-        1.0
-      ]);
-      canvas.drawRect(r, p);
+      for (int i = 0; i < c; i++) {
+        double dbU = dBUfromFloat(audio.levels[i]);
+
+        double barHeight = (height * ((dbU + 60) / 84)).clamp(0, height);
+        Offset topleft = Offset(i * barWidth + (i + 1) * barPad, height - barHeight + 8);
+        Size barSize = Size(barWidth, barHeight);
+        Rect r = topleft & barSize;
+
+        p.shader = ui.Gradient.linear(r.bottomCenter, r.topCenter - Offset(0, height - barHeight), [
+          const Color.fromRGBO(0, 16, 0, 1),
+          const Color.fromRGBO(0, 255, 0, 1),
+          Colors.amber,
+          const Color.fromRGBO(255, 0, 0, 1),
+        ], [
+          0.0,
+          .7,
+          0.8,
+          1.0
+        ]);
+        canvas.drawRect(r, p);
+      }
     }
+    // draw overlay
     double y = height - (height * (60 / 84) - 8);
     canvas.drawLine(Offset(0, y), Offset(width, y), Paint()..color = Colors.white.withOpacity(.75));
     canvas.drawLine(Offset(width, 8), Offset(width, size.height - 8), Paint()..color = Colors.white.withOpacity(.5));

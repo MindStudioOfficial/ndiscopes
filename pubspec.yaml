@@ -46,7 +46,7 @@ dependencies:
     git:
       url: https://github.com/MindStudioOfficial/libao.git
       ref: master
-  window_manager: ^0.2.3
+  window_manager: ^0.2.5
   texturerender:
     git:
       url: https://github.com/MindStudioOfficial/texturerender.git

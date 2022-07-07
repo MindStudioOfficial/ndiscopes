@@ -250,13 +250,14 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     destI = 4 * (oy * scopeHeight + ox);
     if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
+        // r g b is multiplied with current alpha value
+        uint8_t a = d_vScope[destI + 3];
 
+        atomicSwapIfGreaterThan(d_vScope + destI, (uint8_t)ceil(r * a / (double)255));
+        atomicSwapIfGreaterThan(d_vScope + destI + 1, (uint8_t)ceil(g * a / (double)255));
+        atomicSwapIfGreaterThan(d_vScope + destI + 2, (uint8_t)ceil(b * a / (double)255));
 
-        // d_vScope[destI + 1] = clampUint8(d_vScope[destI + 1] + 10);
-        atomicAddClamp(d_vScope + destI, (uint8_t)bright * (r / (double)255));
-        atomicAddClamp(d_vScope + destI + 1, (uint8_t)bright * (g / (double)255));
-        atomicAddClamp(d_vScope + destI + 2, (uint8_t)bright * (b / (double)255));
-        d_vScope[destI + 3] = 255;
+        atomicAddClamp(d_vScope + destI + 3, bright * 2);
     }
     // calculate false color value
 
@@ -441,14 +442,12 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     destI = 4 * (oy * scopeHeight + ox);
     if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
-        // atomicAddClamp(d_vScope + destI + 1, (uint8_t)((double)bright * a / (double)255));
+        atomicAddClamp(d_vScope + destI + 3, (uint8_t)ceil(bright * 4 * a / (double)255));
+        uint8_t ca = d_vScope[destI + 3];
 
-        atomicAddClamp(d_vScope + destI, (uint8_t)bright * (r / (double)255) * (a / (double)255));
-        atomicAddClamp(d_vScope + destI + 1, (uint8_t)bright * (g / (double)255) * (a / (double)255));
-        atomicAddClamp(d_vScope + destI + 2, (uint8_t)bright * (b / (double)255) * (a / (double)255));
-        // set alpha of that pixel to source alpha only IF present value is smaller
-        atomicSwapIfGreaterThan(d_vScope + destI + 3, a);
-        // d_vScope[destI + 3] = a;
+        atomicSwapIfGreaterThan(d_vScope + destI, (uint8_t)ceil(r * a / (double)255 * ca / (double)255));
+        atomicSwapIfGreaterThan(d_vScope + destI + 1, (uint8_t)ceil(g * a / (double)255 * ca / (double)255));
+        atomicSwapIfGreaterThan(d_vScope + destI + 2, (uint8_t)ceil(b * a / (double)255 * ca / (double)255));
     }
 
     Color8_t fC = getFalseColor(y - 16);

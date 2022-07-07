@@ -332,14 +332,14 @@ class VScopeOverlayPainter extends CustomPainter {
       canvas.rotate((uvFromRGB(pLine.color) - const Offset(128, 128)).direction);
       // draw the rectangle for the color
       canvas.drawRect(
-        Offset((uvFromRGB(pLine.color) - const Offset(128, 128)).distance - 5, 0 - 5) & const Size(10, 10),
+        Offset((uvFromRGB(pLine.color) - const Offset(128, 128)).distance + 5, 0 - 5) & const Size(10, 10),
         pLine,
       );
       // interpolate between black and the color at 1-0.25 = 75% saturation
       pLine.color = Color.lerp(c.withOpacity(.7), Colors.black.withOpacity(.7), .25) ?? c;
       // draw the rectangle for the color at 75% saturation
       canvas.drawRect(
-        Offset((uvFromRGB(pLine.color) - const Offset(128, 128)).distance - 2.5, 0 - 2.5) & const Size(5, 5),
+        Offset((uvFromRGB(pLine.color) - const Offset(128, 128)).distance + 2.5, 0 - 2.5) & const Size(5, 5),
         pLine,
       );
       // rotate back

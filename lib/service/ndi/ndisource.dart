@@ -1,6 +1,6 @@
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v3.dart';
+import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
 
 /// A class wrapping around the internal [NDIlib_source_t] type.
 ///

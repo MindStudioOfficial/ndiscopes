@@ -6,7 +6,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart' as ffi;
 import 'package:flutter/foundation.dart';
-import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v3.dart';
+import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
@@ -117,7 +117,7 @@ class NDI {
   static void _updateSourcePointer(_SMObject object) {
     // create settings pointer with options
     Pointer<NDIlib_find_create_t> pCreateSettings = ffi.calloc.call<NDIlib_find_create_t>(1);
-    pCreateSettings.ref.show_local_sources = true;
+    pCreateSettings.ref.show_local_sources = 1;
 
     NDIlib_find_instance_t pNDIfind = _ndi.NDIlib_find_create2(pCreateSettings);
 
@@ -132,8 +132,8 @@ class NDI {
       return;
     }
     // give the sdk more time in case there is more then one source.
-    // otherwise would only find once source and return before other ones are detected
-    sleep(const Duration(seconds: 1));
+    // otherwise would only find one source and return before other ones are detected
+    sleep(const Duration(seconds: 2));
 
     // retrieve all found sources from the sdk
     final pSourceCount = ffi.calloc.call<Uint32>(1);
@@ -574,7 +574,7 @@ class NDI {
 
   Future<void> stopGetAudio() async {
     _aSendport?.send("end");
-    await Future.delayed(const Duration(milliseconds: 50));
+    await Future.delayed(const Duration(milliseconds: 2000));
     _killAudioIsolate();
   }
 

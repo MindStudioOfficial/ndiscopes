@@ -1,5 +1,6 @@
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:dart_discord_rpc/dart_discord_rpc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/models.dart';
@@ -120,6 +121,7 @@ class _MainState extends State<Main> with WindowListener {
     await ndi.dispose();
     await tr.dispose();
     await windowManager.destroy();
+    if (kDebugMode) print("exiting...");
   }
 
   void onSaveFrame() {
