@@ -7,3 +7,4 @@ export 'package:ndiscopes/widgets/settings.dart';
 export 'package:ndiscopes/widgets/versionchecker.dart';
 export 'package:ndiscopes/widgets/window.dart';
 export 'package:ndiscopes/widgets/falsecolorscale.dart';
+export 'package:ndiscopes/widgets/sourcedialog.dart';

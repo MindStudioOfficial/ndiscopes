@@ -24,6 +24,8 @@ export 'package:ndiscopes/service/ndi/savedinputframe.dart';
 NDIffi _ndi = NDIffi(DynamicLibrary.open("bin/Processing.NDI.Lib.x64.dll"));
 PixconvertCUDA pixconvertCUDA = PixconvertCUDA(DynamicLibrary.open("bin/pixconvert_cu.dll"));
 
+late NDI ndi;
+
 class NDI {
   /// A class wrapping around the NDI FFI bindings.
   NDI() {

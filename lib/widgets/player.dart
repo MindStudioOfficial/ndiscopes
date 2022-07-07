@@ -1,16 +1,15 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:ndiscopes/main.dart';
-import 'package:ndiscopes/models/colors.dart';
-import 'package:ndiscopes/models/textstyles.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
+import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
 import 'dart:ui' as ui;
 import 'package:ndiscopes/widgets/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:texturerender/texturerender.dart';
+import 'package:ndiscopes/models/models.dart';
 
 enum OverlayMode {
   splitVertical,
@@ -570,124 +569,6 @@ class ImagePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
-  }
-}
-
-/// the pop-up dialog shown when the select source button is pressed
-///
-/// callback returns the index of the selected source
-/// updates the list of sources via ndi api
-class SourceSelectDialog extends StatefulWidget {
-  final Function(int index) onSelectSource;
-  const SourceSelectDialog({Key? key, required this.onSelectSource}) : super(key: key);
-
-  @override
-  _SourceSelectDialogState createState() => _SourceSelectDialogState();
-}
-
-class _SourceSelectDialogState extends State<SourceSelectDialog> {
-  bool loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    updateSources();
-  }
-
-  updateSources() {
-    ndi.updateSoures().then((_) {
-      if (mounted) {
-        setState(() {
-          loading = false;
-        });
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SimpleDialog(
-      backgroundColor: cDialogBackground,
-      elevation: 0,
-      title: Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            "Select Source",
-            style: tDefault,
-          ),
-          //* refresh button
-          DelayedCustomTooltip(
-            "Refresh",
-            child: IconButton(
-              onPressed: (() {
-                setState(() {
-                  loading = true;
-                });
-                updateSources();
-              }),
-              color: Colors.white,
-              iconSize: 25,
-              icon: const Icon(Icons.refresh_sharp),
-            ),
-          ),
-        ],
-      ),
-      children: [
-        // display the loading indicator if loading
-        if (loading)
-          // necessary center because CircularProgressIndicator behaves weirdly if not in this arrangement of widgets
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(8.0),
-              child: SizedBox(
-                width: 15,
-                height: 15,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              ),
-            ),
-          ),
-        if (!loading && ndi.sources.isEmpty)
-          Center(
-            child: Text(
-              "No Sources Found",
-              style: tAccent,
-            ),
-          ),
-        //* List of source names
-        SizedBox(
-          height: 300,
-          width: 300,
-          child: ListView.builder(
-            itemCount: ndi.sources.length,
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                child: Card(
-                  elevation: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      ndi.sources[index].name,
-                      style: tSmall,
-                    ),
-                  ),
-                  color: cSourceCard,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                ),
-                onTap: () {
-                  widget.onSelectSource(index);
-                  Navigator.pop(context);
-                },
-              );
-            },
-          ),
-        )
-      ],
-    );
   }
 }
 

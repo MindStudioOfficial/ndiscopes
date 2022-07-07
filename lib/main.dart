@@ -14,8 +14,6 @@ import 'package:ndiscopes/widgets/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
-late NDI ndi;
-
 void main() {
   // initialize components
   init();
@@ -138,6 +136,14 @@ class _MainState extends State<Main> with WindowListener {
   }
 
   void onSelectSource(int index) async {
+    if (index == -1) {
+      await ndi.stopGetFrames();
+      await ndi.stopGetAudio();
+      selectedSource = null;
+      setState(() {});
+      return;
+    }
+
     final pS = ndi.getSourceAt(index);
 
     if (pS != null) {
