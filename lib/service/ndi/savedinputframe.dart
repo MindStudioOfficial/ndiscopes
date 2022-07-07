@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
+import 'dart:ffi' as ffi;
 import 'dart:ui' as ui;
 import 'dart:typed_data';
-import 'package:ffi/ffi.dart';
+import 'package:ffi/ffi.dart' as ffi;
 import 'package:ndiscopes/service/ndi/ndi.dart';
+import 'package:ndiscopes/service/textures/textures.dart';
 
 /// Enumarator to distinguish between different formats that incoming or outgoing NDI frames might appear in
 enum NDIInputFormat {
@@ -55,11 +56,11 @@ class SavedInputFrame {
     }
     if (thumbnail == null) {
       // allocate byte pointer with same length as bytes for srouce frame
-      Pointer<Uint8> pSrc = calloc.call<Uint8>(bytes.length);
+      ffi.Pointer<ffi.Uint8> pSrc = ffi.calloc.call<ffi.Uint8>(bytes.length);
       // copy source bytes into pointer
       pSrc.asTypedList(bytes.length).setAll(0, bytes);
       // allocate byte pointer with dimensions of the thumbnail for thumbnail frame (*4 for RGBA)
-      Pointer<Uint8> pTn = calloc.call<Uint8>(160 * 90 * 4);
+      ffi.Pointer<ffi.Uint8> pTn = ffi.calloc.call<ffi.Uint8>(160 * 90 * 4);
       // create thumbnail from source in CUDA
       //! replace with CPU/GPU compatible
       switch (format) {
@@ -82,8 +83,8 @@ class SavedInputFrame {
           // store thumbnail bytes for later to prevent re-rendering
           thumbnail = Uint8List.fromList(pTn.asTypedList(160 * 90 * 4));
           // free all pointers (no memory leaks here)
-          calloc.free(pSrc);
-          calloc.free(pTn);
+          ffi.calloc.free(pSrc);
+          ffi.calloc.free(pTn);
           // return ui.Image of thumbnail
           c.complete(result);
         },
@@ -102,17 +103,17 @@ class SavedInputFrame {
   /// Renders all frames necessary to draw the source and all scopes/waveforms
   ///
   /// provide desired width and height of the scopes
-  Future<NDIOutputFrame?> convertToScopes(int scopeWidth, int scopeHeight) {
+  Future<NDIOutputFrame?> convertToScopes(int scopeWidth, int scopeHeight) async {
     final c = Completer<NDIOutputFrame?>();
 
     // create all necessary pointers with desired dimesions *4 (4 Bytes RGBA)
-    Pointer<Uint8> pSrc = calloc.call<Uint8>(bytes.length);
-    Pointer<Uint8> pRGBA = calloc.call<Uint8>(width * height * 4);
-    Pointer<Uint8> pWF = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
-    Pointer<Uint8> pWFRgb = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
-    Pointer<Uint8> pWFParade = calloc.call<Uint8>(scopeWidth * scopeHeight * 4);
-    Pointer<Uint8> pVScope = calloc.call<Uint8>(scopeHeight * scopeHeight * 4);
-    Pointer<Uint8> pFalseC = calloc.call<Uint8>(width * height * 4);
+    ffi.Pointer<ffi.Uint8> pSrc = ffi.calloc.call<ffi.Uint8>(bytes.length);
+    ffi.Pointer<ffi.Uint8> pRGBA = ffi.calloc.call<ffi.Uint8>(width * height * 4);
+    ffi.Pointer<ffi.Uint8> pWF = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
+    ffi.Pointer<ffi.Uint8> pWFRgb = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
+    ffi.Pointer<ffi.Uint8> pWFParade = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
+    ffi.Pointer<ffi.Uint8> pVScope = ffi.calloc.call<ffi.Uint8>(scopeHeight * scopeHeight * 4);
+    ffi.Pointer<ffi.Uint8> pFalseC = ffi.calloc.call<ffi.Uint8>(width * height * 4);
 
     // copy source bytes into pointer
     pSrc.asTypedList(bytes.length).setAll(0, bytes);
@@ -135,26 +136,26 @@ class SavedInputFrame {
     }
     // convert from rgba bytes in pointers to ui.Image then free the pointers
     ui.decodeImageFromPixels(pRGBA.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888, (iRGBA) {
-      calloc.free(pRGBA);
+      ffi.calloc.free(pRGBA);
       ui.decodeImageFromPixels(
           pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
-        calloc.free(pWF);
+        ffi.calloc.free(pWF);
         ui.decodeImageFromPixels(
             pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
             (iWFRgb) {
-          calloc.free(pWFRgb);
+          ffi.calloc.free(pWFRgb);
           ui.decodeImageFromPixels(
               pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
               (iWFParade) {
-            calloc.free(pWFParade);
+            ffi.calloc.free(pWFParade);
             ui.decodeImageFromPixels(
                 pVScope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight, scopeHeight, ui.PixelFormat.rgba8888,
                 (iVScope) {
-              calloc.free(pVScope);
+              ffi.calloc.free(pVScope);
               // return the finished frames
               ui.decodeImageFromPixels(pFalseC.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888,
                   (iFalseC) {
-                calloc.free(pFalseC);
+                ffi.calloc.free(pFalseC);
                 c.complete(
                   NDIOutputFrame(
                     iRGBA: iRGBA,
@@ -173,6 +174,50 @@ class SavedInputFrame {
     });
     // return intermediate future until completed above
     return c.future;
+  }
+
+  /// Renders all frames necessary to draw the source and all scopes/waveforms
+  ///
+  /// outputs everything as pointers instead of ui.Image
+  ///
+  /// provide desired width and height of the scopes
+  ///
+  Future<void> convertToScopesPointer(int scopeWidth, int scopeHeight) async {
+    // create all necessary pointers with desired dimesions *4 (4 Bytes RGBA)
+    ffi.Pointer<ffi.Uint8> pSrc = ffi.calloc.call<ffi.Uint8>(bytes.length);
+    ffi.Pointer<ffi.Uint8> pRGBA = ffi.calloc.call<ffi.Uint8>(width * height * 4);
+    ffi.Pointer<ffi.Uint8> pWF = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
+    ffi.Pointer<ffi.Uint8> pWFRgb = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
+    ffi.Pointer<ffi.Uint8> pWFParade = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
+    ffi.Pointer<ffi.Uint8> pVScope = ffi.calloc.call<ffi.Uint8>(scopeHeight * scopeHeight * 4);
+    ffi.Pointer<ffi.Uint8> pFalseC = ffi.calloc.call<ffi.Uint8>(width * height * 4);
+
+    // copy source bytes into pointer
+    pSrc.asTypedList(bytes.length).setAll(0, bytes);
+
+    // use different convert method based on input frame format
+    switch (format) {
+      case NDIInputFormat.uyvy:
+        //! replace with CPU/GPU compatible
+        pixconvertCUDA.uyvyToScopes(
+            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
+        break;
+      case NDIInputFormat.bgra:
+        //! replace with CPU/GPU compatible
+        pixconvertCUDA.bgraToScopes(
+            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
+        break;
+      default:
+        return;
+    }
+
+    // update all textures
+    tr.update(texRGBAO, pRGBA, width, height);
+    tr.update(texWFO, pWF, scopeWidth, scopeHeight);
+    tr.update(texWFRgbO, pWFRgb, scopeWidth, scopeHeight);
+    tr.update(texWFParadeO, pWFParade, scopeWidth, scopeHeight);
+    tr.update(texVscopeO, pVScope, scopeHeight, scopeHeight);
+    tr.update(texFalseCO, pFalseC, width, height);
   }
 
   /// Converts this to a json encodable map

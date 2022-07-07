@@ -68,4 +68,21 @@ class Statistics with ChangeNotifier {
     _frameRate = frameRate;
     notifyListeners();
   }
+
+  void update({
+    double? renderFrameRate,
+    Duration? renderDelay,
+    int? sourceCount,
+    int? sourceIndex,
+    Size? frameSize,
+    double? frameRate,
+  }) {
+    _renderFrameRate = renderFrameRate ?? _renderFrameRate;
+    _renderDelay = renderDelay ?? _renderDelay;
+    _sourceCount = sourceCount ?? _sourceCount;
+    _sourceIndex = sourceIndex ?? _sourceIndex;
+    _frameSize = frameSize ?? _frameSize;
+    _frameRate = frameRate ?? _frameRate;
+    notifyListeners();
+  }
 }

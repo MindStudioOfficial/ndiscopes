@@ -84,7 +84,7 @@ class ScopeSettings with ChangeNotifier {
     notifyListeners();
   }
 
-  update(ScopeSettings n) {
+  void update(ScopeSettings n) {
     _backdropOpacity = n.backdropOpacity;
     _enableWFBackdrop = n.enableWFBackdrop;
     _showWFScale = n.showWFScale;

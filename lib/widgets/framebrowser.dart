@@ -229,10 +229,17 @@ class _NDIFrameThumbnailState extends State<NDIFrameThumbnail> {
     frame = SavedInputFrame.fromJSON(jsonDecode(await widget.file.readAsString()));
     if (img == null) {
       frame.thumbnailImage().then(
-            (i) => setState(() {
+        (i) {
+          // only setState if the frame Browser is still open/"mounted"
+          // otherwise it would call setState after dispose
+          // causes unhandled Exception
+          if (mounted) {
+            setState(() {
               img = i;
-            }),
-          );
+            });
+          }
+        },
+      );
     }
   }
 
@@ -416,11 +423,9 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
                           jsonDecode(
                             fse.readAsStringSync(),
                           ),
-                        ).convertToScopes(580, 256).then(
-                          (frame) {
-                            if (frame != null) context.read<Frame>().updateOverlayFrame(frame);
-                          },
-                        );
+                        ).convertToScopesPointer(580, 256).then(
+                              (value) => context.read<Frame>().toggleOverlay(enabled: true),
+                            );
                       },
                       child: Ink(
                         width: 96,

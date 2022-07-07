@@ -7,6 +7,7 @@ import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/service/gfx/gfx.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/settings.dart';
+import 'package:ndiscopes/service/textures/textures.dart';
 import 'package:ndiscopes/util/discordrpc.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/widgets.dart';
@@ -92,6 +93,11 @@ class _MainState extends State<Main> with WindowListener {
 
     // load settings from file
     loadSettings();
+
+    // register all textures and notify parts of the ui when completed
+    initTextures().then((success) {
+      context.read<Frame>().toggleTexturesInitialized(initialized: true);
+    });
   }
 
   @override
@@ -114,6 +120,7 @@ class _MainState extends State<Main> with WindowListener {
       shutdown = true;
     });
     await ndi.dispose();
+    await tr.dispose();
     await windowManager.destroy();
   }
 
@@ -141,15 +148,11 @@ class _MainState extends State<Main> with WindowListener {
       ndi.getFrames(
         selectedSource!.source,
         const Size(580, 256),
-        (frame, rate, delay) => setState(
-          () {
-            context.read<Frame>().updateImageFrame(frame);
-            final stats = context.read<Statistics>();
-            stats.updateFrameRate(rate);
-            stats.updateRenderDelay(delay);
-            stats.calculateRenderFrameRate();
-          },
-        ),
+        (rate, delay, size) {
+          final stats = context.read<Statistics>();
+          stats.update(frameRate: rate, renderDelay: delay, frameSize: size);
+          stats.calculateRenderFrameRate();
+        },
         context.read<MaskProvider>().rect,
         context.read<MaskProvider>().active,
       );
@@ -194,6 +197,7 @@ class _MainState extends State<Main> with WindowListener {
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
                       children: [
+                        //* FRAME VIEWER
                         Expanded(
                           child: RepaintBoundary(
                             child: FrameViewer(
@@ -212,6 +216,7 @@ class _MainState extends State<Main> with WindowListener {
                             ),
                           ),
                         ),
+                        //* FRAME BROWSER
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           width: refOpen ? 175 : 0,
@@ -225,6 +230,7 @@ class _MainState extends State<Main> with WindowListener {
                             ),
                           ),
                         ),
+                        //* SETTINGS
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           width: settingsOpen ? 175 : 0,
@@ -245,6 +251,7 @@ class _MainState extends State<Main> with WindowListener {
                       ],
                     ),
                   ),
+                  //* VSCOPE in portrait layout
                   if (!portraitLayout)
                     Flexible(
                       flex: 1,
@@ -263,8 +270,10 @@ class _MainState extends State<Main> with WindowListener {
                             Expanded(
                               child: SingleChildScrollView(
                                 controller: _vScopeScroll,
-                                child: const VscopeV2(
+                                child: const VScope(
                                   title: "UV Vectorscope",
+                                  imgId: texVscope,
+                                  ovlId: texVscopeO,
                                 ),
                               ),
                             ),
@@ -288,20 +297,20 @@ class _MainState extends State<Main> with WindowListener {
                       children: [
                         SizedBox(
                           width: width / scopesCountX,
-                          child: Scope(
+                          child: ScopeSelector(
                             type: settings.scopeLayout[0],
                           ),
                         ),
                         SizedBox(
                           width: width / scopesCountX,
-                          child: Scope(
+                          child: ScopeSelector(
                             type: settings.scopeLayout[1],
                           ),
                         ),
                         if (!portraitLayout)
                           SizedBox(
                             width: width / scopesCountX,
-                            child: Scope(
+                            child: ScopeSelector(
                               type: settings.scopeLayout[2],
                             ),
                           ),
@@ -316,14 +325,16 @@ class _MainState extends State<Main> with WindowListener {
                         children: [
                           SizedBox(
                             width: width / scopesCountX,
-                            child: Scope(
+                            child: ScopeSelector(
                               type: settings.scopeLayout[2],
                             ),
                           ),
                           SizedBox(
                             width: width / scopesCountX / 2,
-                            child: const VscopeV2(
+                            child: const VScope(
                               title: "UV Vectorscope",
+                              imgId: texVscope,
+                              ovlId: texVscopeO,
                             ),
                           ),
                           if (settings.audioLevelEnabled) const AudioMeters(),
