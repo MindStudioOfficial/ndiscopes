@@ -178,10 +178,10 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
     d_dest[offset + 2] = b;
     d_dest[offset + 3] = 255;
 
-    // make wF
+    //* WF
     int x = pix % srcWidth;
     int ox = minInt((int)round(scopeWidth * (x / (double)srcWidth)), scopeWidth - 1);
-    int oy = minInt((int)round(scopeHeight * (1 - ((y-16) / (double)220))), scopeHeight - 1);
+    int oy = minInt((int)round(scopeHeight * (1 - ((y - 16) / (double)220))), scopeHeight - 1);
 
     int destI = 4 * (oy * scopeWidth + ox);
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
@@ -191,7 +191,7 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
         d_wf[destI + 3] = 255;
     }
 
-    // make wFRGB
+    //* WFRGB
     int or = minInt((int)round(scopeHeight * (1 - (r / (double)255))), scopeHeight - 1);
     int og = minInt((int)round(scopeHeight * (1 - (g / (double)255))), scopeHeight - 1);
     int ob = minInt((int)round(scopeHeight * (1 - (b / (double)255))), scopeHeight - 1);
@@ -215,6 +215,7 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
         d_wfRgb[destB + 3] = 255;
     }
 
+    //* WF PARADE
     double third = (scopeWidth / (double)3);
     ox = (int)round(third * (x / (double)srcWidth));
 
@@ -242,13 +243,19 @@ __global__ void kernelUyvyScopes(int srcWidth, int srcHeight, int scopeWidth, in
         atomicAddClamp(d_wfParade + destB + 2, bright);
         d_wfParade[destB + 3] = 255;
     }
+
+    //* VSCOPE
     ox = minInt((int)round(scopeHeight * (u / (double)255)), scopeHeight - 1);
     oy = minInt((int)round(scopeHeight * (1 - (v / (double)255))), scopeHeight - 1);
     destI = 4 * (oy * scopeHeight + ox);
     if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
+
+
         // d_vScope[destI + 1] = clampUint8(d_vScope[destI + 1] + 10);
-        atomicAddClamp(d_vScope + destI + 1, bright);
+        atomicAddClamp(d_vScope + destI, (uint8_t)bright * (r / (double)255));
+        atomicAddClamp(d_vScope + destI + 1, (uint8_t)bright * (g / (double)255));
+        atomicAddClamp(d_vScope + destI + 2, (uint8_t)bright * (b / (double)255));
         d_vScope[destI + 3] = 255;
     }
     // calculate false color value
@@ -356,7 +363,7 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     // map x position to x position in destination scope
     int ox = minInt((int)round(scopeWidth * (x / (float)srcWidth)), scopeWidth - 1);
     // calculate y position from luminance (y)
-    int oy = minInt((int)roundf(scopeHeight * (1 - ((y-16) / (float)220))), scopeHeight - 1);
+    int oy = minInt((int)roundf(scopeHeight * (1 - ((y - 16) / (float)220))), scopeHeight - 1);
 
     int destI = 4 * (oy * scopeWidth + ox);
     if (destI >= 0 && destI < (scopeWidth * scopeHeight * 4) - 3)
@@ -434,7 +441,11 @@ __global__ void kernelBGRAScopes(int srcWidth, int srcHeight, int scopeWidth, in
     destI = 4 * (oy * scopeHeight + ox);
     if (destI >= 0 && destI < (scopeHeight * scopeHeight * 4))
     {
-        atomicAddClamp(d_vScope + destI + 1, (uint8_t)((double)bright * a / (double)255));
+        // atomicAddClamp(d_vScope + destI + 1, (uint8_t)((double)bright * a / (double)255));
+
+        atomicAddClamp(d_vScope + destI, (uint8_t)bright * (r / (double)255) * (a / (double)255));
+        atomicAddClamp(d_vScope + destI + 1, (uint8_t)bright * (g / (double)255) * (a / (double)255));
+        atomicAddClamp(d_vScope + destI + 2, (uint8_t)bright * (b / (double)255) * (a / (double)255));
         // set alpha of that pixel to source alpha only IF present value is smaller
         atomicSwapIfGreaterThan(d_vScope + destI + 3, a);
         // d_vScope[destI + 3] = a;

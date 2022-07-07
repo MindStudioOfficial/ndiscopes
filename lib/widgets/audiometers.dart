@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/providers/audiolevelprovider.dart';
 import 'package:ndiscopes/util/audioconversation.dart';
 import 'package:provider/provider.dart';
