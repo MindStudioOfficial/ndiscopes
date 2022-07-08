@@ -75,6 +75,7 @@ class _MainState extends State<Main> with WindowListener {
   bool settingsOpen = false;
   bool portraitLayout = false;
   bool shutdown = false;
+  String shutDownStatus = "";
 
   final ScrollController _vScopeScroll = ScrollController();
 
@@ -117,9 +118,16 @@ class _MainState extends State<Main> with WindowListener {
   void onWindowClose() async {
     setState(() {
       shutdown = true;
+      shutDownStatus = "shutting down NDI®...";
     });
     await ndi.dispose();
+    setState(() {
+      shutDownStatus = "shutting down renderer...";
+    });
     await tr.dispose();
+    setState(() {
+      shutDownStatus = "closing...";
+    });
     await windowManager.destroy();
     if (kDebugMode) print("exiting...");
   }
@@ -138,9 +146,9 @@ class _MainState extends State<Main> with WindowListener {
   }
 
   void onSelectSource(int index) async {
+    // index is -1 if stop butten was pressed
     if (index == -1) {
-      await ndi.stopGetFrames();
-      await ndi.stopGetAudio();
+      await Future.wait([ndi.stopGetFrames(), ndi.stopGetAudio()]);
       selectedSource = null;
       setState(() {});
       return;
@@ -149,8 +157,7 @@ class _MainState extends State<Main> with WindowListener {
     final pS = ndi.getSourceAt(index);
 
     if (pS != null) {
-      await ndi.stopGetFrames();
-      await ndi.stopGetAudio();
+      await Future.wait([ndi.stopGetFrames(), ndi.stopGetAudio()]);
       selectedSource = NDISource(pS);
       setState(() {});
       ndi.getFrames(
@@ -356,9 +363,20 @@ class _MainState extends State<Main> with WindowListener {
         );
       } else {
         return Center(
-          child: Text(
-            "Shutting down...",
-            style: tThin.copyWith(fontSize: 55),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Shutting down...",
+                style: tThin.copyWith(fontSize: 55),
+              ),
+              Text(
+                shutDownStatus,
+                style: tThin.copyWith(fontSize: 15),
+              ),
+            ],
           ),
         );
       }

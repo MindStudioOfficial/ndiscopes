@@ -10,8 +10,17 @@ final bc = WindowButtonColors(
   iconMouseDown: Colors.white,
   iconMouseOver: Colors.grey,
   normal: Colors.transparent,
-  mouseOver: Colors.black.withOpacity(0.4),
-  mouseDown: Colors.black.withOpacity(0.8),
+  mouseOver: Colors.black.withOpacity(0.7),
+  mouseDown: Colors.black.withOpacity(0.9),
+);
+
+final cbc = WindowButtonColors(
+  iconNormal: Colors.white,
+  iconMouseDown: Colors.white,
+  iconMouseOver: Colors.white,
+  normal: Colors.transparent,
+  mouseOver: Colors.red.withOpacity(0.75),
+  mouseDown: Colors.red.withOpacity(0.9),
 );
 
 class WindowTitleBar extends StatelessWidget {
@@ -39,7 +48,7 @@ class WindowTitleBar extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: Text(
-                      "NDI Scopes by MindStudio  -  $sourceName ${stats.frameSize.width.toInt().toString() + " x " + stats.frameSize.height.toInt().toString()} ${stats.renderFrameRate.clamp(0, stats.frameRate).toStringAsFixed(1)}/${stats.frameRate.toStringAsFixed(1)}fps ${(stats.renderDelay.inMicroseconds / 1000).toStringAsFixed(2)}ms",
+                      "NDI Scopes by MindStudio  -  $sourceName ${stats.frameSize.width.toInt().toString()} x ${stats.frameSize.height.toInt().toString()} ${stats.renderFrameRate.clamp(0, stats.frameRate).toStringAsFixed(1)}/${stats.frameRate.toStringAsFixed(1)}fps ${(stats.renderDelay.inMicroseconds / 1000).toStringAsFixed(2)}ms",
                       style: TextStyle(color: Colors.white.withOpacity(.2)),
                       overflow: TextOverflow.visible,
                       maxLines: 1,
@@ -48,13 +57,13 @@ class WindowTitleBar extends StatelessWidget {
                 ),
               ),
               const VersionChecker(),
-              MinimizeWindowButton(colors: bc),
-              MaximizeWindowButton(colors: bc),
+              MinimizeWindowButton(colors: bc, animate: true),
+              MaximizeWindowButton(colors: bc, animate: true),
               CloseWindowButton(
                 onPressed: () {
                   appWindow.close();
                 },
-                colors: bc,
+                colors: cbc,
               ),
             ],
           ),

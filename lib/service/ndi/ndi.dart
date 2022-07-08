@@ -271,6 +271,7 @@ class NDI {
     // used for updating the mask inside the receiver thread
     if (data is SendPort) {
       _fIsoSendport = data;
+      _printNDI("Stated Video Isolate");
     }
     if (data is String) {
       if (data == "ended") _killFrameIsolate();
@@ -444,7 +445,7 @@ class NDI {
       //receive next frame
     }
 
-    _printNDI("Ended Frame Isolate");
+    _printNDI("Ended Video Isolate");
     object.sendPort.send("ended");
   }
 
@@ -556,7 +557,10 @@ class NDI {
       if (data is NDIAudioLevelFrame) {
         onLevel(data);
       }
-      if (data is SendPort) _aSendport = data;
+      if (data is SendPort) {
+        _aSendport = data;
+        _printNDI("Started Audio Isolate");
+      }
       if (data is String) {
         if (data == "ended") _killAudioIsolate();
       }
@@ -574,7 +578,7 @@ class NDI {
 
   Future<void> stopGetAudio() async {
     _aSendport?.send("end");
-    await Future.delayed(const Duration(milliseconds: 2000));
+    await Future.delayed(const Duration(milliseconds: 1000));
     _killAudioIsolate();
   }
 
@@ -689,10 +693,16 @@ class NDI {
     _aSendport!.send(outputEnabled);
   }
 
+  /// Deinitializes the NDI Library
+  ///
+  /// Disconnects from any source
+  /// Frees memory if necessary
   Future<void> dispose() async {
     // stop all isolates
-    await stopGetFrames();
-    await stopGetAudio();
+    await Future.wait([stopGetFrames(), stopGetAudio()]);
+
+    // disconnect from any sources
+    _ndi.NDIlib_recv_connect(_pRecv, nullptr);
     // destroy recv instance
     _ndi.NDIlib_recv_destroy(_pRecv);
     // free sources pointer
