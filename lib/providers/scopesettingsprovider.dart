@@ -107,7 +107,7 @@ class ScopeSettings with ChangeNotifier {
       audioOutputEnabled: json["audioOutputEnabled"],
       scopeLayout: List<ScopeTypes>.generate(
         3,
-        (index) => ScopeTypes.values[json["scopeLayout"]?[index] ?? 0],
+        (index) => ScopeTypes.values[json["scopeLayout"]?[index] ?? index],
       ),
     );
   }
