@@ -9,7 +9,7 @@ import 'package:ndiscopes/service/gfx/gfx.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/settings.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
-import 'package:ndiscopes/util/discordrpc.dart';
+import 'package:ndiscopes/service/discordrpc.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/widgets.dart';
 import 'package:provider/provider.dart';
@@ -116,18 +116,13 @@ class _MainState extends State<Main> with WindowListener {
 
   @override
   void onWindowClose() async {
-    setState(() {
-      shutdown = true;
-      shutDownStatus = "shutting down NDI®...";
-    });
+    setState(() => shutdown = true);
+    setShutdownStatus("shutting down NDI®...");
     await ndi.dispose();
-    setState(() {
-      shutDownStatus = "shutting down renderer...";
-    });
+    setShutdownStatus("shutting down renderer...");
     await tr.dispose();
-    setState(() {
-      shutDownStatus = "closing...";
-    });
+    rpcDispose();
+    setShutdownStatus("closing...");
     await windowManager.destroy();
     if (kDebugMode) print("exiting...");
   }
@@ -143,6 +138,12 @@ class _MainState extends State<Main> with WindowListener {
       context.read<MaskProvider>().rect,
       context.read<MaskProvider>().active,
     );
+  }
+
+  void setShutdownStatus(String status) {
+    setState(() {
+      shutDownStatus = status;
+    });
   }
 
   void onSelectSource(int index) async {

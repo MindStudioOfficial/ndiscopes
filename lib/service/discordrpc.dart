@@ -38,3 +38,8 @@ rpcUpdate(String? sourceName) {
 
   rpc.updatePresence(_defaultPresence);
 }
+
+rpcDispose() {
+  rpc.clearPresence();
+  rpc.shutDown();
+}

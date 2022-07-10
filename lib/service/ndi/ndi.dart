@@ -500,8 +500,9 @@ class NDI {
 
   static void _getSingleFrame(_FMObject object) {
     NDIlib_recv_instance_t pNDIrecv = Pointer.fromAddress(object.pRecvA);
-    Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>();
-    _ndi.NDIlib_recv_connect(pNDIrecv, pSource);
+    //Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>();
+
+    // no need to reconnect here since we are already connected
 
     Pointer<NDIlib_video_frame_v2_t> pVideoFrame = ffi.calloc<NDIlib_video_frame_v2_t>();
 

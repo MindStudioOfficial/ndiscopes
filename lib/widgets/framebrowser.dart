@@ -27,10 +27,13 @@ class Framebrowser extends StatefulWidget {
 class _FramebrowserState extends State<Framebrowser> {
   Directory? currentDir;
   StreamSubscription? fsWatcher;
+  late ScrollController listController;
 
   @override
   void initState() {
     super.initState();
+    listController = ScrollController();
+
     checkFolders(
       () {
         updateDirContent();
@@ -56,6 +59,8 @@ class _FramebrowserState extends State<Framebrowser> {
 
   @override
   void dispose() {
+    listController.dispose();
+
     if (fsWatcher != null) fsWatcher!.cancel();
     super.dispose();
   }
@@ -98,6 +103,7 @@ class _FramebrowserState extends State<Framebrowser> {
                 width: constraints.maxWidth,
                 height: constraints.maxHeight - 40,
                 child: ListView.builder(
+                  controller: listController,
                   scrollDirection: Axis.horizontal,
                   physics: const AlwaysScrollableScrollPhysics(),
                   itemBuilder: (context, index) {
