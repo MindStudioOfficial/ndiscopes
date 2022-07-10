@@ -77,10 +77,16 @@ class _MainState extends State<Main> with WindowListener {
   bool shutdown = false;
   String shutDownStatus = "";
 
-  final ScrollController _vScopeScroll = ScrollController();
+  late ScrollController _vScopeScroll;
+  late ScrollController _frameBrowserScroll;
+  late ScrollController _settingsScroll;
 
   @override
   void initState() {
+    _vScopeScroll = ScrollController();
+    _frameBrowserScroll = ScrollController();
+    _settingsScroll = ScrollController();
+
     // listen for window events
     windowManager.addListener(this);
     // set to manually close the app in the onWindowClose handler
@@ -105,6 +111,8 @@ class _MainState extends State<Main> with WindowListener {
     windowManager.removeListener(this);
 
     _vScopeScroll.dispose();
+    _frameBrowserScroll.dispose();
+    _settingsScroll.dispose();
     super.dispose();
   }
 
@@ -151,16 +159,18 @@ class _MainState extends State<Main> with WindowListener {
     if (index == -1) {
       await Future.wait([ndi.stopGetFrames(), ndi.stopGetAudio()]);
       selectedSource = null;
+      rpcUpdate(null);
       setState(() {});
       return;
     }
-
     final pS = ndi.getSourceAt(index);
 
     if (pS != null) {
       await Future.wait([ndi.stopGetFrames(), ndi.stopGetAudio()]);
+
       selectedSource = NDISource(pS);
       setState(() {});
+
       ndi.getFrames(
         selectedSource!.source,
         const Size(580, 256),
@@ -237,10 +247,11 @@ class _MainState extends State<Main> with WindowListener {
                           duration: const Duration(milliseconds: 250),
                           width: refOpen ? 175 : 0,
                           curve: Curves.easeInOutQuad,
-                          child: const SingleChildScrollView(
+                          child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
-                            physics: NeverScrollableScrollPhysics(),
-                            child: SizedBox(
+                            physics: const NeverScrollableScrollPhysics(),
+                            controller: _frameBrowserScroll,
+                            child: const SizedBox(
                               width: 175,
                               child: FrameBrowserV2(),
                             ),
@@ -253,6 +264,7 @@ class _MainState extends State<Main> with WindowListener {
                           curve: Curves.easeInOutQuad,
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
+                            controller: _settingsScroll,
                             physics: const NeverScrollableScrollPhysics(),
                             child: SizedBox(
                               width: 175,
