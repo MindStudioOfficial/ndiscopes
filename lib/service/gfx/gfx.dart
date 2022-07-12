@@ -16,7 +16,7 @@ void printGFX(String m) {
 void checkGPU(BuildContext context) {
   final major = calloc<Int32>();
   final minor = calloc<Int32>();
-  pixconvertCUDA.getDeviceProperties(major, minor);
+  scopes.getDeviceProperties(major, minor);
 
   printGFX("GPU version ${major.value}.${minor.value}");
   if (major.value == 0) {

@@ -4,6 +4,7 @@ import 'dart:ffi' as ffi;
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart' as ffi;
+import 'package:ndiscopes/bindings/scopes_bindings_v1.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
 
@@ -65,10 +66,10 @@ class SavedInputFrame {
       //! replace with CPU/GPU compatible
       switch (format) {
         case NDIInputFormat.bgra:
-          pixconvertCUDA.thumbnailFromBgra(pSrc, width, height, pTn, 160, 90);
+          scopes.thumbnailFromBgra(pSrc, width, height, pTn, 160, 90);
           break;
         case NDIInputFormat.uyvy:
-          pixconvertCUDA.thumbnailFromUyvy(pSrc, width, height, pTn, 160, 90);
+          scopes.thumbnailFromUyvy(pSrc, width, height, pTn, 160, 90);
           break;
         default:
       }
@@ -122,13 +123,33 @@ class SavedInputFrame {
     switch (format) {
       case NDIInputFormat.uyvy:
         //! replace with CPU/GPU compatible
-        pixconvertCUDA.uyvyToScopes(
-            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
+        scopes.renderScopes(
+          width,
+          height,
+          pSrc,
+          pRGBA,
+          pWF,
+          pWFRgb,
+          pWFParade,
+          pVScope,
+          pFalseC,
+          ScopeInputFrameTypeE.uyvy,
+        );
         break;
       case NDIInputFormat.bgra:
         //! replace with CPU/GPU compatible
-        pixconvertCUDA.bgraToScopes(
-            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
+        scopes.renderScopes(
+          width,
+          height,
+          pSrc,
+          pRGBA,
+          pWF,
+          pWFRgb,
+          pWFParade,
+          pVScope,
+          pFalseC,
+          ScopeInputFrameTypeE.bgra,
+        );
         break;
       default:
         c.complete(null);
@@ -199,13 +220,13 @@ class SavedInputFrame {
     switch (format) {
       case NDIInputFormat.uyvy:
         //! replace with CPU/GPU compatible
-        pixconvertCUDA.uyvyToScopes(
-            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
+        scopes.renderScopes(
+            width, height, pSrc, pRGBA, pWF, pWFRgb, pWFParade, pVScope, pFalseC, ScopeInputFrameTypeE.uyvy);
         break;
       case NDIInputFormat.bgra:
         //! replace with CPU/GPU compatible
-        pixconvertCUDA.bgraToScopes(
-            width, height, pSrc, pRGBA, scopeWidth, scopeHeight, pWF, pWFRgb, pWFParade, pVScope, pFalseC);
+        scopes.renderScopes(
+            width, height, pSrc, pRGBA, pWF, pWFRgb, pWFParade, pVScope, pFalseC, ScopeInputFrameTypeE.bgra);
         break;
       default:
         return;

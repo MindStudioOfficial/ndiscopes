@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:ndiscopes/bindings/pixconvert_cu_bindigs.dart';
+import 'package:ndiscopes/bindings/scopes_bindings_v1.dart';
 import 'package:ndiscopes/service/audio/audio.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
 import 'package:ndiscopes/util/datetimetostring.dart';
@@ -22,7 +22,7 @@ export 'package:ndiscopes/service/ndi/ndioutputframe.dart';
 export 'package:ndiscopes/service/ndi/savedinputframe.dart';
 
 NDIffi _ndi = NDIffi(DynamicLibrary.open("bin/Processing.NDI.Lib.x64.dll"));
-PixconvertCUDA pixconvertCUDA = PixconvertCUDA(DynamicLibrary.open("bin/pixconvert_cu.dll"));
+ScopesFFI scopes = ScopesFFI(DynamicLibrary.open("bin/scopes.dll"));
 
 late NDI ndi;
 
@@ -250,12 +250,12 @@ class NDI {
         int scopeWidth = data["scopeWidth"]! as int;
         int scopeHeight = data["scopeHeight"]! as int;
 
-        tr.update(texRGBA, pRGBA, width, height);
-        tr.update(texFalseC, pFalseC, width, height);
-        tr.update(texWF, pWF, scopeWidth, scopeHeight);
-        tr.update(texWFRgb, pWFRgb, scopeWidth, scopeHeight);
-        tr.update(texWFParade, pWFParade, scopeWidth, scopeHeight);
-        tr.update(texVscope, pVscope, scopeHeight, scopeHeight);
+        if (pRGBA != nullptr) tr.update(texRGBA, pRGBA, width, height);
+        if (pFalseC != nullptr) tr.update(texFalseC, pFalseC, width, height);
+        if (pWF != nullptr) tr.update(texWF, pWF, scopeWidth, scopeHeight);
+        if (pWFRgb != nullptr) tr.update(texWFRgb, pWFRgb, scopeWidth, scopeHeight);
+        if (pWFParade != nullptr) tr.update(texWFParade, pWFParade, scopeWidth, scopeHeight);
+        if (pVscope != nullptr) tr.update(texVscope, pVscope, scopeHeight, scopeHeight);
 
         onFrame(
           frameRate,
@@ -381,9 +381,22 @@ class NDI {
           // apply mask if active to source to reflect it on all scopes
           if (maskActive) {
             //! replace with CPU/GPU compatible
-            pixconvertCUDA.rectMaskFrame(ui.Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 1);
+            scopes.rectMaskFrame(ui.Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 1);
           }
           //! replace with CPU/GPU compatible
+          scopes.renderScopes(
+            width,
+            height,
+            pVideoFrame.ref.p_data,
+            pRGBA,
+            pWF,
+            pWFRgb,
+            pWFParade,
+            pVScope,
+            pFalseC,
+            ScopeInputFrameTypeE.uyvy,
+          );
+          /*
           pixconvertCUDA.uyvyToScopes(
             width,
             height,
@@ -396,14 +409,28 @@ class NDI {
             pWFParade,
             pVScope,
             pFalseC,
-          );
+          );*/
           break;
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_BGRA:
           // apply mask if active to source to reflect it on all scopes
           if (maskActive) {
             //! replace with CPU/GPU compatible
-            pixconvertCUDA.rectMaskFrame(ui.Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 2);
+            scopes.rectMaskFrame(ui.Size(width.toDouble(), height.toDouble()), mask, pVideoFrame.ref.p_data, 2);
           }
+
+          scopes.renderScopes(
+            width,
+            height,
+            pVideoFrame.ref.p_data,
+            pRGBA,
+            pWF,
+            pWFRgb,
+            pWFParade,
+            pVScope,
+            pFalseC,
+            ScopeInputFrameTypeE.bgra,
+          );
+          /*
           //! replace with CPU/GPU compatible
           pixconvertCUDA.bgraToScopes(
             width,
@@ -417,7 +444,7 @@ class NDI {
             pWFParade,
             pVScope,
             pFalseC,
-          );
+          );*/
           break;
         default:
           _printNDI("unsupported format");
@@ -491,7 +518,8 @@ class NDI {
           Uint8List bytes = Uint8List.fromList(pVideoFrame.ref.p_data.asTypedList(width * height * bytesPerPixel));
           _ndi.NDIlib_recv_free_video_v2(pNDIRecv, pVideoFrame);
           onFrameReady(
-              SavedInputFrame(bytes: bytes, width: width, height: height, format: format, timestamp: DateTime.now()));
+            SavedInputFrame(bytes: bytes, width: width, height: height, format: format, timestamp: DateTime.now()),
+          );
         }
       }
     });

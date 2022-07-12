@@ -1,6 +1,0 @@
-output: "lib/bindings/portaudio_bindings.dart"
-headers:
-  entry-points: 
-  - "bin/include/portaudio.h"
-name: "PortAudioFFI"
-description: "Portaudio FFI Bindings"
