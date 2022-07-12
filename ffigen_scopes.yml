@@ -1,6 +1,0 @@
-output: 'lib/bindings/scopes_bindings_v1.dart'
-headers: 
-  entry-points:
-    - 'bin/src/scopes.cuh'
-name: 'ScopesFFI'
-description: 'Scopes FFI Bindings'
