@@ -52,6 +52,7 @@ class ScopeSelector extends StatelessWidget {
       case ScopeTypes.yuvparade:
         imgId = TextureIDs.texYUVParade;
         ovlId = TextureIDs.texYUVParadeO;
+        parade = true;
         break;
       case ScopeTypes.histogram:
         imgId = TextureIDs.texHistogram;

@@ -15,13 +15,13 @@ import 'package:ndiscopes/widgets/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
-// TODO: Select Scope Types
+// DONE: Select Scope Types
 // TODO: Per Scope Overlays
 // TODO: Per Scope Settings
 // TODO: Per Scope Context Menu
 // TODO: Toggle Vectorscope Colorize
 // TODO: Change Luminance Scope Color
-// TODO: YUV Parade
+// DONE: YUV Parade
 // TODO: Histogram
 // TODO: 10% Black Level View
 // TODO: Audio Waveform
@@ -154,7 +154,6 @@ class _MainState extends State<Main> with WindowListener {
     // TODO: Make this better...!
     ndi.getSingleFrame(
       selectedSource!.source,
-      const Size(580, 256),
       (frame) {
         saveInputFrame(frame);
       },
@@ -188,7 +187,6 @@ class _MainState extends State<Main> with WindowListener {
 
       ndi.getFrames(
         selectedSource!.source,
-        const Size(580, 256),
         (rate, delay, size) {
           final stats = context.read<Statistics>();
           stats.update(frameRate: rate, renderDelay: delay, frameSize: size);

@@ -155,3 +155,8 @@ Map<ScopeTypes, String> scopeTypeNames = {
   ScopeTypes.rgb: "RGB Waveform",
   ScopeTypes.yuvparade: "YUV Parade",
 };
+
+abstract class ScopeSize {
+  static const int width = 580;
+  static const int height = 256;
+}

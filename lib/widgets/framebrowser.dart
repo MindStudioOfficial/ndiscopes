@@ -429,7 +429,7 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
                           jsonDecode(
                             fse.readAsStringSync(),
                           ),
-                        ).convertToScopesPointer(580, 256).then(
+                        ).convertToScopesPointer().then(
                               (value) => context.read<Frame>().toggleOverlay(enabled: true),
                             );
                       },

@@ -10,6 +10,7 @@ import 'package:ndiscopes/bindings/ndi_ffi_bindigs_v2.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/bindings/scopes_bindings_v1.dart';
+import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/service/audio/audio.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
 import 'package:ndiscopes/util/datetimetostring.dart';
@@ -173,7 +174,6 @@ class NDI {
   /// A stream yielding the NDI Frames converted to an ui.Image.
   Future<void> getFrames(
     Pointer<NDIlib_source_t> source,
-    ui.Size scopeSize,
     Function(
       double frameRate,
       Duration renderDelay,
@@ -201,7 +201,7 @@ class NDI {
     // create the isolate that continously receives NDI frames and finishes once stopGetFrames() is called
     _fIsolate = await Isolate.spawn(
       _getFrames,
-      _FMObject(source.address, _pRecv.address, _fReceivePort!.sendPort, scopeSize, mask, maskActive),
+      _FMObject(source.address, _pRecv.address, _fReceivePort!.sendPort, mask, maskActive),
       debugName: "Video Frame Isolate",
     );
     // return intermediate future until receiving has ended
@@ -227,13 +227,16 @@ class NDI {
           data["pWFParade"] != null &&
           data["pVScope"] != null &&
           data["pFalseC"] != null &&
-          data["scopeWidth"] != null &&
-          data["scopeHeight"] != null) {
+          data["pYUVParade"] != null &&
+          data["pHistogram"] != null) {
         _fIsoSendport?.send("pause");
+
         Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]! as int);
         Pointer<Uint8> pWF = Pointer.fromAddress(data["pWF"]! as int);
         Pointer<Uint8> pWFRgb = Pointer.fromAddress(data["pWFRgb"]! as int);
         Pointer<Uint8> pWFParade = Pointer.fromAddress(data["pWFParade"]! as int);
+        Pointer<Uint8> pYUVParade = Pointer.fromAddress(data["pYUVParade"]! as int);
+        Pointer<Uint8> pHistogram = Pointer.fromAddress(data["pHistogram"]! as int);
         Pointer<Uint8> pVscope = Pointer.fromAddress(data["pVScope"]! as int);
         Pointer<Uint8> pFalseC = Pointer.fromAddress(data["pFalseC"]! as int);
 
@@ -246,16 +249,14 @@ class NDI {
         // convert every pointer to a Uint8List and convert that with width and height to a ui.Image
         // then free the pointers immediatly
 
-        //Uint8List pxs = pRGBA.asTypedList(width * height * 4);
-        int scopeWidth = data["scopeWidth"]! as int;
-        int scopeHeight = data["scopeHeight"]! as int;
-
         if (pRGBA != nullptr) tr.update(TextureIDs.texRGBA, pRGBA, width, height);
         if (pFalseC != nullptr) tr.update(TextureIDs.texFalseC, pFalseC, width, height);
-        if (pWF != nullptr) tr.update(TextureIDs.texWF, pWF, scopeWidth, scopeHeight);
-        if (pWFRgb != nullptr) tr.update(TextureIDs.texWFRgb, pWFRgb, scopeWidth, scopeHeight);
-        if (pWFParade != nullptr) tr.update(TextureIDs.texWFParade, pWFParade, scopeWidth, scopeHeight);
-        if (pVscope != nullptr) tr.update(TextureIDs.texVscope, pVscope, scopeHeight, scopeHeight);
+        if (pWF != nullptr) tr.update(TextureIDs.texWF, pWF, ScopeSize.width, ScopeSize.height);
+        if (pWFRgb != nullptr) tr.update(TextureIDs.texWFRgb, pWFRgb, ScopeSize.width, ScopeSize.height);
+        if (pWFParade != nullptr) tr.update(TextureIDs.texWFParade, pWFParade, ScopeSize.width, ScopeSize.height);
+        if (pYUVParade != nullptr) tr.update(TextureIDs.texYUVParade, pYUVParade, ScopeSize.width, ScopeSize.height);
+        if (pHistogram != nullptr) tr.update(TextureIDs.texHistogram, pHistogram, ScopeSize.width, ScopeSize.height);
+        if (pVscope != nullptr) tr.update(TextureIDs.texVscope, pVscope, ScopeSize.height, ScopeSize.height);
 
         onFrame(
           frameRate,
@@ -366,15 +367,15 @@ class NDI {
       frameRate = pVideoFrame.ref.frame_rate_N / pVideoFrame.ref.frame_rate_D;
       // allocate memory for the rgba frame and all the scopes/waveforms
       Pointer<Uint8> pRGBA = ffi.calloc.call<Uint8>(width * height * 4);
-      Pointer<Uint8> pWF = ffi.calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
-      Pointer<Uint8> pWFRgb =
-          ffi.calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
-      Pointer<Uint8> pWFParade =
-          ffi.calloc.call<Uint8>(object.scopeSize.width.toInt() * object.scopeSize.height.toInt() * 4);
-      Pointer<Uint8> pVScope =
-          ffi.calloc.call<Uint8>(object.scopeSize.height.toInt() * object.scopeSize.height.toInt() * 4);
       Pointer<Uint8> pFalseC = ffi.calloc.call<Uint8>(width * height * 4);
 
+      Pointer<Uint8> pWF = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
+      Pointer<Uint8> pWFRgb = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
+      Pointer<Uint8> pWFParade = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
+      Pointer<Uint8> pYUVParade = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
+      Pointer<Uint8> pHistogram = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
+
+      Pointer<Uint8> pVScope = ffi.calloc.call<Uint8>(ScopeSize.height * ScopeSize.height * 4);
       // convert to rgba pointers based on the format
       switch (pVideoFrame.ref.FourCC) {
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY:
@@ -394,22 +395,11 @@ class NDI {
             pWFParade,
             pVScope,
             pFalseC,
+            pYUVParade,
+            pHistogram,
             ScopeInputFrameTypeE.uyvy,
           );
-          /*
-          pixconvertCUDA.uyvyToScopes(
-            width,
-            height,
-            pVideoFrame.ref.p_data,
-            pRGBA,
-            object.scopeSize.width.toInt(),
-            object.scopeSize.height.toInt(),
-            pWF,
-            pWFRgb,
-            pWFParade,
-            pVScope,
-            pFalseC,
-          );*/
+
           break;
         case NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_BGRA:
           // apply mask if active to source to reflect it on all scopes
@@ -428,23 +418,13 @@ class NDI {
             pWFParade,
             pVScope,
             pFalseC,
+            pYUVParade,
+            pHistogram,
             ScopeInputFrameTypeE.bgra,
           );
-          /*
+
           //! replace with CPU/GPU compatible
-          pixconvertCUDA.bgraToScopes(
-            width,
-            height,
-            pVideoFrame.ref.p_data,
-            pRGBA,
-            object.scopeSize.width.toInt(),
-            object.scopeSize.height.toInt(),
-            pWF,
-            pWFRgb,
-            pWFParade,
-            pVScope,
-            pFalseC,
-          );*/
+
           break;
         default:
           _printNDI("unsupported format");
@@ -463,8 +443,8 @@ class NDI {
         "pWFParade": pWFParade.address,
         "pVScope": pVScope.address,
         "pFalseC": pFalseC.address,
-        "scopeWidth": object.scopeSize.width.toInt(),
-        "scopeHeight": object.scopeSize.height.toInt(),
+        "pYUVParade": pYUVParade.address,
+        "pHistogram": pHistogram.address,
         "frameRate": frameRate,
         "renderStartTime": renderStartTime,
       });
@@ -481,7 +461,6 @@ class NDI {
   /// the same as getFrames but doesn't loop so only returns one frame as SavedInputFrame to be stored in a file
   Future<void> getSingleFrame(
     Pointer<NDIlib_source_t> pSource,
-    ui.Size scopeSize,
     Function(SavedInputFrame frame) onFrameReady,
     Rect mask,
     bool maskActive,
@@ -490,7 +469,7 @@ class NDI {
     _sfReceivePort = ReceivePort();
     await Isolate.spawn(
       _getSingleFrame,
-      _FMObject(pSource.address, _pRecv.address, _sfReceivePort!.sendPort, scopeSize, mask, maskActive),
+      _FMObject(pSource.address, _pRecv.address, _sfReceivePort!.sendPort, mask, maskActive),
       debugName: "get Single Frame Isolate",
     );
     _sfReceivePort!.listen((data) {
@@ -761,10 +740,9 @@ class _FMObject {
   int pSourceA;
   int pRecvA;
   SendPort sendPort;
-  ui.Size scopeSize;
   Rect mask;
   bool maskActive;
-  _FMObject(this.pSourceA, this.pRecvA, this.sendPort, this.scopeSize, this.mask, this.maskActive);
+  _FMObject(this.pSourceA, this.pRecvA, this.sendPort, this.mask, this.maskActive);
 }
 
 class NDIAudioLevelFrame {

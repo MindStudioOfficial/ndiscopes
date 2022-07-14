@@ -121,6 +121,11 @@ __device__ static inline uint8_t atomicSwapIfGreaterThan(uint8_t *address, uint8
     } while (expected != old);
 }
 
+__device__ uint8_t alphaMultiplied(int val, uint8_t alpha)
+{
+    return (uint8_t)ceil(val * alpha / (double)255);
+}
+
 __host__ int getInputStride(Scope_input_frame_type_e inputType)
 {
     switch (inputType)
@@ -217,6 +222,8 @@ __global__ void kernelScopes(
     uint8_t *d_wfParade,
     uint8_t *d_vScope,
     uint8_t *d_falseC,
+    uint8_t *d_yuvParade,
+    uint8_t *d_histogram,
     int bright)
 {
 
@@ -240,7 +247,7 @@ __global__ void kernelScopes(
     // False Color
     // ========================
 
-    if (d_falseC != nullptr)
+    if (d_falseC)
     {
         Color8_t fC = getFalseColor(y);
         d_falseC[pixByte] = (uint8_t)rintf(fC.r * a / 255.0f);
@@ -257,9 +264,9 @@ __global__ void kernelScopes(
     int srcX = pix % srcWidth;
     int scopeX = minInt((int)rint(SW * (srcX / (double)srcWidth)), SW - 1);
 
-    if (d_wf != nullptr)
+    if (d_wf)
     {
-        int scopeY = minInt((int)rint(SH * (1 - (y / 220.0))), SH - 1);
+        int scopeY = minInt((int)rint(SH * (1 - (y / 219.0))), SH - 1);
         int scopePix = (scopeX + scopeY * SW) * 4;
         if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
         {
@@ -279,7 +286,7 @@ __global__ void kernelScopes(
         minInt((int)rint(SH * (1 - (g / 255.0))), SH - 1),
         minInt((int)rint(SH * (1 - (b / 255.0))), SH - 1)};
 
-    if (d_wfRgb != nullptr)
+    if (d_wfRgb)
     {
 
         for (int i = 0; i < 3; i++)
@@ -299,7 +306,7 @@ __global__ void kernelScopes(
     // RGB Parade Scope
     // ========================
 
-    if (d_wfParade != nullptr)
+    if (d_wfParade)
     {
         for (int i = 0; i < 3; i++)
         {
@@ -321,7 +328,7 @@ __global__ void kernelScopes(
     // Vector Scope
     // ========================
 
-    if (d_vScope != nullptr)
+    if (d_vScope)
     {
         scopeX = minInt((int)rintf(SH * u / 255.0f), SH - 1);
         int scopeY = minInt((int)rintf(SH * (1 - v / 255.0f)), SH - 1);
@@ -336,6 +343,56 @@ __global__ void kernelScopes(
             atomicSwapIfGreaterThan(d_vScope + scopePixByte + 2, (uint8_t)ceilf(b * a / 255.0f * ca / 255.0f));
         }
     }
+
+    // ========================
+    // YUV Parade
+    // ========================
+
+    if (d_yuvParade)
+    {
+        int scopeYUVY[] = {
+            minInt((int)rintf(SH * (1 - ((y + 16) / 255.0f))), SH - 1),
+            minInt((int)rintf(SH * (1 - (u / 255.0f))), SH - 1),
+            minInt((int)rintf(SH * (1 - (v / 255.0f))), SH - 1)};
+
+        for (int i = 0; i < 3; i++)
+        {
+            scopeX = minInt((int)rint(STHIRD * (srcX / (double)srcWidth) + i * STHIRD), SW - 1);
+
+            int scopePix = (scopeX + scopeYUVY[i] * SW) * 4;
+
+            if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
+            {
+                atomicAddClamp(d_yuvParade + scopePix + 3, alphaMultiplied(bright * 4, a));
+                uint8_t currentAlpha = d_yuvParade[scopePix + 3];
+
+                Color8_t c;
+
+                switch (i)
+                {
+                case 0: // Y
+                    c.r = 255;
+                    c.g = 255;
+                    c.b = 255;
+                    break;
+                case 1: // U
+                    c.r = clampUint8((int)rintf(1.164f * (y-16) + 1.793f * 0));
+                    c.g = clampUint8((int)rintf(1.164f * (y-16) - 0.213f * (u - 128) - 0.533 * 0));
+                    c.b = clampUint8((int)rintf(1.164f * (y-16) + 2.112f * (u - 128)));
+                    break;
+                case 2: // U
+                    c.r = clampUint8((int)rintf(1.164f * (y-16) + 1.793f * (v - 128)));
+                    c.g = clampUint8((int)rintf(1.164f * (y-16) - 0.213f * 0 - 0.533 * (v - 128)));
+                    c.b = clampUint8((int)rintf(1.164f * (y-16) + 2.112f * 0));
+                    break;
+                }
+
+                atomicSwapIfGreaterThan(d_yuvParade + scopePix, (uint8_t)ceilf(c.r * a / 255.0f * currentAlpha / 255.0f));
+                atomicSwapIfGreaterThan(d_yuvParade + scopePix + 1, (uint8_t)ceilf(c.g * a / 255.0f * currentAlpha / 255.0f));
+                atomicSwapIfGreaterThan(d_yuvParade + scopePix + 2, (uint8_t)ceilf(c.b * a / 255.0f * currentAlpha / 255.0f));
+            }
+        }
+    }
 }
 
 EXTERNC float renderScopes(
@@ -348,6 +405,8 @@ EXTERNC float renderScopes(
     uint8_t *wfParade,
     uint8_t *vScope,
     uint8_t *falseC,
+    uint8_t *yuvParade,
+    uint8_t *histogram,
     Scope_input_frame_type_e inputType)
 {
     if (src == nullptr)
@@ -367,6 +426,8 @@ EXTERNC float renderScopes(
         *d_wf,
         *d_wfRgb,
         *d_wfParade,
+        *d_yuvParade,
+        *d_histogram,
         *d_vScope,
         *d_falseC;
 
@@ -399,15 +460,25 @@ EXTERNC float renderScopes(
     cudaMemcpy(rgba, d_rgba, rgbaSize, cudaMemcpyDeviceToHost);
     cudaFree(d_src);
     // allocate only if required
-    if (wf != nullptr)
+    if (wf)
         cudaMalloc(&d_wf, SW * SH * 4);
-    if (wfRgb != nullptr)
+
+    if (wfRgb)
         cudaMalloc(&d_wfRgb, SW * SH * 4);
-    if (wfParade != nullptr)
+
+    if (wfParade)
         cudaMalloc(&d_wfParade, SW * SH * 4);
-    if (vScope != nullptr)
+
+    if (vScope)
         cudaMalloc(&d_vScope, SH * SH * 4);
-    if (falseC != nullptr)
+
+    if (yuvParade)
+        cudaMalloc(&d_yuvParade, SW * SH * 4);
+
+    if (histogram)
+        cudaMalloc(&d_histogram, SW * SH * 4);
+
+    if (falseC)
         cudaMalloc(&d_falseC, rgbaSize);
 
     kernelScopes<<<gridSize, blockSize>>>(
@@ -420,6 +491,8 @@ EXTERNC float renderScopes(
         d_wfParade,
         d_vScope,
         d_falseC,
+        d_yuvParade,
+        d_histogram,
         bright);
 
     cudaEventRecord(stop);
@@ -429,27 +502,37 @@ EXTERNC float renderScopes(
     cudaFree(d_rgba);
     cudaFree(d_yuv);
     // copy if required
-    if (wf != nullptr)
+    if (wf)
     {
         cudaMemcpy(wf, d_wf, SW * SH * 4, cudaMemcpyDeviceToHost);
         cudaFree(d_wf);
     }
-    if (wfRgb != nullptr)
+    if (wfRgb)
     {
         cudaMemcpy(wfRgb, d_wfRgb, SW * SH * 4, cudaMemcpyDeviceToHost);
         cudaFree(d_wfRgb);
     }
-    if (wfParade != nullptr)
+    if (wfParade)
     {
         cudaMemcpy(wfParade, d_wfParade, SW * SH * 4, cudaMemcpyDeviceToHost);
         cudaFree(d_wfParade);
     }
-    if (vScope != nullptr)
+    if (yuvParade)
+    {
+        cudaMemcpy(yuvParade, d_yuvParade, SW * SH * 4, cudaMemcpyDeviceToHost);
+        cudaFree(d_yuvParade);
+    }
+    if (histogram)
+    {
+        cudaMemcpy(histogram, d_histogram, SW * SH * 4, cudaMemcpyDeviceToHost);
+        cudaFree(d_histogram);
+    }
+    if (vScope)
     {
         cudaMemcpy(vScope, d_vScope, SH * SH * 4, cudaMemcpyDeviceToHost);
         cudaFree(d_vScope);
     }
-    if (falseC != nullptr)
+    if (falseC)
     {
         cudaMemcpy(falseC, d_falseC, rgbaSize, cudaMemcpyDeviceToHost);
         cudaFree(d_falseC);
@@ -465,7 +548,7 @@ EXTERNC void getDeviceProperties(int *major, int *minor)
     major[0] = deviceProp.major;
     minor[0] = deviceProp.minor;
 }
-    
+
 __global__ void kernelRectMaskFrame(int fWidth, int fHeight, int mLeft, int mTop, int mWidth, int mHeight, uint8_t *d_frame, int stride, int format)
 {
     int pixcount = fWidth * fHeight;

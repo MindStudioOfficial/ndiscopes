@@ -10,6 +10,10 @@ class ScopesFFI {
   /// The symbols are looked up with [lookup].
   ScopesFFI.fromLookup(ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) lookup) : _lookup = lookup;
 
+  // ====================
+  // *RENDER SCOPES
+  // ====================
+
   /// Converts the [src] image to rgba based on the specified [inputType]
   ///
   double renderScopes(
@@ -22,6 +26,8 @@ class ScopesFFI {
     ffi.Pointer<ffi.Uint8> wfParade,
     ffi.Pointer<ffi.Uint8> vScope,
     ffi.Pointer<ffi.Uint8> falseC,
+    ffi.Pointer<ffi.Uint8> yuvParade,
+    ffi.Pointer<ffi.Uint8> histogram,
     int inputType,
   ) {
     return _renderScopes(
@@ -34,6 +40,8 @@ class ScopesFFI {
       wfParade,
       vScope,
       falseC,
+      yuvParade,
+      histogram,
       inputType,
     );
   }
@@ -43,6 +51,8 @@ class ScopesFFI {
           ffi.Float Function(
     ffi.Int32,
     ffi.Int32,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
@@ -64,8 +74,14 @@ class ScopesFFI {
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Pointer<ffi.Uint8>,
     int,
   )>();
+
+  // ====================
+  // *Get Device Properties
+  // ====================
 
   void getDeviceProperties(
     ffi.Pointer<ffi.Int32> major,
@@ -86,6 +102,10 @@ class ScopesFFI {
     ffi.Pointer<ffi.Int32>,
     ffi.Pointer<ffi.Int32>,
   )>();
+
+  // ====================
+  // *Rect Mask Frame
+  // ====================
 
   /// format: 1 = UYVY | 2 = BGRA
   void rectMaskFrame(Size frameSize, Rect mask, ffi.Pointer<ffi.Uint8> frame, int format) {
@@ -126,6 +146,10 @@ class ScopesFFI {
     int format,
   )>();
 
+  // ====================
+  // *Thumbnail from uyvy
+  // ====================
+
   void thumbnailFromUyvy(
     ffi.Pointer<ffi.Uint8> src,
     int srcWidth,
@@ -157,6 +181,10 @@ class ScopesFFI {
     int tnWidth,
     int tnHeight,
   )>();
+
+  // ====================
+  // *Thumbnail from bgra
+  // ====================
 
   void thumbnailFromBgra(
     ffi.Pointer<ffi.Uint8> src,

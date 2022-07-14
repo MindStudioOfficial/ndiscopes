@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart' as ffi;
 import 'package:ndiscopes/bindings/scopes_bindings_v1.dart';
+import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
 
@@ -133,6 +134,8 @@ class SavedInputFrame {
           pWFParade,
           pVScope,
           pFalseC,
+          ffi.nullptr, // !
+          ffi.nullptr, // !
           ScopeInputFrameTypeE.uyvy,
         );
         break;
@@ -148,6 +151,8 @@ class SavedInputFrame {
           pWFParade,
           pVScope,
           pFalseC,
+          ffi.nullptr, // !
+          ffi.nullptr, // !
           ScopeInputFrameTypeE.bgra,
         );
         break;
@@ -203,15 +208,19 @@ class SavedInputFrame {
   ///
   /// provide desired width and height of the scopes
   ///
-  Future<void> convertToScopesPointer(int scopeWidth, int scopeHeight) async {
+  Future<void> convertToScopesPointer() async {
     // create all necessary pointers with desired dimesions *4 (4 Bytes RGBA)
     ffi.Pointer<ffi.Uint8> pSrc = ffi.calloc.call<ffi.Uint8>(bytes.length);
     ffi.Pointer<ffi.Uint8> pRGBA = ffi.calloc.call<ffi.Uint8>(width * height * 4);
-    ffi.Pointer<ffi.Uint8> pWF = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
-    ffi.Pointer<ffi.Uint8> pWFRgb = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
-    ffi.Pointer<ffi.Uint8> pWFParade = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
-    ffi.Pointer<ffi.Uint8> pVScope = ffi.calloc.call<ffi.Uint8>(scopeHeight * scopeHeight * 4);
     ffi.Pointer<ffi.Uint8> pFalseC = ffi.calloc.call<ffi.Uint8>(width * height * 4);
+
+    ffi.Pointer<ffi.Uint8> pWF = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
+    ffi.Pointer<ffi.Uint8> pWFRgb = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
+    ffi.Pointer<ffi.Uint8> pWFParade = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
+    ffi.Pointer<ffi.Uint8> pYUVParade = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
+    ffi.Pointer<ffi.Uint8> pHistogram = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
+
+    ffi.Pointer<ffi.Uint8> pVScope = ffi.calloc.call<ffi.Uint8>(ScopeSize.height * ScopeSize.height * 4);
 
     // copy source bytes into pointer
     pSrc.asTypedList(bytes.length).setAll(0, bytes);
@@ -221,12 +230,36 @@ class SavedInputFrame {
       case NDIInputFormat.uyvy:
         //! replace with CPU/GPU compatible
         scopes.renderScopes(
-            width, height, pSrc, pRGBA, pWF, pWFRgb, pWFParade, pVScope, pFalseC, ScopeInputFrameTypeE.uyvy);
+          width,
+          height,
+          pSrc,
+          pRGBA,
+          pWF,
+          pWFRgb,
+          pWFParade,
+          pVScope,
+          pFalseC,
+          pYUVParade,
+          pHistogram,
+          ScopeInputFrameTypeE.uyvy,
+        );
         break;
       case NDIInputFormat.bgra:
         //! replace with CPU/GPU compatible
         scopes.renderScopes(
-            width, height, pSrc, pRGBA, pWF, pWFRgb, pWFParade, pVScope, pFalseC, ScopeInputFrameTypeE.bgra);
+          width,
+          height,
+          pSrc,
+          pRGBA,
+          pWF,
+          pWFRgb,
+          pWFParade,
+          pVScope,
+          pFalseC,
+          pYUVParade,
+          pHistogram,
+          ScopeInputFrameTypeE.bgra,
+        );
         break;
       default:
         return;
@@ -234,11 +267,15 @@ class SavedInputFrame {
 
     // update all textures
     tr.update(TextureIDs.texRGBAO, pRGBA, width, height);
-    tr.update(TextureIDs.texWFO, pWF, scopeWidth, scopeHeight);
-    tr.update(TextureIDs.texWFRgbO, pWFRgb, scopeWidth, scopeHeight);
-    tr.update(TextureIDs.texWFParadeO, pWFParade, scopeWidth, scopeHeight);
-    tr.update(TextureIDs.texVscopeO, pVScope, scopeHeight, scopeHeight);
     tr.update(TextureIDs.texFalseCO, pFalseC, width, height);
+
+    tr.update(TextureIDs.texWFO, pWF, ScopeSize.width, ScopeSize.height);
+    tr.update(TextureIDs.texWFRgbO, pWFRgb, ScopeSize.width, ScopeSize.height);
+    tr.update(TextureIDs.texWFParadeO, pWFParade, ScopeSize.width, ScopeSize.height);
+    tr.update(TextureIDs.texYUVParadeO, pYUVParade, ScopeSize.width, ScopeSize.height);
+    tr.update(TextureIDs.texHistogramO, pHistogram, ScopeSize.height, ScopeSize.height);
+
+    tr.update(TextureIDs.texVscopeO, pVScope, ScopeSize.height, ScopeSize.height);
   }
 
   /// Converts this to a json encodable map
