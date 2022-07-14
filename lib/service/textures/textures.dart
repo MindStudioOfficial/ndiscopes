@@ -2,23 +2,29 @@ import 'package:texturerender/texturerender.dart';
 
 late Texturerender tr;
 
-const int texRGBA = 0;
-const int texRGBAO = 1;
-const int texFalseC = 2;
-const int texFalseCO = 3;
-const int texWF = 4;
-const int texWFO = 5;
-const int texWFRgb = 6;
-const int texWFRgbO = 7;
-const int texWFParade = 8;
-const int texWFParadeO = 9;
-const int texVscope = 10;
-const int texVscopeO = 11;
+abstract class TextureIDs {
+  static const int texRGBA = 0;
+  static const int texRGBAO = 1;
+  static const int texFalseC = 2;
+  static const int texFalseCO = 3;
+  static const int texWF = 4;
+  static const int texWFO = 5;
+  static const int texWFRgb = 6;
+  static const int texWFRgbO = 7;
+  static const int texWFParade = 8;
+  static const int texWFParadeO = 9;
+  static const int texVscope = 10;
+  static const int texVscopeO = 11;
+  static const int texYUVParade = 12;
+  static const int texYUVParadeO = 13;
+  static const int texHistogram = 14;
+  static const int texHistogramO = 15;
+}
 
 Future<bool> initTextures() async {
   tr = Texturerender();
   bool succ = true;
-  for (int i = 0; i < 12; i++) {
+  for (int i = 0; i < 16; i++) {
     if (!(await tr.register(i))) succ = false;
   }
   return succ;

@@ -15,6 +15,20 @@ import 'package:ndiscopes/widgets/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
+// TODO: Select Scope Types
+// TODO: Per Scope Overlays
+// TODO: Per Scope Settings
+// TODO: Per Scope Context Menu
+// TODO: Toggle Vectorscope Colorize
+// TODO: Change Luminance Scope Color
+// TODO: YUV Parade
+// TODO: Histogram
+// TODO: 10% Black Level View
+// TODO: Audio Waveform
+// TODO: Audio Spectrum
+// TODO: Audio Vectorscope
+// TODO: Color Space Coverage
+
 void main() {
   // initialize components
   init();
@@ -301,8 +315,8 @@ class _MainState extends State<Main> with WindowListener {
                                 controller: _vScopeScroll,
                                 child: const VScope(
                                   title: "UV Vectorscope",
-                                  imgId: texVscope,
-                                  ovlId: texVscopeO,
+                                  imgId: TextureIDs.texVscope,
+                                  ovlId: TextureIDs.texVscopeO,
                                 ),
                               ),
                             ),
@@ -326,21 +340,21 @@ class _MainState extends State<Main> with WindowListener {
                       children: [
                         SizedBox(
                           width: width / scopesCountX,
-                          child: ScopeSelector(
-                            type: settings.scopeLayout[0],
+                          child: const ScopeSelector(
+                            layoutIndex: 0,
                           ),
                         ),
                         SizedBox(
                           width: width / scopesCountX,
-                          child: ScopeSelector(
-                            type: settings.scopeLayout[1],
+                          child: const ScopeSelector(
+                            layoutIndex: 1,
                           ),
                         ),
                         if (!portraitLayout)
                           SizedBox(
                             width: width / scopesCountX,
-                            child: ScopeSelector(
-                              type: settings.scopeLayout[2],
+                            child: const ScopeSelector(
+                              layoutIndex: 2,
                             ),
                           ),
                         if (settings.audioLevelEnabled && !portraitLayout) const AudioMeters(),
@@ -354,16 +368,16 @@ class _MainState extends State<Main> with WindowListener {
                         children: [
                           SizedBox(
                             width: width / scopesCountX,
-                            child: ScopeSelector(
-                              type: settings.scopeLayout[2],
+                            child: const ScopeSelector(
+                              layoutIndex: 2,
                             ),
                           ),
                           SizedBox(
                             width: width / scopesCountX / 2,
                             child: const VScope(
                               title: "UV Vectorscope",
-                              imgId: texVscope,
-                              ovlId: texVscopeO,
+                              imgId: TextureIDs.texVscope,
+                              ovlId: TextureIDs.texVscopeO,
                             ),
                           ),
                           if (settings.audioLevelEnabled) const AudioMeters(),

@@ -250,12 +250,12 @@ class NDI {
         int scopeWidth = data["scopeWidth"]! as int;
         int scopeHeight = data["scopeHeight"]! as int;
 
-        if (pRGBA != nullptr) tr.update(texRGBA, pRGBA, width, height);
-        if (pFalseC != nullptr) tr.update(texFalseC, pFalseC, width, height);
-        if (pWF != nullptr) tr.update(texWF, pWF, scopeWidth, scopeHeight);
-        if (pWFRgb != nullptr) tr.update(texWFRgb, pWFRgb, scopeWidth, scopeHeight);
-        if (pWFParade != nullptr) tr.update(texWFParade, pWFParade, scopeWidth, scopeHeight);
-        if (pVscope != nullptr) tr.update(texVscope, pVscope, scopeHeight, scopeHeight);
+        if (pRGBA != nullptr) tr.update(TextureIDs.texRGBA, pRGBA, width, height);
+        if (pFalseC != nullptr) tr.update(TextureIDs.texFalseC, pFalseC, width, height);
+        if (pWF != nullptr) tr.update(TextureIDs.texWF, pWF, scopeWidth, scopeHeight);
+        if (pWFRgb != nullptr) tr.update(TextureIDs.texWFRgb, pWFRgb, scopeWidth, scopeHeight);
+        if (pWFParade != nullptr) tr.update(TextureIDs.texWFParade, pWFParade, scopeWidth, scopeHeight);
+        if (pVscope != nullptr) tr.update(TextureIDs.texVscope, pVscope, scopeHeight, scopeHeight);
 
         onFrame(
           frameRate,

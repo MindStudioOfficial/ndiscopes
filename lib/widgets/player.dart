@@ -76,12 +76,14 @@ class _FrameViewerState extends State<FrameViewer> {
 
     bool texturesInitialized = frame.texturesInitialized;
 
-    Widget imgw =
-        texturesInitialized ? (frame.falseColorEnabled ? tr.widget(texFalseC) : tr.widget(texRGBA)) : Container();
-    Widget ovlw =
-        texturesInitialized ? (frame.falseColorEnabled ? tr.widget(texFalseCO) : tr.widget(texRGBAO)) : Container();
+    Widget imgw = texturesInitialized
+        ? (frame.falseColorEnabled ? tr.widget(TextureIDs.texFalseC) : tr.widget(TextureIDs.texRGBA))
+        : Container();
+    Widget ovlw = texturesInitialized
+        ? (frame.falseColorEnabled ? tr.widget(TextureIDs.texFalseCO) : tr.widget(TextureIDs.texRGBAO))
+        : Container();
 
-    ValueListenable<Tex>? texInfo = tr.textureInfo(texRGBA);
+    ValueListenable<Tex>? texInfo = tr.textureInfo(TextureIDs.texRGBA);
 
     return Row(
       mainAxisSize: MainAxisSize.max,

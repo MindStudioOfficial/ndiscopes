@@ -5,6 +5,7 @@ import 'package:ndiscopes/service/textures/textures.dart';
 import 'dart:ui' as ui;
 import 'package:ndiscopes/util/colorconversion.dart';
 import 'package:ndiscopes/widgets/player.dart';
+import 'package:ndiscopes/widgets/scopeswitcher.dart';
 import 'package:provider/provider.dart';
 
 /// the colors at which to draw the squares on the vectorscope
@@ -20,10 +21,10 @@ List<Color> scopeColors = [
 ];
 
 class ScopeSelector extends StatelessWidget {
-  final ScopeTypes type;
+  final int layoutIndex;
   const ScopeSelector({
     Key? key,
-    required this.type,
+    required this.layoutIndex,
   }) : super(key: key);
 
   @override
@@ -31,31 +32,39 @@ class ScopeSelector extends StatelessWidget {
     int imgId;
     int ovlId;
     bool parade = false;
+    final scopeSettings = context.watch<ScopeSettings>();
+    ScopeTypes type = scopeSettings.scopeLayout[layoutIndex];
+
     switch (type) {
-      case ScopeTypes.histogram:
-        imgId = texWF;
-        ovlId = texWFO;
-        break;
       case ScopeTypes.luma:
-        imgId = texWF;
-        ovlId = texWFO;
+        imgId = TextureIDs.texWF;
+        ovlId = TextureIDs.texWFO;
         break;
       case ScopeTypes.parade:
-        imgId = texWFParade;
-        ovlId = texWFParadeO;
+        imgId = TextureIDs.texWFParade;
+        ovlId = TextureIDs.texWFParadeO;
         parade = true;
         break;
       case ScopeTypes.rgb:
-        imgId = texWFRgb;
-        ovlId = texWFRgbO;
+        imgId = TextureIDs.texWFRgb;
+        ovlId = TextureIDs.texWFRgbO;
+        break;
+      case ScopeTypes.yuvparade:
+        imgId = TextureIDs.texYUVParade;
+        ovlId = TextureIDs.texYUVParadeO;
+        break;
+      case ScopeTypes.histogram:
+        imgId = TextureIDs.texHistogram;
+        ovlId = TextureIDs.texHistogramO;
         break;
 
       default:
-        imgId = texWF;
-        ovlId = texWFO;
+        imgId = TextureIDs.texWF;
+        ovlId = TextureIDs.texWFO;
         break;
     }
     return Scope(
+      layoutIndex: layoutIndex,
       imgId: imgId,
       ovlId: ovlId,
       isParade: parade,
@@ -69,6 +78,7 @@ class Scope extends StatelessWidget {
   final bool isParade;
   final int imgId;
   final int ovlId;
+  final int layoutIndex;
 
   const Scope({
     Key? key,
@@ -76,6 +86,7 @@ class Scope extends StatelessWidget {
     required this.ovlId,
     required this.isParade,
     required this.title,
+    required this.layoutIndex,
   }) : super(key: key);
 
   @override
@@ -98,11 +109,15 @@ class Scope extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Text(
-                title,
-                style: tSmall,
+            SizedBox(
+              width: 600,
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Center(
+                  child: ScopeSwitcher(
+                    layoutIndex: layoutIndex,
+                  ),
+                ),
               ),
             ),
             RepaintBoundary(

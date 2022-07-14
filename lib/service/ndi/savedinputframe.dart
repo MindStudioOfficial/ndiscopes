@@ -233,12 +233,12 @@ class SavedInputFrame {
     }
 
     // update all textures
-    tr.update(texRGBAO, pRGBA, width, height);
-    tr.update(texWFO, pWF, scopeWidth, scopeHeight);
-    tr.update(texWFRgbO, pWFRgb, scopeWidth, scopeHeight);
-    tr.update(texWFParadeO, pWFParade, scopeWidth, scopeHeight);
-    tr.update(texVscopeO, pVScope, scopeHeight, scopeHeight);
-    tr.update(texFalseCO, pFalseC, width, height);
+    tr.update(TextureIDs.texRGBAO, pRGBA, width, height);
+    tr.update(TextureIDs.texWFO, pWF, scopeWidth, scopeHeight);
+    tr.update(TextureIDs.texWFRgbO, pWFRgb, scopeWidth, scopeHeight);
+    tr.update(TextureIDs.texWFParadeO, pWFParade, scopeWidth, scopeHeight);
+    tr.update(TextureIDs.texVscopeO, pVScope, scopeHeight, scopeHeight);
+    tr.update(TextureIDs.texFalseCO, pFalseC, width, height);
   }
 
   /// Converts this to a json encodable map
