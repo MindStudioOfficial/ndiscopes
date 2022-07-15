@@ -41,6 +41,7 @@ EXTERNC float renderScopes(
     uint8_t *falseC,
     uint8_t *yuvParade,
     uint8_t *histogram,
+    uint8_t *blacklevel,
     Scope_input_frame_type_e inputType);
 
 

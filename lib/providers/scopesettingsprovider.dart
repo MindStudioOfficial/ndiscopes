@@ -148,6 +148,7 @@ enum ScopeTypes {
   parade,
   histogram,
   yuvparade,
+  blacklevel,
 }
 
 Map<ScopeTypes, String> scopeTypeNames = {
@@ -156,6 +157,7 @@ Map<ScopeTypes, String> scopeTypeNames = {
   ScopeTypes.parade: "RGB Parade",
   ScopeTypes.rgb: "RGB Waveform",
   ScopeTypes.yuvparade: "YUV Parade",
+  ScopeTypes.blacklevel: "Black Level"
 };
 
 abstract class ScopeSize {

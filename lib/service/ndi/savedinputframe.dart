@@ -104,106 +104,6 @@ class SavedInputFrame {
 
   /// Renders all frames necessary to draw the source and all scopes/waveforms
   ///
-  /// provide desired width and height of the scopes
-  Future<NDIOutputFrame?> convertToScopes(int scopeWidth, int scopeHeight) async {
-    final c = Completer<NDIOutputFrame?>();
-
-    // create all necessary pointers with desired dimesions *4 (4 Bytes RGBA)
-    ffi.Pointer<ffi.Uint8> pSrc = ffi.calloc.call<ffi.Uint8>(bytes.length);
-    ffi.Pointer<ffi.Uint8> pRGBA = ffi.calloc.call<ffi.Uint8>(width * height * 4);
-    ffi.Pointer<ffi.Uint8> pWF = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
-    ffi.Pointer<ffi.Uint8> pWFRgb = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
-    ffi.Pointer<ffi.Uint8> pWFParade = ffi.calloc.call<ffi.Uint8>(scopeWidth * scopeHeight * 4);
-    ffi.Pointer<ffi.Uint8> pVScope = ffi.calloc.call<ffi.Uint8>(scopeHeight * scopeHeight * 4);
-    ffi.Pointer<ffi.Uint8> pFalseC = ffi.calloc.call<ffi.Uint8>(width * height * 4);
-
-    // copy source bytes into pointer
-    pSrc.asTypedList(bytes.length).setAll(0, bytes);
-
-    // use different convert method based on input frame format
-    switch (format) {
-      case NDIInputFormat.uyvy:
-        //! replace with CPU/GPU compatible
-        scopes.renderScopes(
-          width,
-          height,
-          pSrc,
-          pRGBA,
-          pWF,
-          pWFRgb,
-          pWFParade,
-          pVScope,
-          pFalseC,
-          ffi.nullptr, // !
-          ffi.nullptr, // !
-          ScopeInputFrameTypeE.uyvy,
-        );
-        break;
-      case NDIInputFormat.bgra:
-        //! replace with CPU/GPU compatible
-        scopes.renderScopes(
-          width,
-          height,
-          pSrc,
-          pRGBA,
-          pWF,
-          pWFRgb,
-          pWFParade,
-          pVScope,
-          pFalseC,
-          ffi.nullptr, // !
-          ffi.nullptr, // !
-          ScopeInputFrameTypeE.bgra,
-        );
-        break;
-      default:
-        c.complete(null);
-        return c.future;
-    }
-    // convert from rgba bytes in pointers to ui.Image then free the pointers
-    ui.decodeImageFromPixels(pRGBA.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888, (iRGBA) {
-      ffi.calloc.free(pRGBA);
-      ui.decodeImageFromPixels(
-          pWF.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888, (iWF) {
-        ffi.calloc.free(pWF);
-        ui.decodeImageFromPixels(
-            pWFRgb.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-            (iWFRgb) {
-          ffi.calloc.free(pWFRgb);
-          ui.decodeImageFromPixels(
-              pWFParade.asTypedList(scopeWidth * scopeHeight * 4), scopeWidth, scopeHeight, ui.PixelFormat.rgba8888,
-              (iWFParade) {
-            ffi.calloc.free(pWFParade);
-            ui.decodeImageFromPixels(
-                pVScope.asTypedList(scopeHeight * scopeHeight * 4), scopeHeight, scopeHeight, ui.PixelFormat.rgba8888,
-                (iVScope) {
-              ffi.calloc.free(pVScope);
-              // return the finished frames
-              ui.decodeImageFromPixels(pFalseC.asTypedList(width * height * 4), width, height, ui.PixelFormat.rgba8888,
-                  (iFalseC) {
-                ffi.calloc.free(pFalseC);
-                c.complete(
-                  NDIOutputFrame(
-                    iRGBA: iRGBA,
-                    iWF: iWF,
-                    iWFRgb: iWFRgb,
-                    iWFParade: iWFParade,
-                    iVScope: iVScope,
-                    iFalseC: iFalseC,
-                  ),
-                );
-              });
-            });
-          });
-        });
-      });
-    });
-    // return intermediate future until completed above
-    return c.future;
-  }
-
-  /// Renders all frames necessary to draw the source and all scopes/waveforms
-  ///
   /// outputs everything as pointers instead of ui.Image
   ///
   /// provide desired width and height of the scopes
@@ -219,6 +119,7 @@ class SavedInputFrame {
     ffi.Pointer<ffi.Uint8> pWFParade = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
     ffi.Pointer<ffi.Uint8> pYUVParade = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
     ffi.Pointer<ffi.Uint8> pHistogram = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
+    ffi.Pointer<ffi.Uint8> pBlacklevel = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
 
     ffi.Pointer<ffi.Uint8> pVScope = ffi.calloc.call<ffi.Uint8>(ScopeSize.height * ScopeSize.height * 4);
 
@@ -241,6 +142,7 @@ class SavedInputFrame {
           pFalseC,
           pYUVParade,
           pHistogram,
+          pBlacklevel,
           ScopeInputFrameTypeE.uyvy,
         );
         break;
@@ -258,6 +160,7 @@ class SavedInputFrame {
           pFalseC,
           pYUVParade,
           pHistogram,
+          pBlacklevel,
           ScopeInputFrameTypeE.bgra,
         );
         break;
@@ -273,7 +176,8 @@ class SavedInputFrame {
     tr.update(TextureIDs.texWFRgbO, pWFRgb, ScopeSize.width, ScopeSize.height);
     tr.update(TextureIDs.texWFParadeO, pWFParade, ScopeSize.width, ScopeSize.height);
     tr.update(TextureIDs.texYUVParadeO, pYUVParade, ScopeSize.width, ScopeSize.height);
-    tr.update(TextureIDs.texHistogramO, pHistogram, ScopeSize.height, ScopeSize.height);
+    tr.update(TextureIDs.texHistogramO, pHistogram, ScopeSize.width, ScopeSize.height);
+    tr.update(TextureIDs.texBLO, pBlacklevel, ScopeSize.width, ScopeSize.height);
 
     tr.update(TextureIDs.texVscopeO, pVScope, ScopeSize.height, ScopeSize.height);
   }

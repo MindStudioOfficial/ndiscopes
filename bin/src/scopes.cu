@@ -224,6 +224,7 @@ __global__ void kernelScopes(
     uint8_t *d_falseC,
     uint8_t *d_yuvParade,
     uint8_t *d_histogram,
+    uint8_t *d_blacklevel,
     int bright)
 {
 
@@ -310,9 +311,9 @@ __global__ void kernelScopes(
     {
         for (int i = 0; i < 3; i++)
         {
-            scopeX = minInt((int)rint(STHIRD * (srcX / (double)srcWidth) + i * STHIRD), SW - 1);
+            int scopeXT = minInt((int)rint(STHIRD * (srcX / (double)srcWidth) + i * STHIRD), SW - 1);
 
-            int scopePix = (scopeX + scopeRGBY[i] * SW) * 4;
+            int scopePix = (scopeXT + scopeRGBY[i] * SW) * 4;
 
             if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
             {
@@ -330,9 +331,9 @@ __global__ void kernelScopes(
 
     if (d_vScope)
     {
-        scopeX = minInt((int)rintf(SH * u / 255.0f), SH - 1);
-        int scopeY = minInt((int)rintf(SH * (1 - v / 255.0f)), SH - 1);
-        int scopePixByte = (scopeY * SH + scopeX) * 4;
+        int scopeXU = minInt((int)rintf(SH * u / 255.0f), SH - 1);
+        int scopeYV = minInt((int)rintf(SH * (1 - v / 255.0f)), SH - 1);
+        int scopePixByte = (scopeYV * SH + scopeXU) * 4;
         if (scopePixByte >= 0 && scopePixByte < (SH * SH * 4) - 3)
         {
             atomicAddClamp(d_vScope + scopePixByte + 3, (uint8_t)ceil(bright * 4 * a / (double)255));
@@ -357,9 +358,9 @@ __global__ void kernelScopes(
 
         for (int i = 0; i < 3; i++)
         {
-            scopeX = minInt((int)rint(STHIRD * (srcX / (double)srcWidth) + i * STHIRD), SW - 1);
+            int scopeXT = minInt((int)rint(STHIRD * (srcX / (double)srcWidth) + i * STHIRD), SW - 1);
 
-            int scopePix = (scopeX + scopeYUVY[i] * SW) * 4;
+            int scopePix = (scopeXT + scopeYUVY[i] * SW) * 4;
 
             if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
             {
@@ -393,6 +394,37 @@ __global__ void kernelScopes(
             }
         }
     }
+
+    // ========================
+    // RGB Blacklevel Scope
+    // ========================
+
+    int scopeBlackRGBY[] = {
+        minInt((int)rint(SH * (1 - (r / 26.0))), SH - 1),
+        minInt((int)rint(SH * (1 - (g / 26.0))), SH - 1),
+        minInt((int)rint(SH * (1 - (b / 26.0))), SH - 1)};
+
+    if (d_blacklevel)
+    {
+
+        for (int i = 0; i < 3; i++)
+        {
+            int yval = scopeBlackRGBY[i];
+            if (yval >= SH || yval < 0)
+                continue;
+            for (int j = 0; j < 10; j++)
+            {
+                int scopePix = (scopeX + (yval+j) * SW) * 4;
+                if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3) // fill y 
+                {
+                    // add brightness to the green byte of waveform
+                    atomicAddClamp(d_blacklevel + scopePix + i, (uint8_t)((float)bright * a / 255.0f));
+                    // set alpha of that pixel to source alpha only IF present value is smaller
+                    atomicSwapIfGreaterThan(d_blacklevel + scopePix + 3, a);
+                }
+            }
+        }
+    }
 }
 
 EXTERNC float renderScopes(
@@ -407,6 +439,7 @@ EXTERNC float renderScopes(
     uint8_t *falseC,
     uint8_t *yuvParade,
     uint8_t *histogram,
+    uint8_t *blacklevel,
     Scope_input_frame_type_e inputType)
 {
     if (src == nullptr)
@@ -428,6 +461,7 @@ EXTERNC float renderScopes(
             *d_wfParade = nullptr,
             *d_yuvParade = nullptr,
             *d_histogram = nullptr,
+            *d_blacklevel = nullptr,
             *d_vScope = nullptr,
             *d_falseC = nullptr;
 
@@ -475,6 +509,9 @@ EXTERNC float renderScopes(
     if (yuvParade)
         cudaMalloc(&d_yuvParade, SW * SH * 4);
 
+    if (blacklevel)
+        cudaMalloc(&d_blacklevel, SW * SH * 4);
+
     if (histogram)
         cudaMalloc(&d_histogram, SW * SH * 4);
 
@@ -493,6 +530,7 @@ EXTERNC float renderScopes(
         d_falseC,
         d_yuvParade,
         d_histogram,
+        d_blacklevel,
         bright);
 
     cudaEventRecord(stop);
@@ -521,6 +559,11 @@ EXTERNC float renderScopes(
     {
         cudaMemcpy(yuvParade, d_yuvParade, SW * SH * 4, cudaMemcpyDeviceToHost);
         cudaFree(d_yuvParade);
+    }
+    if (blacklevel)
+    {
+        cudaMemcpy(blacklevel, d_blacklevel, SW * SH * 4, cudaMemcpyDeviceToHost);
+        cudaFree(d_blacklevel);
     }
     if (histogram)
     {

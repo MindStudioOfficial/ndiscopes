@@ -3,7 +3,7 @@ import 'package:texturerender/texturerender.dart';
 late Texturerender tr;
 
 abstract class TextureIDs {
-  static const int count = 16;
+  static const int count = 18;
   static const int texRGBA = 0;
   static const int texRGBAO = 1;
   static const int texFalseC = 2;
@@ -20,6 +20,8 @@ abstract class TextureIDs {
   static const int texYUVParadeO = 13;
   static const int texHistogram = 14;
   static const int texHistogramO = 15;
+  static const int texBL = 16;
+  static const int texBLO = 17;
 }
 
 Future<bool> initTextures() async {

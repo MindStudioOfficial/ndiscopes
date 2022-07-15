@@ -16,15 +16,16 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 // DONE: Select Scope Types
-// TODO: Don't render deselected scopes
+// DONE: YUV Parade
+// DONE: Don't render deselected scopes
+// DONE: 10% Black Level View
+// TODO: Visual Highlighting of focused buttons
 // TODO: Per Scope Overlays
 // TODO: Per Scope Settings
 // TODO: Per Scope Context Menu
 // TODO: Toggle Vectorscope Colorize
 // TODO: Change Luminance Scope Color
-// DONE: YUV Parade
 // TODO: Histogram
-// TODO: 10% Black Level View
 // TODO: Audio Waveform
 // TODO: Audio Spectrum
 // TODO: Audio Vectorscope

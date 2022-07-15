@@ -246,6 +246,7 @@ class NDI {
         Pointer<Uint8> pWFParade = Pointer.fromAddress(data["pWFParade"]! as int);
         Pointer<Uint8> pYUVParade = Pointer.fromAddress(data["pYUVParade"]! as int);
         Pointer<Uint8> pHistogram = Pointer.fromAddress(data["pHistogram"]! as int);
+        Pointer<Uint8> pBlacklevel = Pointer.fromAddress(data["pBlacklevel"]! as int);
         Pointer<Uint8> pVscope = Pointer.fromAddress(data["pVScope"]! as int);
         Pointer<Uint8> pFalseC = Pointer.fromAddress(data["pFalseC"]! as int);
 
@@ -265,6 +266,7 @@ class NDI {
         if (pWFParade != nullptr) tr.update(TextureIDs.texWFParade, pWFParade, ScopeSize.width, ScopeSize.height);
         if (pYUVParade != nullptr) tr.update(TextureIDs.texYUVParade, pYUVParade, ScopeSize.width, ScopeSize.height);
         if (pHistogram != nullptr) tr.update(TextureIDs.texHistogram, pHistogram, ScopeSize.width, ScopeSize.height);
+        if (pBlacklevel != nullptr) tr.update(TextureIDs.texBL, pBlacklevel, ScopeSize.width, ScopeSize.height);
         if (pVscope != nullptr) tr.update(TextureIDs.texVscope, pVscope, ScopeSize.height, ScopeSize.height);
 
         onFrame(
@@ -397,6 +399,9 @@ class NDI {
       Pointer<Uint8> pHistogram = scopeTypes.contains(ScopeTypes.histogram)
           ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
           : nullptr;
+      Pointer<Uint8> pBlacklevel = scopeTypes.contains(ScopeTypes.blacklevel)
+          ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
+          : nullptr;
 
       Pointer<Uint8> pVScope = ffi.calloc.call<Uint8>(ScopeSize.height * ScopeSize.height * 4);
       // convert to rgba pointers based on the format
@@ -420,6 +425,7 @@ class NDI {
             pFalseC,
             pYUVParade,
             pHistogram,
+            pBlacklevel,
             ScopeInputFrameTypeE.uyvy,
           );
 
@@ -443,6 +449,7 @@ class NDI {
             pFalseC,
             pYUVParade,
             pHistogram,
+            pBlacklevel,
             ScopeInputFrameTypeE.bgra,
           );
 
@@ -468,6 +475,7 @@ class NDI {
         "pFalseC": pFalseC.address,
         "pYUVParade": pYUVParade.address,
         "pHistogram": pHistogram.address,
+        "pBlacklevel": pBlacklevel.address,
         "frameRate": frameRate,
         "renderStartTime": renderStartTime,
       });

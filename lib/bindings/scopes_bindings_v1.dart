@@ -28,6 +28,7 @@ class ScopesFFI {
     ffi.Pointer<ffi.Uint8> falseC,
     ffi.Pointer<ffi.Uint8> yuvParade,
     ffi.Pointer<ffi.Uint8> histogram,
+    ffi.Pointer<ffi.Uint8> blacklevel,
     int inputType,
   ) {
     return _renderScopes(
@@ -42,6 +43,7 @@ class ScopesFFI {
       falseC,
       yuvParade,
       histogram,
+      blacklevel,
       inputType,
     );
   }
@@ -60,6 +62,7 @@ class ScopesFFI {
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
+    ffi.Pointer<ffi.Uint8>,
     ffi.Int32,
   )>>("renderScopes");
 
@@ -67,6 +70,7 @@ class ScopesFFI {
       double Function(
     int,
     int,
+    ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,

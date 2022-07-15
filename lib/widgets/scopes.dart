@@ -58,6 +58,10 @@ class ScopeSelector extends StatelessWidget {
         imgId = TextureIDs.texHistogram;
         ovlId = TextureIDs.texHistogramO;
         break;
+      case ScopeTypes.blacklevel:
+        imgId = TextureIDs.texBL;
+        ovlId = TextureIDs.texBLO;
+        break;
 
       default:
         imgId = TextureIDs.texWF;
@@ -69,13 +73,11 @@ class ScopeSelector extends StatelessWidget {
       imgId: imgId,
       ovlId: ovlId,
       isParade: parade,
-      title: scopeTypeNames[type] ?? "Unknown",
     );
   }
 }
 
 class Scope extends StatelessWidget {
-  final String title;
   final bool isParade;
   final int imgId;
   final int ovlId;
@@ -86,7 +88,6 @@ class Scope extends StatelessWidget {
     required this.imgId,
     required this.ovlId,
     required this.isParade,
-    required this.title,
     required this.layoutIndex,
   }) : super(key: key);
 
