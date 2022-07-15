@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 // DONE: Select Scope Types
+// TODO: Don't render deselected scopes
 // TODO: Per Scope Overlays
 // TODO: Per Scope Settings
 // TODO: Per Scope Context Menu
@@ -159,6 +160,7 @@ class _MainState extends State<Main> with WindowListener {
       },
       context.read<MaskProvider>().rect,
       context.read<MaskProvider>().active,
+      context.read<ScopeSettings>().scopeTypes,
     );
   }
 
@@ -182,27 +184,38 @@ class _MainState extends State<Main> with WindowListener {
     if (pS != null) {
       await Future.wait([ndi.stopGetFrames(), ndi.stopGetAudio()]);
 
+      // update the current selected source
       selectedSource = NDISource(pS);
       setState(() {});
 
+      // * START RECEIVING VIDEO
       ndi.getFrames(
+        // the pointer to the current source
         selectedSource!.source,
+        // the callback when a new frame arrives
         (rate, delay, size) {
           final stats = context.read<Statistics>();
           stats.update(frameRate: rate, renderDelay: delay, frameSize: size);
           stats.calculateRenderFrameRate();
         },
+        // the current rect mask
         context.read<MaskProvider>().rect,
+        // wether the mask is enabled
         context.read<MaskProvider>().active,
+        // the currently active Scopes that need rendering
+        context.read<ScopeSettings>().scopeTypes,
       );
+
+      // * START RECEIVING AUDIO
       ndi.getAudio(
-        pS,
+        selectedSource!.source,
         (level) {
           context.read<AudioLevel>().setLevels(level.channelLevels);
         },
         context.read<ScopeSettings>().audioOutputEnabled,
       );
     }
+    // update the discord rich presence with the new source information (or null for NO SOURCE)
     rpcUpdate(selectedSource?.name);
   }
 

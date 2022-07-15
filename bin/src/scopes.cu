@@ -376,14 +376,14 @@ __global__ void kernelScopes(
                     c.b = 255;
                     break;
                 case 1: // U
-                    c.r = clampUint8((int)rintf(1.164f * (y-16) + 1.793f * 0));
-                    c.g = clampUint8((int)rintf(1.164f * (y-16) - 0.213f * (u - 128) - 0.533 * 0));
-                    c.b = clampUint8((int)rintf(1.164f * (y-16) + 2.112f * (u - 128)));
+                    c.r = clampUint8((int)rintf(1.164f * (y - 16) + 1.793f * 0));
+                    c.g = clampUint8((int)rintf(1.164f * (y - 16) - 0.213f * (u - 128) - 0.533 * 0));
+                    c.b = clampUint8((int)rintf(1.164f * (y - 16) + 2.112f * (u - 128)));
                     break;
                 case 2: // U
-                    c.r = clampUint8((int)rintf(1.164f * (y-16) + 1.793f * (v - 128)));
-                    c.g = clampUint8((int)rintf(1.164f * (y-16) - 0.213f * 0 - 0.533 * (v - 128)));
-                    c.b = clampUint8((int)rintf(1.164f * (y-16) + 2.112f * 0));
+                    c.r = clampUint8((int)rintf(1.164f * (y - 16) + 1.793f * (v - 128)));
+                    c.g = clampUint8((int)rintf(1.164f * (y - 16) - 0.213f * 0 - 0.533 * (v - 128)));
+                    c.b = clampUint8((int)rintf(1.164f * (y - 16) + 2.112f * 0));
                     break;
                 }
 
@@ -420,16 +420,16 @@ EXTERNC float renderScopes(
     cudaEventCreate(&stop);
     float millis = 0;
 
-    uint8_t *d_src,
-        *d_rgba,
-        *d_yuv,
-        *d_wf,
-        *d_wfRgb,
-        *d_wfParade,
-        *d_yuvParade,
-        *d_histogram,
-        *d_vScope,
-        *d_falseC;
+    uint8_t *d_src = nullptr,
+            *d_rgba = nullptr,
+            *d_yuv = nullptr,
+            *d_wf = nullptr,
+            *d_wfRgb = nullptr,
+            *d_wfParade = nullptr,
+            *d_yuvParade = nullptr,
+            *d_histogram = nullptr,
+            *d_vScope = nullptr,
+            *d_falseC = nullptr;
 
     uint8_t bright = 1 + 4 * (1080 / srcHeight) * (1080 / srcHeight);
 

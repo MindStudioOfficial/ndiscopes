@@ -43,6 +43,8 @@ class ScopeSettings with ChangeNotifier {
   bool get audioOutputEnabled => _audioOutputEnabled;
   List<ScopeTypes> get scopeLayout => _scopeLayout;
 
+  Set<ScopeTypes> get scopeTypes => Set<ScopeTypes>.from(scopeLayout);
+
   void updateVScopeScale(double scale) {
     _vScopeScale = scale;
     notifyListeners();

@@ -153,6 +153,14 @@ class NDI {
   Isolate? _fIsolate;
   SendPort? _fIsoSendport;
 
+  /// Sends the a configuration of needed scopes to the video frame isolate
+  ///
+  /// The Isolate will then only render the specified scopes
+
+  void updateScopeTypes(Set<ScopeTypes> types) {
+    _fIsoSendport?.send(types);
+  }
+
   /// sends updated mask properties to the receiving isolate if present
   ///
   /// [mask] is the Rect containing the mask position and size
@@ -182,6 +190,7 @@ class NDI {
         onFrame,
     Rect mask,
     bool maskActive,
+    Set<ScopeTypes> scopeTypes,
   ) async {
     final completer = Completer();
     _fReceivePort = ReceivePort();
@@ -201,7 +210,7 @@ class NDI {
     // create the isolate that continously receives NDI frames and finishes once stopGetFrames() is called
     _fIsolate = await Isolate.spawn(
       _getFrames,
-      _FMObject(source.address, _pRecv.address, _fReceivePort!.sendPort, mask, maskActive),
+      _FMObject(source.address, _pRecv.address, _fReceivePort!.sendPort, mask, maskActive, scopeTypes),
       debugName: "Video Frame Isolate",
     );
     // return intermediate future until receiving has ended
@@ -303,6 +312,7 @@ class NDI {
     bool maskActive = object.maskActive;
     bool end = false;
     bool pause = false;
+    Set<ScopeTypes> scopeTypes = object.scopeTypes;
     // send back the sendport for bidirectional communication
     object.sendPort.send(rP.sendPort);
     // listen for incoming messages from the main thread
@@ -326,6 +336,9 @@ class NDI {
           if (message == "end") end = true;
           if (message == "pause") pause = true;
           if (message == "resume") pause = false;
+        }
+        if (message is Set<ScopeTypes>) {
+          scopeTypes = message;
         }
       },
       onDone: () {},
@@ -369,11 +382,21 @@ class NDI {
       Pointer<Uint8> pRGBA = ffi.calloc.call<Uint8>(width * height * 4);
       Pointer<Uint8> pFalseC = ffi.calloc.call<Uint8>(width * height * 4);
 
-      Pointer<Uint8> pWF = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
-      Pointer<Uint8> pWFRgb = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
-      Pointer<Uint8> pWFParade = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
-      Pointer<Uint8> pYUVParade = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
-      Pointer<Uint8> pHistogram = ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4);
+      Pointer<Uint8> pWF = scopeTypes.contains(ScopeTypes.luma)
+          ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
+          : nullptr;
+      Pointer<Uint8> pWFRgb = scopeTypes.contains(ScopeTypes.rgb)
+          ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
+          : nullptr;
+      Pointer<Uint8> pWFParade = scopeTypes.contains(ScopeTypes.parade)
+          ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
+          : nullptr;
+      Pointer<Uint8> pYUVParade = scopeTypes.contains(ScopeTypes.yuvparade)
+          ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
+          : nullptr;
+      Pointer<Uint8> pHistogram = scopeTypes.contains(ScopeTypes.histogram)
+          ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
+          : nullptr;
 
       Pointer<Uint8> pVScope = ffi.calloc.call<Uint8>(ScopeSize.height * ScopeSize.height * 4);
       // convert to rgba pointers based on the format
@@ -464,12 +487,13 @@ class NDI {
     Function(SavedInputFrame frame) onFrameReady,
     Rect mask,
     bool maskActive,
+    Set<ScopeTypes> scopes,
   ) async {
     final completer = Completer();
     _sfReceivePort = ReceivePort();
     await Isolate.spawn(
       _getSingleFrame,
-      _FMObject(pSource.address, _pRecv.address, _sfReceivePort!.sendPort, mask, maskActive),
+      _FMObject(pSource.address, _pRecv.address, _sfReceivePort!.sendPort, mask, maskActive, scopes),
       debugName: "get Single Frame Isolate",
     );
     _sfReceivePort!.listen((data) {
@@ -507,9 +531,6 @@ class NDI {
 
   static void _getSingleFrame(_FMObject object) {
     NDIlib_recv_instance_t pNDIrecv = Pointer.fromAddress(object.pRecvA);
-    //Pointer<NDIlib_source_t> pSource = Pointer.fromAddress(object.pSourceA).cast<NDIlib_source_t>();
-
-    // no need to reconnect here since we are already connected
 
     Pointer<NDIlib_video_frame_v2_t> pVideoFrame = ffi.calloc<NDIlib_video_frame_v2_t>();
 
@@ -742,7 +763,8 @@ class _FMObject {
   SendPort sendPort;
   Rect mask;
   bool maskActive;
-  _FMObject(this.pSourceA, this.pRecvA, this.sendPort, this.mask, this.maskActive);
+  Set<ScopeTypes> scopeTypes;
+  _FMObject(this.pSourceA, this.pRecvA, this.sendPort, this.mask, this.maskActive, this.scopeTypes);
 }
 
 class NDIAudioLevelFrame {
