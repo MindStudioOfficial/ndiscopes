@@ -11,6 +11,7 @@
 #define SW 580
 #define STHIRD 193.3333282F
 #define SH 256
+#define BLACKLEVEL 38.25F
 
 #include <math.h>
 #include <stdint.h>

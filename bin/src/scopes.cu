@@ -400,9 +400,9 @@ __global__ void kernelScopes(
     // ========================
 
     int scopeBlackRGBY[] = {
-        minInt((int)rint(SH * (1 - (r / 26.0))), SH - 1),
-        minInt((int)rint(SH * (1 - (g / 26.0))), SH - 1),
-        minInt((int)rint(SH * (1 - (b / 26.0))), SH - 1)};
+        minInt((int)rint(SH * (1 - (r / BLACKLEVEL))), SH - 1),
+        minInt((int)rint(SH * (1 - (g / BLACKLEVEL))), SH - 1),
+        minInt((int)rint(SH * (1 - (b / BLACKLEVEL))), SH - 1)};
 
     if (d_blacklevel)
     {
@@ -412,7 +412,7 @@ __global__ void kernelScopes(
             int yval = scopeBlackRGBY[i];
             if (yval >= SH || yval < 0)
                 continue;
-            for (int j = 0; j < 10; j++)
+            for (int j = 0; j < 7; j++)
             {
                 int scopePix = (scopeX + (yval+j) * SW) * 4;
                 if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3) // fill y 
