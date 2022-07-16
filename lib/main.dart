@@ -278,9 +278,13 @@ class _MainState extends State<Main> with WindowListener {
                             scrollDirection: Axis.horizontal,
                             physics: const NeverScrollableScrollPhysics(),
                             controller: _frameBrowserScroll,
-                            child: const SizedBox(
+                            child: SizedBox(
                               width: 175,
-                              child: FrameBrowserV2(),
+                              child: FocusTraversalGroup(
+                                descendantsAreFocusable: refOpen,
+                                descendantsAreTraversable: refOpen,
+                                child: const FrameBrowserV2(),
+                              ),
                             ),
                           ),
                         ),
@@ -295,10 +299,14 @@ class _MainState extends State<Main> with WindowListener {
                             physics: const NeverScrollableScrollPhysics(),
                             child: SizedBox(
                               width: 175,
-                              child: Settings(
-                                onToggleAudioOut: (enabled) {
-                                  ndi.updateAudio(enabled);
-                                },
+                              child: FocusTraversalGroup(
+                                descendantsAreFocusable: settingsOpen,
+                                descendantsAreTraversable: settingsOpen,
+                                child: Settings(
+                                  onToggleAudioOut: (enabled) {
+                                    ndi.updateAudio(enabled);
+                                  },
+                                ),
                               ),
                             ),
                           ),
@@ -347,53 +355,57 @@ class _MainState extends State<Main> with WindowListener {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   IntrinsicHeight(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        SizedBox(
-                          width: width / scopesCountX,
-                          child: const ScopeSelector(
-                            layoutIndex: 0,
-                          ),
-                        ),
-                        SizedBox(
-                          width: width / scopesCountX,
-                          child: const ScopeSelector(
-                            layoutIndex: 1,
-                          ),
-                        ),
-                        if (!portraitLayout)
-                          SizedBox(
-                            width: width / scopesCountX,
-                            child: const ScopeSelector(
-                              layoutIndex: 2,
-                            ),
-                          ),
-                        if (settings.audioLevelEnabled && !portraitLayout) const AudioMeters(),
-                      ],
-                    ),
-                  ),
-                  if (portraitLayout)
-                    IntrinsicHeight(
+                    child: FocusTraversalGroup(
                       child: Row(
                         mainAxisSize: MainAxisSize.max,
                         children: [
                           SizedBox(
                             width: width / scopesCountX,
                             child: const ScopeSelector(
-                              layoutIndex: 2,
+                              layoutIndex: 0,
                             ),
                           ),
                           SizedBox(
-                            width: width / scopesCountX / 2,
-                            child: const VScope(
-                              title: "UV Vectorscope",
-                              imgId: TextureIDs.texVscope,
-                              ovlId: TextureIDs.texVscopeO,
+                            width: width / scopesCountX,
+                            child: const ScopeSelector(
+                              layoutIndex: 1,
                             ),
                           ),
-                          if (settings.audioLevelEnabled) const AudioMeters(),
+                          if (!portraitLayout)
+                            SizedBox(
+                              width: width / scopesCountX,
+                              child: const ScopeSelector(
+                                layoutIndex: 2,
+                              ),
+                            ),
+                          if (settings.audioLevelEnabled && !portraitLayout) const AudioMeters(),
                         ],
+                      ),
+                    ),
+                  ),
+                  if (portraitLayout)
+                    IntrinsicHeight(
+                      child: FocusTraversalGroup(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            SizedBox(
+                              width: width / scopesCountX,
+                              child: const ScopeSelector(
+                                layoutIndex: 2,
+                              ),
+                            ),
+                            SizedBox(
+                              width: width / scopesCountX / 2,
+                              child: const VScope(
+                                title: "UV Vectorscope",
+                                imgId: TextureIDs.texVscope,
+                                ovlId: TextureIDs.texVscopeO,
+                              ),
+                            ),
+                            if (settings.audioLevelEnabled) const AudioMeters(),
+                          ],
+                        ),
                       ),
                     ),
                 ],

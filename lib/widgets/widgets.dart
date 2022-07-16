@@ -8,3 +8,5 @@ export 'package:ndiscopes/widgets/versionchecker.dart';
 export 'package:ndiscopes/widgets/window.dart';
 export 'package:ndiscopes/widgets/falsecolorscale.dart';
 export 'package:ndiscopes/widgets/sourcedialog.dart';
+export 'package:ndiscopes/widgets/scopeswitcher.dart';
+export 'package:ndiscopes/widgets/customiconbutton.dart';
