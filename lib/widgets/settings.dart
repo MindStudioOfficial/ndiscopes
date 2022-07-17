@@ -67,6 +67,7 @@ class _SettingsState extends State<Settings> {
                     onTap: () {
                       scopeSettings.updateWVScaleType(WFScaleTypes.percentage);
                     },
+                    focusColor: cFocused,
                     child: Ink(
                       color: scopeSettings.wFScaleType == WFScaleTypes.percentage ? cHighlight : cAccent,
                       child: Center(
@@ -82,6 +83,7 @@ class _SettingsState extends State<Settings> {
                     onTap: () {
                       scopeSettings.updateWVScaleType(WFScaleTypes.bits);
                     },
+                    focusColor: cFocused,
                     child: Ink(
                       color: scopeSettings.wFScaleType == WFScaleTypes.bits ? cHighlight : cAccent,
                       child: Center(
@@ -114,29 +116,6 @@ class _SettingsState extends State<Settings> {
               widget.onToggleAudioOut(v ?? false);
             },
           ),
-          /*CheckboxListTile(
-            title: Text("Backdrop", style: tSmall),
-            value: scopeSettings.enableWVBackdrop,
-            onChanged: (v) {
-              scopeSettings.toggleWVBackdrop(enable: v);
-            },
-          ),
-          const SizedBox(height: 8),
-          Text("Backdrop Opacity", style: tSmall),
-          Slider(
-            value: scopeSettings.backdropOpacity,
-            onChanged: (v) {
-              scopeSettings.updateBackdropOpacity(v);
-            },
-            min: 0,
-            max: 1,
-            label: "Opacity ${scopeSettings.backdropOpacity}",
-            divisions: 20,
-            inactiveColor: cAccent,
-            thumbColor: cHighlight,
-            activeColor: cHighlight,
-          ),*/
-          //Divider(color: cHighlight),
         ],
       ),
     );

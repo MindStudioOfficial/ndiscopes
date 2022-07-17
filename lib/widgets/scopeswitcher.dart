@@ -51,13 +51,13 @@ class _ScopeSwitcherState extends State<ScopeSwitcher> {
       underline: _hasFocus
           ? Container(
               height: 2,
-              color: cHighlight,
+              color: cFocused,
             )
           : Container(),
       iconSize: 15,
       isDense: true,
       style: tThin,
-      focusColor: cHighlight,
+      focusColor: cFocused,
       focusNode: fn,
       items: List<DropdownMenuItem<ScopeTypes>>.generate(ScopeTypes.values.length, (index) {
         return DropdownMenuItem<ScopeTypes>(

@@ -25,7 +25,7 @@ ButtonStyle bIconDefault = ButtonStyle(
   ),
   backgroundColor: MaterialStateProperty.resolveWith(
     (states) {
-      if (states.contains(MaterialState.focused)) return cHighlight;
+      if (states.contains(MaterialState.focused)) return cFocused;
       if (states.contains(MaterialState.pressed)) return cHighlight;
       if (states.contains(MaterialState.hovered)) return const Color.fromRGBO(8, 8, 8, 1);
       return Colors.transparent;

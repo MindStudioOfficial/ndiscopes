@@ -19,7 +19,8 @@ import 'package:window_manager/window_manager.dart';
 // DONE: YUV Parade
 // DONE: Don't render deselected scopes
 // DONE: 10% Black Level View
-// TODO: Visual Highlighting of focused buttons
+// DONE: Visual Highlighting of focused buttons MISSING FrameBrowser and Settings
+// TODO: Fix overlay when no frame present
 // TODO: Per Scope Overlays
 // TODO: Per Scope Settings
 // TODO: Per Scope Context Menu
