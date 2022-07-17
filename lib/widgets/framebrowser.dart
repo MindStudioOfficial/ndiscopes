@@ -110,12 +110,30 @@ class FrameBrowserV2 extends StatefulWidget {
 class _FrameBrowserV2State extends State<FrameBrowserV2> {
   Directory? currentDir;
   late Directory appDir;
+  late FocusNode fn;
+  bool _hasFocus = false;
 
   @override
   void initState() {
     super.initState();
+    fn = FocusNode();
+    fn.addListener(focusListener);
     //initiate application directory and listener
     init();
+  }
+
+  @override
+  void dispose() {
+    fn.removeListener(focusListener);
+    fn.dispose();
+
+    super.dispose();
+  }
+
+  void focusListener() {
+    setState(() {
+      _hasFocus = fn.hasFocus;
+    });
   }
 
   //all contents of the application directory
@@ -187,13 +205,24 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
         children: [
           if (appDirDirectorys.isNotEmpty && currentDir != null && appDirDirectorys.contains(currentDir))
             DropdownButton<Directory>(
+              focusNode: fn,
               value: currentDir,
+              underline: _hasFocus
+                  ? Container(
+                      height: 2,
+                      color: cFocused,
+                    )
+                  : Container(),
+              style: tThin,
               items: List<DropdownMenuItem<Directory>>.generate(
                 appDirDirectorys.length,
                 (index) => DropdownMenuItem<Directory>(
-                  child: Text(
-                    path.basename(appDirDirectorys[index].path),
-                    style: tSmall,
+                  child: Center(
+                    child: Text(
+                      path.basename(appDirDirectorys[index].path),
+                      style: tSmall,
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   value: appDirDirectorys[index],
                   key: ValueKey(appDirDirectorys[index]),
@@ -204,7 +233,7 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
                 updateCurrentDir();
                 setState(() {});
               },
-              dropdownColor: cPrimary,
+              dropdownColor: cDialogBackground,
             ),
           if (appDirDirectorys.isEmpty)
             Padding(
@@ -224,23 +253,30 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
                 if (fse is File && path.extension(fse.path) == ".ndis") {
                   return Padding(
                     padding: const EdgeInsets.all(8),
-                    child: InkWell(
-                      onTap: () {
-                        // read data from file and create frame and scopes
-                        SavedInputFrame.fromJSON(
-                          jsonDecode(
-                            fse.readAsStringSync(),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          // read data from file and create frame and scopes
+                          SavedInputFrame.fromJSON(
+                            jsonDecode(
+                              fse.readAsStringSync(),
+                            ),
+                          ).convertToScopesPointer().then(
+                                (value) => context.read<Frame>().toggleOverlay(enabled: true),
+                              );
+                        },
+                        overlayColor: MaterialStateProperty.resolveWith((states) {
+                          if (states.contains(MaterialState.hovered)) return cHighlight;
+                          if (states.contains(MaterialState.focused)) return cFocused;
+                          return Colors.transparent;
+                        }),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2.0),
+                          child: NDIFrameThumbnail(
+                            file: fse,
+                            key: ValueKey(fse),
                           ),
-                        ).convertToScopesPointer().then(
-                              (value) => context.read<Frame>().toggleOverlay(enabled: true),
-                            );
-                      },
-                      child: Ink(
-                        width: 96,
-                        height: 96,
-                        child: NDIFrameThumbnail(
-                          file: fse,
-                          key: ValueKey(fse),
                         ),
                       ),
                     ),
