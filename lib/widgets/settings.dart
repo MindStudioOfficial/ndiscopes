@@ -47,13 +47,14 @@ class _SettingsState extends State<Settings> {
             activeColor: cHighlight,
           ),
           Divider(color: cHighlight),
+          /*
           const SizedBox(height: 8),
           Text("Waveforms", style: tSmall.copyWith(fontSize: 18)),
           CheckboxListTile(
             title: Text("Labels", style: tSmall),
-            value: scopeSettings.showWFScale,
+            value: scopeSettings.scaleEnabled[ScopeTypes.luma.index],
             onChanged: (v) {
-              scopeSettings.toogleShowWVScale(show: v);
+              scopeSettings.toggleShowScale(ScopeTypes.luma, show: v);
             },
           ),
           const SizedBox(height: 8),
@@ -65,11 +66,13 @@ class _SettingsState extends State<Settings> {
                 Expanded(
                   child: InkWell(
                     onTap: () {
-                      scopeSettings.updateWVScaleType(WFScaleTypes.percentage);
+                      scopeSettings.updateWVScaleType(ScopeTypes.luma, WFScaleTypes.percentage);
                     },
                     focusColor: cFocused,
                     child: Ink(
-                      color: scopeSettings.wFScaleType == WFScaleTypes.percentage ? cHighlight : cAccent,
+                      color: scopeSettings.scaleTypes[ScopeTypes.luma.index] == WFScaleTypes.percentage
+                          ? cHighlight
+                          : cAccent,
                       child: Center(
                           child: Padding(
                         padding: const EdgeInsets.all(8.0),
@@ -81,11 +84,12 @@ class _SettingsState extends State<Settings> {
                 Expanded(
                   child: InkWell(
                     onTap: () {
-                      scopeSettings.updateWVScaleType(WFScaleTypes.bits);
+                      scopeSettings.updateWVScaleType(ScopeTypes.luma, WFScaleTypes.bits);
                     },
                     focusColor: cFocused,
                     child: Ink(
-                      color: scopeSettings.wFScaleType == WFScaleTypes.bits ? cHighlight : cAccent,
+                      color:
+                          scopeSettings.scaleTypes[ScopeTypes.luma.index] == WFScaleTypes.bits ? cHighlight : cAccent,
                       child: Center(
                           child: Padding(
                         padding: const EdgeInsets.all(8.0),
@@ -99,6 +103,7 @@ class _SettingsState extends State<Settings> {
           ),
           const SizedBox(height: 8),
           Divider(color: cHighlight),
+          */
           const SizedBox(height: 8),
           Text("Audio", style: tSmall.copyWith(fontSize: 18)),
           CheckboxListTile(

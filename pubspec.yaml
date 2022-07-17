@@ -54,6 +54,7 @@ dependencies:
     #path: "D:/DEV/.Projects/20211007 ndi test 2/texturerender"
   ffi: ^1.2.1
   ffigen: ^6.0.0
+  aligned_dialog: ^0.0.6
 
 dev_dependencies:
   flutter_test:

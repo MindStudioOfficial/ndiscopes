@@ -101,8 +101,10 @@ class Scope extends StatelessWidget {
     Widget imgw = texturesInitialized ? tr.widget(imgId) : Container();
     Widget ovlw = texturesInitialized ? tr.widget(ovlId) : Container();
 
+    ScopeTypes type = scopeSettings.scopeLayout[layoutIndex];
+
     EdgeInsets scopePadding =
-        scopeSettings.showWFScale ? const EdgeInsets.fromLTRB(20, 10, 0, 10) : const EdgeInsets.all(10);
+        scopeSettings.scaleEnabled[type.index] ? const EdgeInsets.fromLTRB(22, 10, 0, 10) : const EdgeInsets.all(10);
 
     return AspectRatio(
       aspectRatio: 600 / 306,
@@ -140,6 +142,7 @@ class Scope extends StatelessWidget {
                     CustomPaint(
                       painter: ScopeLabelPainter(
                         scopeSettings: scopeSettings,
+                        type: type,
                       ),
                       size: const Size(600, 276),
                     ),
@@ -157,10 +160,12 @@ class Scope extends StatelessWidget {
 class ScopeLabelPainter extends CustomPainter {
   final bool? isParade;
   final ScopeSettings scopeSettings;
+  final ScopeTypes type;
 
   const ScopeLabelPainter({
     this.isParade,
     required this.scopeSettings,
+    required this.type,
   });
 
   @override
@@ -168,31 +173,54 @@ class ScopeLabelPainter extends CustomPainter {
     Paint p;
 
     // draw horizontal level depending on percentage or 8bit
-    p = Paint()..color = Colors.white.withOpacity(.3);
+    p = Paint()..color = Colors.white.withOpacity(.5);
 
     // calculate the amount of lines/labels
     int increments = 0;
-    switch (scopeSettings.wFScaleType) {
+
+    switch (scopeSettings.scaleTypes[type.index]) {
       case WFScaleTypes.percentage:
         increments = 10;
+        if (type == ScopeTypes.blacklevel) increments = 15;
         break;
       case WFScaleTypes.bits:
         increments = 8;
+        if (type == ScopeTypes.blacklevel) increments = 19;
         break;
     }
 
-    bool labels = scopeSettings.showWFScale;
+    int minVal;
+    int maxVal;
+
+    switch (type) {
+      case ScopeTypes.blacklevel:
+        minVal = 0;
+        maxVal = 15;
+        break;
+      case ScopeTypes.yuvparade:
+        minVal = -50;
+        maxVal = 50;
+        break;
+      default:
+        minVal = 0;
+        maxVal = 100;
+        break;
+    }
+
+    bool labels = scopeSettings.scaleEnabled[type.index];
 
     for (int i = 0; i <= increments; i++) {
+      // Y Position in scope
       double y = i * 256 / increments;
+
       if (labels) {
         String label = "";
-        switch (scopeSettings.wFScaleType) {
+        switch (scopeSettings.scaleTypes[type.index]) {
           case WFScaleTypes.percentage:
-            label = (100 - (100 / increments * i)).toInt().toString();
+            label = (maxVal - ((maxVal - minVal) / increments * i)).toInt().toString();
             break;
           case WFScaleTypes.bits:
-            label = (256 - y).toInt().toString();
+            label = (maxVal * 2.56 - ((maxVal - minVal) * 2.56 / increments * i)).toInt().toString();
             break;
         }
 
@@ -201,25 +229,30 @@ class ScopeLabelPainter extends CustomPainter {
             fontSize: 11,
             textAlign: TextAlign.center,
             fontWeight: FontWeight.w100,
+            maxLines: 1,
           ),
         )
-          ..pushStyle(ui.TextStyle(color: Colors.grey))
+          ..pushStyle(ui.TextStyle(
+            color: Colors.grey,
+          ))
           ..addText(label);
 
         final paragraph = pb.build();
-        paragraph.layout(const ui.ParagraphConstraints(width: 18));
+        paragraph.layout(const ui.ParagraphConstraints(width: 20));
 
         canvas.drawParagraph(
           paragraph,
           Offset(1, y),
         );
       }
-      double leftOffset = scopeSettings.showWFScale ? 20 : 10;
-      canvas.drawLine(
-        Offset(leftOffset, y + 10),
-        Offset(size.width - (20 - leftOffset), y + 10),
-        p,
-      );
+      double leftOffset = labels ? 22 : 10;
+      if (scopeSettings.linesEnabled[type.index]) {
+        canvas.drawLine(
+          Offset(leftOffset, y + 10),
+          Offset(size.width - (22 - leftOffset), y + 10),
+          p,
+        );
+      }
     }
   }
 

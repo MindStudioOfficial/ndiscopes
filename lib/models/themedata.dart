@@ -21,4 +21,5 @@ ThemeData thDefault = ThemeData(
   listTileTheme: ListTileThemeData(selectedTileColor: cFocused),
   highlightColor: cFocused,
   hoverColor: cHighlight,
+  popupMenuTheme: const PopupMenuThemeData(elevation: 0, color: Colors.white),
 );

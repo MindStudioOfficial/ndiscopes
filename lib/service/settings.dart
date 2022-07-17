@@ -21,6 +21,12 @@ Future<void> saveSettings(ScopeSettings settings) async {
   final supportDir = await getApplicationSupportDirectory();
   File settingsFile = File(supportDir.path + "/config.json");
   if (!await settingsFile.exists()) await settingsFile.create();
-  await settingsFile.writeAsString(jsonEncode(settings.toJson()));
+
+  await settingsFile.writeAsString(prettyJSON(settings.toJson()));
   return;
+}
+
+String prettyJSON(Map<String, dynamic> json) {
+  JsonEncoder encoder = const JsonEncoder.withIndent("  ");
+  return encoder.convert(json);
 }

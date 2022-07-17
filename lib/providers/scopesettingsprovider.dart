@@ -4,41 +4,39 @@ import 'package:ndiscopes/service/settings.dart';
 class ScopeSettings with ChangeNotifier {
   ScopeSettings({
     double? vScopeScale,
-    bool? showWFScale,
-    WFScaleTypes? wfScaleType,
-    bool? enableWFBackdrop,
-    double? backdropOpacity,
+    List<bool>? linesEnabled,
+    List<bool>? scaleEnabled,
+    List<WFScaleTypes>? scaleTypes,
     bool? audioLevelEnabled,
     bool? audioOutputEnabled,
     List<ScopeTypes>? scopeLayout,
   }) {
     _vScopeScale = vScopeScale ?? _vScopeScale;
-    _showWFScale = showWFScale ?? _showWFScale;
-    _wFScaleType = wfScaleType ?? _wFScaleType;
-    _enableWFBackdrop = enableWFBackdrop ?? _enableWFBackdrop;
-    _backdropOpacity = backdropOpacity ?? _backdropOpacity;
     _audioLevelEnabled = audioLevelEnabled ?? _audioLevelEnabled;
     _audioOutputEnabled = audioOutputEnabled ?? _audioOutputEnabled;
     _scopeLayout = scopeLayout ?? _scopeLayout;
+    _linesEnabled = linesEnabled ?? _linesEnabled;
+    _scaleEnabled = scaleEnabled ?? _scaleEnabled;
+    _scaleTypes = scaleTypes ?? _scaleTypes;
   }
 
   double _vScopeScale = 0.5;
-  bool _showWFScale = true;
-  WFScaleTypes _wFScaleType = WFScaleTypes.percentage;
-  bool _enableWFBackdrop = false;
-  double _backdropOpacity = 0.3;
   bool _audioLevelEnabled = true;
   bool _audioOutputEnabled = false;
+  List<bool> _linesEnabled = List<bool>.generate(ScopeTypes.values.length, (index) => true);
+  List<bool> _scaleEnabled = List<bool>.generate(ScopeTypes.values.length, (index) => true);
+  List<WFScaleTypes> _scaleTypes =
+      List<WFScaleTypes>.generate(ScopeTypes.values.length, (index) => WFScaleTypes.percentage);
+
   List<ScopeTypes> _scopeLayout = List.from(
     [ScopeTypes.luma, ScopeTypes.rgb, ScopeTypes.parade],
     growable: false,
   );
 
   double get vScopeScale => _vScopeScale;
-  bool get showWFScale => _showWFScale;
-  WFScaleTypes get wFScaleType => _wFScaleType;
-  bool get enableWFBackdrop => _enableWFBackdrop;
-  double get backdropOpacity => _backdropOpacity;
+  List<bool> get scaleEnabled => _scaleEnabled;
+  List<bool> get linesEnabled => _linesEnabled;
+  List<WFScaleTypes> get scaleTypes => _scaleTypes;
   bool get audioLevelEnabled => _audioLevelEnabled;
   bool get audioOutputEnabled => _audioOutputEnabled;
   List<ScopeTypes> get scopeLayout => _scopeLayout;
@@ -50,23 +48,18 @@ class ScopeSettings with ChangeNotifier {
     notifyListeners();
   }
 
-  void toogleShowWVScale({bool? show}) {
-    _showWFScale = show ?? !_showWFScale;
+  void toggleShowScale(ScopeTypes scope, {bool? show}) {
+    _scaleEnabled[scope.index] = show ?? !_scaleEnabled[scope.index];
     notifyListeners();
   }
 
-  void updateWVScaleType(WFScaleTypes type) {
-    _wFScaleType = type;
+  void toggleShowLines(ScopeTypes scope, {bool? show}) {
+    _linesEnabled[scope.index] = show ?? !_linesEnabled[scope.index];
     notifyListeners();
   }
 
-  void toggleWVBackdrop({bool? enable}) {
-    _enableWFBackdrop = enable ?? !_enableWFBackdrop;
-    notifyListeners();
-  }
-
-  void updateBackdropOpacity(double opacity) {
-    _backdropOpacity = opacity;
+  void updateWVScaleType(ScopeTypes scope, WFScaleTypes scale) {
+    _scaleTypes[scope.index] = scale;
     notifyListeners();
   }
 
@@ -87,11 +80,10 @@ class ScopeSettings with ChangeNotifier {
   }
 
   void update(ScopeSettings n) {
-    _backdropOpacity = n.backdropOpacity;
-    _enableWFBackdrop = n.enableWFBackdrop;
-    _showWFScale = n.showWFScale;
+    _linesEnabled = n.linesEnabled;
+    _scaleEnabled = n.scaleEnabled;
+    _scaleTypes = n.scaleTypes;
     _vScopeScale = n.vScopeScale;
-    _wFScaleType = n.wFScaleType;
     _audioLevelEnabled = n.audioLevelEnabled;
     _audioOutputEnabled = n.audioOutputEnabled;
     _scopeLayout = n.scopeLayout;
@@ -100,11 +92,13 @@ class ScopeSettings with ChangeNotifier {
 
   factory ScopeSettings.fromJson(Map<String, dynamic> json) {
     return ScopeSettings(
-      backdropOpacity: json["backdropOpacity"],
-      enableWFBackdrop: json["enableWFBackdrop"],
-      showWFScale: json["showWFScale"],
+      linesEnabled: List<bool>.from(json["linesEnabled"]),
+      scaleEnabled: List<bool>.from(json["scaleEnabled"]),
+      scaleTypes: List<WFScaleTypes>.generate(
+        ScopeTypes.values.length,
+        (index) => WFScaleTypes.values[json["scaleTypes"]?[index] ?? 0],
+      ),
       vScopeScale: json["vScopeScale"],
-      wfScaleType: WFScaleTypes.values.elementAt(json["wfScaleType"]),
       audioLevelEnabled: json["audioLevelEnabled"],
       audioOutputEnabled: json["audioOutputEnabled"],
       scopeLayout: List<ScopeTypes>.generate(
@@ -116,18 +110,24 @@ class ScopeSettings with ChangeNotifier {
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
-      "backdropOpacity": _backdropOpacity,
-      "enableWFBackdrop": _enableWFBackdrop,
-      "showWFScale": _showWFScale,
       "vScopeScale": _vScopeScale,
-      "wfScaleType": _wFScaleType.index,
       "audioLevelEnabled": _audioLevelEnabled,
       "audioOutputEnabled": _audioOutputEnabled,
       "scopeLayout": List<int>.generate(
         3,
         (index) => _scopeLayout[index].index,
       ),
+      "linesEnabled": _linesEnabled,
+      "scaleEnabled": _scaleEnabled,
+      "scaleTypes": List<int>.generate(
+        ScopeTypes.values.length,
+        (index) => _scaleTypes[index].index,
+      ),
     };
+  }
+
+  ScopeSettings copyWith() {
+    return ScopeSettings();
   }
 
   @override
