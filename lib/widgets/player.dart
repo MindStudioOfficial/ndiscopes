@@ -84,6 +84,7 @@ class _FrameViewerState extends State<FrameViewer> {
         : Container();
 
     ValueListenable<Tex>? texInfo = tr.textureInfo(TextureIDs.texRGBA);
+    ValueListenable<Tex>? texInfoO = tr.textureInfo(TextureIDs.texRGBAO);
 
     return Row(
       mainAxisSize: MainAxisSize.max,
@@ -262,6 +263,11 @@ class _FrameViewerState extends State<FrameViewer> {
             ? ValueListenableBuilder<Tex>(
                 valueListenable: texInfo,
                 builder: (context, tex, _) {
+                  Size s = tex.size.isEmpty
+                      ? (texInfoO != null && !texInfoO.value.size.isEmpty
+                          ? texInfoO.value.size
+                          : const Size(1920, 1080))
+                      : tex.size;
                   return Expanded(
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
@@ -272,8 +278,8 @@ class _FrameViewerState extends State<FrameViewer> {
                             children: [
                               if (frame.gridEnabled)
                                 SizedBox(
-                                  width: tex.size.width,
-                                  height: tex.size.height,
+                                  width: s.width,
+                                  height: s.height,
                                   child: Image.asset(
                                     "graphics/transparency500.png",
                                     repeat: ImageRepeat.repeat,
@@ -287,25 +293,26 @@ class _FrameViewerState extends State<FrameViewer> {
                                 Split(
                                   child: ovlw,
                                   tex: tex,
+                                  texO: texInfoO?.value,
                                 ),
 
                               //* Mask Overlay
                               if (mask.active)
                                 Mask(
                                   frameSize: Size(
-                                    tex.size.width,
-                                    tex.size.height,
+                                    s.width,
+                                    s.height,
                                   ),
                                 ),
                               //* Overlay slider vertical
                               if (frame.overlayEnabled && frame.overlayMode == OverlayMode.splitVertical)
                                 Positioned(
-                                  left: (tex.size.width) * frame.splitPos - 22.5,
-                                  top: (tex.size.height) / 2 - 22.5,
+                                  left: (s.width) * frame.splitPos - 22.5,
+                                  top: (s.height) / 2 - 22.5,
                                   child: Listener(
                                     onPointerMove: (event) {
                                       frame.updateSplitPos(
-                                        (frame.splitPos + event.localDelta.dx / (tex.size.width)).clamp(0, 1),
+                                        (frame.splitPos + event.localDelta.dx / (s.width)).clamp(0, 1),
                                       );
                                     },
                                     child: ClipRRect(
@@ -328,12 +335,12 @@ class _FrameViewerState extends State<FrameViewer> {
                               //* Overlay slider horizontal
                               if (frame.overlayEnabled && frame.overlayMode == OverlayMode.splitHorizontal)
                                 Positioned(
-                                  left: (tex.size.width) / 2 - 22.5,
-                                  top: (tex.size.height) * frame.splitPos - 22.5,
+                                  left: (s.width) / 2 - 22.5,
+                                  top: (s.height) * frame.splitPos - 22.5,
                                   child: Listener(
                                     onPointerMove: (event) {
                                       frame.updateSplitPos(
-                                        (frame.splitPos + event.localDelta.dy / (tex.size.height)).clamp(0, 1),
+                                        (frame.splitPos + event.localDelta.dy / (s.height)).clamp(0, 1),
                                       );
                                     },
                                     child: ClipRRect(
@@ -635,15 +642,17 @@ class MaskPainter extends CustomPainter {
 class Split extends StatelessWidget {
   final Widget child;
   final Tex tex;
-  const Split({Key? key, required this.child, required this.tex}) : super(key: key);
+  final Tex? texO;
+  const Split({Key? key, required this.child, required this.tex, required this.texO}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final frame = context.watch<Frame>();
+    Size s = tex.size.isEmpty ? (texO != null && !texO!.size.isEmpty ? texO!.size : const Size(1920, 1080)) : tex.size;
 
     return SizedBox(
-      width: tex.size.width,
-      height: tex.size.height,
+      width: s.width,
+      height: s.height,
       child: Align(
         alignment: splitAlignment(frame.overlayMode, frame.flipSplit),
         child: ClipRect(
@@ -656,10 +665,10 @@ class Split extends StatelessWidget {
                 ? (frame.flipSplit ? 1 - frame.splitPos : frame.splitPos)
                 : null,
             child: SizedBox(
-              width: tex.size.width,
-              height: tex.size.height,
+              width: s.width,
+              height: s.height,
               child: FittedBox(
-                fit: BoxFit.contain,
+                fit: BoxFit.fitWidth,
                 child: child,
               ),
             ),

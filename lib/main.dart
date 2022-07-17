@@ -20,7 +20,7 @@ import 'package:window_manager/window_manager.dart';
 // DONE: Don't render deselected scopes
 // DONE: 10% Black Level View
 // DONE: Visual Highlighting of focused buttons MISSING FrameBrowser and Settings
-// TODO: Fix overlay when no frame present
+// DONE: Fix overlay when no frame present
 // TODO: Per Scope Overlays
 // TODO: Per Scope Settings
 // TODO: Per Scope Context Menu
