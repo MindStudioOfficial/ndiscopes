@@ -46,6 +46,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ScopeSettings()),
         ChangeNotifierProvider(create: (_) => AudioLevel()),
         ChangeNotifierProvider(create: (_) => Statistics()),
+        ChangeNotifierProvider(create: (_) => AppStatus()),
       ],
       child: MaterialApp(
         theme: thDefault,
@@ -93,8 +94,6 @@ class _MainState extends State<Main> with WindowListener {
   bool refOpen = false;
   bool settingsOpen = false;
   bool portraitLayout = false;
-  bool shutdown = false;
-  String shutDownStatus = "";
 
   late ScrollController _vScopeScroll;
   late ScrollController _frameBrowserScroll;
@@ -113,16 +112,28 @@ class _MainState extends State<Main> with WindowListener {
 
     super.initState();
 
-    // check GPU version
-    checkGPU(context);
+    initialize();
+  }
 
-    // load settings from file
-    loadSettings();
-
+  Future<void> initialize() async {
     // register all textures and notify parts of the ui when completed
-    initTextures().then((success) {
-      context.read<Frame>().toggleTexturesInitialized(initialized: true);
-    });
+    await initTextures();
+    context.read<Frame>().toggleTexturesInitialized(initialized: true);
+    await Future.delayed(const Duration(milliseconds: 150));
+    context.read<AppStatus>().updateStatusText("initializing renderer...");
+    await Future.delayed(const Duration(milliseconds: 150));
+    // check GPU version
+    context.read<AppStatus>().updateStatusText("checking GPU...");
+    checkGPU(context);
+    await Future.delayed(const Duration(milliseconds: 150));
+    // load settings from file
+    context.read<AppStatus>().updateStatusText("loading settings...");
+    await loadSettings();
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    context.read<AppStatus>().updateStatusText("");
+    await Future.delayed(const Duration(milliseconds: 150));
+    context.read<AppStatus>().toggleLoading(loading: false);
   }
 
   @override
@@ -135,21 +146,22 @@ class _MainState extends State<Main> with WindowListener {
     super.dispose();
   }
 
-  loadSettings() {
-    loadScopeSettings().then((s) {
-      context.read<ScopeSettings>().update(s);
-    });
+  Future<void> loadSettings() async {
+    ScopeSettings s = await loadScopeSettings();
+    context.read<ScopeSettings>().update(s);
   }
 
   @override
   void onWindowClose() async {
-    setState(() => shutdown = true);
-    setShutdownStatus("shutting down NDI®...");
+    context.read<AppStatus>().updateStatusText("");
+    context.read<AppStatus>().toggleShutdown(shutdown: true);
+    context.read<AppStatus>().updateStatusText("shutting down NDI®...");
     await ndi.dispose();
-    setShutdownStatus("shutting down renderer...");
+    context.read<AppStatus>().updateStatusText("shutting down renderer...");
     await tr.dispose();
     rpcDispose();
-    setShutdownStatus("closing...");
+
+    context.read<AppStatus>().updateStatusText("closing...");
     await windowManager.destroy();
     if (kDebugMode) print("exiting...");
   }
@@ -166,12 +178,6 @@ class _MainState extends State<Main> with WindowListener {
       context.read<MaskProvider>().active,
       context.read<ScopeSettings>().scopeTypes,
     );
-  }
-
-  void setShutdownStatus(String status) {
-    setState(() {
-      shutDownStatus = status;
-    });
   }
 
   void onSelectSource(int index) async {
@@ -226,17 +232,70 @@ class _MainState extends State<Main> with WindowListener {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<ScopeSettings>();
+    final status = context.watch<AppStatus>();
 
-    return LayoutBuilder(builder: (context, constraints) {
-      double aspect = constraints.maxWidth / constraints.maxHeight;
-      portraitLayout = aspect < 1.3;
-      int scopesCountX = portraitLayout ? 2 : 3;
-      double width = constraints.maxWidth;
-      if (settings.audioLevelEnabled && !portraitLayout) {
-        width -= 125;
-      }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double aspect = constraints.maxWidth / constraints.maxHeight;
+        portraitLayout = aspect < 1.3;
+        int scopesCountX = portraitLayout ? 2 : 3;
+        double width = constraints.maxWidth;
+        if (settings.audioLevelEnabled && !portraitLayout) {
+          width -= 125;
+        }
 
-      if (!shutdown) {
+        if (status.shutdown) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Shutting down...",
+                  style: tThin.copyWith(fontSize: 55),
+                ),
+                Text(
+                  status.statusText,
+                  style: tThin.copyWith(fontSize: 15),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (status.loading) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(
+                  flex: 2,
+                ),
+                Text(
+                  "NDIScopes",
+                  style: tBold.copyWith(fontSize: 55),
+                ),
+                Text(
+                  "by MindStudio",
+                  style: tThin.copyWith(fontSize: 33),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      status.statusText,
+                      style: tThin.copyWith(fontSize: 15),
+                    ),
+                  ),
+                ),
+                const Spacer()
+              ],
+            ),
+          );
+        }
+
         return Column(
           mainAxisSize: MainAxisSize.max,
           children: [
@@ -416,25 +475,7 @@ class _MainState extends State<Main> with WindowListener {
             )
           ],
         );
-      } else {
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Shutting down...",
-                style: tThin.copyWith(fontSize: 55),
-              ),
-              Text(
-                shutDownStatus,
-                style: tThin.copyWith(fontSize: 15),
-              ),
-            ],
-          ),
-        );
-      }
-    });
+      },
+    );
   }
 }

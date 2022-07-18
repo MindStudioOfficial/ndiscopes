@@ -126,10 +126,6 @@ class ScopeSettings with ChangeNotifier {
     };
   }
 
-  ScopeSettings copyWith() {
-    return ScopeSettings();
-  }
-
   @override
   void notifyListeners() {
     super.notifyListeners();

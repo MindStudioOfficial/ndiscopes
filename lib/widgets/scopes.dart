@@ -173,7 +173,11 @@ class ScopeLabelPainter extends CustomPainter {
     Paint p;
 
     // draw horizontal level depending on percentage or 8bit
-    p = Paint()..color = Colors.white.withOpacity(.5);
+    p = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = .5
+      ..isAntiAlias = true
+      ..color = Colors.white.withOpacity(.5);
 
     // calculate the amount of lines/labels
     int increments = 0;
@@ -191,19 +195,23 @@ class ScopeLabelPainter extends CustomPainter {
 
     int minVal;
     int maxVal;
+    int skip = 0;
 
     switch (type) {
       case ScopeTypes.blacklevel:
         minVal = 0;
         maxVal = 15;
+        skip = 2;
         break;
       case ScopeTypes.yuvparade:
         minVal = -50;
         maxVal = 50;
+        skip = 0;
         break;
       default:
         minVal = 0;
         maxVal = 100;
+        skip = 1;
         break;
     }
 
@@ -213,7 +221,7 @@ class ScopeLabelPainter extends CustomPainter {
       // Y Position in scope
       double y = i * 256 / increments;
 
-      if (labels) {
+      if (labels && (increments - i) % (skip + 1) == 0) {
         String label = "";
         switch (scopeSettings.scaleTypes[type.index]) {
           case WFScaleTypes.percentage:
