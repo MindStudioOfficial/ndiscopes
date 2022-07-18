@@ -118,7 +118,6 @@ class SavedInputFrame {
     ffi.Pointer<ffi.Uint8> pWFRgb = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
     ffi.Pointer<ffi.Uint8> pWFParade = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
     ffi.Pointer<ffi.Uint8> pYUVParade = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
-    ffi.Pointer<ffi.Uint8> pHistogram = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
     ffi.Pointer<ffi.Uint8> pBlacklevel = ffi.calloc.call<ffi.Uint8>(ScopeSize.width * ScopeSize.height * 4);
 
     ffi.Pointer<ffi.Uint8> pVScope = ffi.calloc.call<ffi.Uint8>(ScopeSize.height * ScopeSize.height * 4);
@@ -141,7 +140,7 @@ class SavedInputFrame {
           pVScope,
           pFalseC,
           pYUVParade,
-          pHistogram,
+          //pHistogram,
           pBlacklevel,
           ScopeInputFrameTypeE.uyvy,
         );
@@ -159,7 +158,6 @@ class SavedInputFrame {
           pVScope,
           pFalseC,
           pYUVParade,
-          pHistogram,
           pBlacklevel,
           ScopeInputFrameTypeE.bgra,
         );
@@ -176,7 +174,6 @@ class SavedInputFrame {
     tr.update(TextureIDs.texWFRgbO, pWFRgb, ScopeSize.width, ScopeSize.height);
     tr.update(TextureIDs.texWFParadeO, pWFParade, ScopeSize.width, ScopeSize.height);
     tr.update(TextureIDs.texYUVParadeO, pYUVParade, ScopeSize.width, ScopeSize.height);
-    tr.update(TextureIDs.texHistogramO, pHistogram, ScopeSize.width, ScopeSize.height);
     tr.update(TextureIDs.texBLO, pBlacklevel, ScopeSize.width, ScopeSize.height);
 
     tr.update(TextureIDs.texVscopeO, pVScope, ScopeSize.height, ScopeSize.height);

@@ -236,8 +236,7 @@ class NDI {
           data["pWFParade"] != null &&
           data["pVScope"] != null &&
           data["pFalseC"] != null &&
-          data["pYUVParade"] != null &&
-          data["pHistogram"] != null) {
+          data["pYUVParade"] != null) {
         _fIsoSendport?.send("pause");
 
         Pointer<Uint8> pRGBA = Pointer.fromAddress(data["pRGBA"]! as int);
@@ -245,7 +244,6 @@ class NDI {
         Pointer<Uint8> pWFRgb = Pointer.fromAddress(data["pWFRgb"]! as int);
         Pointer<Uint8> pWFParade = Pointer.fromAddress(data["pWFParade"]! as int);
         Pointer<Uint8> pYUVParade = Pointer.fromAddress(data["pYUVParade"]! as int);
-        Pointer<Uint8> pHistogram = Pointer.fromAddress(data["pHistogram"]! as int);
         Pointer<Uint8> pBlacklevel = Pointer.fromAddress(data["pBlacklevel"]! as int);
         Pointer<Uint8> pVscope = Pointer.fromAddress(data["pVScope"]! as int);
         Pointer<Uint8> pFalseC = Pointer.fromAddress(data["pFalseC"]! as int);
@@ -265,7 +263,6 @@ class NDI {
         if (pWFRgb != nullptr) tr.update(TextureIDs.texWFRgb, pWFRgb, ScopeSize.width, ScopeSize.height);
         if (pWFParade != nullptr) tr.update(TextureIDs.texWFParade, pWFParade, ScopeSize.width, ScopeSize.height);
         if (pYUVParade != nullptr) tr.update(TextureIDs.texYUVParade, pYUVParade, ScopeSize.width, ScopeSize.height);
-        if (pHistogram != nullptr) tr.update(TextureIDs.texHistogram, pHistogram, ScopeSize.width, ScopeSize.height);
         if (pBlacklevel != nullptr) tr.update(TextureIDs.texBL, pBlacklevel, ScopeSize.width, ScopeSize.height);
         if (pVscope != nullptr) tr.update(TextureIDs.texVscope, pVscope, ScopeSize.height, ScopeSize.height);
 
@@ -396,9 +393,7 @@ class NDI {
       Pointer<Uint8> pYUVParade = scopeTypes.contains(ScopeTypes.yuvparade)
           ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
           : nullptr;
-      Pointer<Uint8> pHistogram = scopeTypes.contains(ScopeTypes.histogram)
-          ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
-          : nullptr;
+
       Pointer<Uint8> pBlacklevel = scopeTypes.contains(ScopeTypes.blacklevel)
           ? ffi.calloc.call<Uint8>(ScopeSize.width * ScopeSize.height * 4)
           : nullptr;
@@ -424,7 +419,6 @@ class NDI {
             pVScope,
             pFalseC,
             pYUVParade,
-            pHistogram,
             pBlacklevel,
             ScopeInputFrameTypeE.uyvy,
           );
@@ -448,7 +442,6 @@ class NDI {
             pVScope,
             pFalseC,
             pYUVParade,
-            pHistogram,
             pBlacklevel,
             ScopeInputFrameTypeE.bgra,
           );
@@ -474,7 +467,6 @@ class NDI {
         "pVScope": pVScope.address,
         "pFalseC": pFalseC.address,
         "pYUVParade": pYUVParade.address,
-        "pHistogram": pHistogram.address,
         "pBlacklevel": pBlacklevel.address,
         "frameRate": frameRate,
         "renderStartTime": renderStartTime,

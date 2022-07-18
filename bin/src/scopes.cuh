@@ -7,11 +7,12 @@
 #define EXTERNC
 #endif
 
-#define THREADS 192
+#define THREADS 256
 #define SW 580
 #define STHIRD 193.3333282F
 #define SH 256
 #define BLACKLEVEL 38.25F
+#define HISTSIZE 256*3
 
 #include <math.h>
 #include <stdint.h>
@@ -41,7 +42,6 @@ EXTERNC float renderScopes(
     uint8_t *vScope,
     uint8_t *falseC,
     uint8_t *yuvParade,
-    uint8_t *histogram,
     uint8_t *blacklevel,
     Scope_input_frame_type_e inputType);
 

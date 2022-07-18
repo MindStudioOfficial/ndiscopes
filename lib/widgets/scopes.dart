@@ -54,10 +54,7 @@ class ScopeSelector extends StatelessWidget {
         ovlId = TextureIDs.texYUVParadeO;
         parade = true;
         break;
-      case ScopeTypes.histogram:
-        imgId = TextureIDs.texHistogram;
-        ovlId = TextureIDs.texHistogramO;
-        break;
+
       case ScopeTypes.blacklevel:
         imgId = TextureIDs.texBL;
         ovlId = TextureIDs.texBLO;

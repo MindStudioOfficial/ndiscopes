@@ -142,13 +142,11 @@ enum ScopeTypes {
   luma,
   rgb,
   parade,
-  histogram,
   yuvparade,
   blacklevel,
 }
 
 Map<ScopeTypes, String> scopeTypeNames = {
-  ScopeTypes.histogram: "Histogram",
   ScopeTypes.luma: "Luminance Waveform",
   ScopeTypes.parade: "RGB Parade",
   ScopeTypes.rgb: "RGB Waveform",

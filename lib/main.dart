@@ -18,17 +18,16 @@ import 'package:window_manager/window_manager.dart';
 // DONE: Select Scope Types
 // DONE: YUV Parade
 // DONE: Don't render deselected scopes
-// DONE: 10% Black Level View
+// DONE: 15% Black Level View
 // DONE: Visual Highlighting of focused buttons MISSING FrameBrowser and Settings
 // DONE: Fix overlay when no frame present
 // DONE: Per Scope Settings
 // DONE: Per Scope Settings Menu
 // DONE: Per Scope Overlays
-// TODO: Show LoadingScreen/Splashscreen while loading settings
+// DONE: Show LoadingScreen/Splashscreen while loading settings
 // TODO: Scope specific settings
 // TODO: Toggle Vectorscope Colorize
 // TODO: Change Luminance Scope Color
-// TODO: Histogram
 // TODO: Audio Waveform
 // TODO: Audio Spectrum
 // TODO: Audio Vectorscope

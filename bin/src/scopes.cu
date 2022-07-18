@@ -223,7 +223,8 @@ __global__ void kernelScopes(
     uint8_t *d_vScope,
     uint8_t *d_falseC,
     uint8_t *d_yuvParade,
-    uint8_t *d_histogram,
+    //uint8_t *d_histogram,
+    //int *d_histogram_data,
     uint8_t *d_blacklevel,
     int bright)
 {
@@ -414,8 +415,8 @@ __global__ void kernelScopes(
                 continue;
             for (int j = 0; j < 7; j++)
             {
-                int scopePix = (scopeX + (yval+j) * SW) * 4;
-                if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3) // fill y 
+                int scopePix = (scopeX + (yval + j) * SW) * 4;
+                if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3) // fill y
                 {
                     // add brightness to the green byte of waveform
                     atomicAddClamp(d_blacklevel + scopePix + i, (uint8_t)((float)bright * a / 255.0f));
@@ -425,6 +426,7 @@ __global__ void kernelScopes(
             }
         }
     }
+
 }
 
 EXTERNC float renderScopes(
@@ -438,7 +440,6 @@ EXTERNC float renderScopes(
     uint8_t *vScope,
     uint8_t *falseC,
     uint8_t *yuvParade,
-    uint8_t *histogram,
     uint8_t *blacklevel,
     Scope_input_frame_type_e inputType)
 {
@@ -460,7 +461,6 @@ EXTERNC float renderScopes(
             *d_wfRgb = nullptr,
             *d_wfParade = nullptr,
             *d_yuvParade = nullptr,
-            *d_histogram = nullptr,
             *d_blacklevel = nullptr,
             *d_vScope = nullptr,
             *d_falseC = nullptr;
@@ -512,9 +512,6 @@ EXTERNC float renderScopes(
     if (blacklevel)
         cudaMalloc(&d_blacklevel, SW * SH * 4);
 
-    if (histogram)
-        cudaMalloc(&d_histogram, SW * SH * 4);
-
     if (falseC)
         cudaMalloc(&d_falseC, rgbaSize);
 
@@ -529,7 +526,6 @@ EXTERNC float renderScopes(
         d_vScope,
         d_falseC,
         d_yuvParade,
-        d_histogram,
         d_blacklevel,
         bright);
 
@@ -564,11 +560,6 @@ EXTERNC float renderScopes(
     {
         cudaMemcpy(blacklevel, d_blacklevel, SW * SH * 4, cudaMemcpyDeviceToHost);
         cudaFree(d_blacklevel);
-    }
-    if (histogram)
-    {
-        cudaMemcpy(histogram, d_histogram, SW * SH * 4, cudaMemcpyDeviceToHost);
-        cudaFree(d_histogram);
     }
     if (vScope)
     {
