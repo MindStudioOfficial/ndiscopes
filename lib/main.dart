@@ -25,6 +25,7 @@ import 'package:window_manager/window_manager.dart';
 // DONE: Per Scope Settings Menu
 // DONE: Per Scope Overlays
 // DONE: Show LoadingScreen/Splashscreen while loading settings
+// DONE: Create Application folder on startup if not exist
 // TODO: Scope specific settings
 // TODO: Toggle Vectorscope Colorize
 // TODO: Change Luminance Scope Color

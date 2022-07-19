@@ -20,13 +20,15 @@ class ScopeSettings with ChangeNotifier {
     _scaleTypes = scaleTypes ?? _scaleTypes;
   }
 
-  double _vScopeScale = 0.5;
+  double _vScopeScale = 1;
   bool _audioLevelEnabled = true;
   bool _audioOutputEnabled = false;
   List<bool> _linesEnabled = List<bool>.generate(ScopeTypes.values.length, (index) => true);
   List<bool> _scaleEnabled = List<bool>.generate(ScopeTypes.values.length, (index) => true);
-  List<WFScaleTypes> _scaleTypes =
-      List<WFScaleTypes>.generate(ScopeTypes.values.length, (index) => WFScaleTypes.percentage);
+  List<WFScaleTypes> _scaleTypes = List<WFScaleTypes>.generate(
+    ScopeTypes.values.length,
+    (index) => WFScaleTypes.percentage,
+  );
 
   List<ScopeTypes> _scopeLayout = List.from(
     [ScopeTypes.luma, ScopeTypes.rgb, ScopeTypes.parade],
