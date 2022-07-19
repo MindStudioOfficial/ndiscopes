@@ -114,7 +114,7 @@ class _FrameViewerState extends State<FrameViewer> {
                       },
                     );
                   },
-                  iconData: FluentIcons.video_clip_24_filled,
+                  iconData: FluentIcons.video_24_regular,
                 ),
 
                 //* colored container for all reference frame related buttons
@@ -131,7 +131,7 @@ class _FrameViewerState extends State<FrameViewer> {
                           frameBrowserOpen = !frameBrowserOpen;
                           widget.onToggleFrameBrowser(frameBrowserOpen);
                         },
-                        iconData: FluentIcons.image_28_filled,
+                        iconData: FluentIcons.image_24_regular,
                         active: frameBrowserOpen,
                       ),
 
@@ -142,7 +142,7 @@ class _FrameViewerState extends State<FrameViewer> {
                           onPressed: () {
                             frame.toggleOverlay(enabled: false);
                           },
-                          iconData: FluentIcons.dismiss_24_filled,
+                          iconData: FluentIcons.dismiss_24_regular,
                         ),
                         if (frame.overlayMode != OverlayMode.opacity) ...[
                           //* split mode toggle button
@@ -158,8 +158,8 @@ class _FrameViewerState extends State<FrameViewer> {
                               );
                             },
                             iconData: frame.overlayMode == OverlayMode.splitHorizontal
-                                ? FluentIcons.split_vertical_28_regular
-                                : FluentIcons.split_horizontal_28_regular,
+                                ? FluentIcons.split_vertical_24_regular
+                                : FluentIcons.split_horizontal_24_regular,
                           ),
 
                           //* flip overlay toogle button
@@ -180,7 +180,7 @@ class _FrameViewerState extends State<FrameViewer> {
                         onPressed: () {
                           widget.onSaveFrame();
                         },
-                        iconData: FluentIcons.image_add_24_filled,
+                        iconData: FluentIcons.camera_add_24_regular,
                       ),
                     ],
                   ),
@@ -196,7 +196,7 @@ class _FrameViewerState extends State<FrameViewer> {
                         ndi.updateMask(mask.rect, !mask.active);
                         mask.toogle();
                       },
-                      iconData: FluentIcons.crop_24_filled,
+                      iconData: FluentIcons.crop_24_regular,
                       active: mask.active,
                     ),
 
@@ -213,7 +213,7 @@ class _FrameViewerState extends State<FrameViewer> {
                                     mask.updateRect(m);
                                     ndi.updateMask(m, mask.active);
                                   },
-                                  iconData: FluentIcons.arrow_reset_24_filled,
+                                  iconData: FluentIcons.arrow_reset_24_regular,
                                 );
                               },
                             )
@@ -224,20 +224,20 @@ class _FrameViewerState extends State<FrameViewer> {
                                 mask.updateRect(m);
                                 ndi.updateMask(m, mask.active);
                               },
-                              iconData: FluentIcons.arrow_reset_24_filled,
+                              iconData: FluentIcons.arrow_reset_24_regular,
                             ),
                   ],
                 ),
                 CustomIconButton(
                   tooltip: "Toggle Transparancy Grid",
                   onPressed: () => frame.toogleGrid(),
-                  iconData: FluentIcons.tab_in_private_24_filled,
+                  iconData: FluentIcons.tab_in_private_24_regular,
                   active: frame.gridEnabled,
                 ),
                 CustomIconButton(
                   tooltip: "Toggle False Color",
                   onPressed: () => frame.toggleFalseColor(),
-                  iconData: FluentIcons.color_24_filled,
+                  iconData: FluentIcons.color_24_regular,
                   active: frame.falseColorEnabled,
                 ),
                 CustomIconButton(
@@ -246,7 +246,7 @@ class _FrameViewerState extends State<FrameViewer> {
                     settingsOpen = !settingsOpen;
                     widget.onToggleSettings(settingsOpen);
                   },
-                  iconData: FluentIcons.settings_24_filled,
+                  iconData: FluentIcons.settings_24_regular,
                   active: settingsOpen,
                 ),
               ],
