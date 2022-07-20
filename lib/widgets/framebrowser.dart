@@ -171,12 +171,7 @@ class _FrameBrowserV2State extends State<FrameBrowserV2> {
   Future<void> updateAppDir() async {
     if (!await appDir.exists()) await appDir.create();
     // get all entities in application directory
-    appDirContents = [];
-    final fseStream = appDir.list(followLinks: false, recursive: false);
-
-    await for (FileSystemEntity fse in fseStream) {
-      appDirContents.add(fse);
-    }
+    appDirContents = appDir.listSync(followLinks: false, recursive: false);
 
     // only consider subdirectories and ignore files
     appDirDirectorys = appDirContents.whereType<Directory>().toList();

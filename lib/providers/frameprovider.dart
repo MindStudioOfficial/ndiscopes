@@ -45,7 +45,7 @@ class Frame with ChangeNotifier {
     notifyListeners();
   }
 
-  void toogleGrid({bool? enabled}) {
+  void toggleGrid({bool? enabled}) {
     _gridEnabled = enabled ?? !_gridEnabled;
     notifyListeners();
   }

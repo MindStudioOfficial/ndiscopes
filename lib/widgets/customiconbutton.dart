@@ -7,12 +7,14 @@ class CustomIconButton extends StatefulWidget {
   final void Function() onPressed;
   final IconData iconData;
   final bool? active;
+  final LogicalKeySet? shortcutKeys;
   const CustomIconButton({
     Key? key,
     required this.tooltip,
     required this.onPressed,
     required this.iconData,
     this.active,
+    this.shortcutKeys,
   }) : super(key: key);
 
   @override
@@ -21,14 +23,10 @@ class CustomIconButton extends StatefulWidget {
 
 class _CustomIconButtonState extends State<CustomIconButton> {
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return DelayedCustomTooltip(
       widget.tooltip,
+      shortcutKeys: widget.shortcutKeys,
       child: TextButton(
         style: bIconDefault,
         onPressed: widget.onPressed,

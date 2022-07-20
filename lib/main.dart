@@ -3,9 +3,11 @@ import 'package:dart_discord_rpc/dart_discord_rpc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ndiscopes/models/models.dart';
 import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/service/gfx/gfx.dart';
+import 'package:ndiscopes/service/intents.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
 import 'package:ndiscopes/service/settings.dart';
 import 'package:ndiscopes/service/textures/textures.dart';
@@ -26,7 +28,10 @@ import 'package:window_manager/window_manager.dart';
 // DONE: Per Scope Overlays
 // DONE: Show LoadingScreen/Splashscreen while loading settings
 // DONE: Create Application folder on startup if not exist
-// TODO: Keyboard shortcuts
+// DONE: Keyboard shortcuts
+// DONE: Prevent spamming S open multiple source dialogs
+// TODO: Capture frame responsive
+// TODO: Number hotkeys for different reference frames
 // TODO: Scope specific settings
 // TODO: Toggle Vectorscope Colorize
 // TODO: Change Luminance Scope Color
@@ -40,27 +45,14 @@ void main() {
   init();
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => Frame()),
-        ChangeNotifierProvider(create: (_) => MaskProvider()),
-        ChangeNotifierProvider(create: (_) => ScopeSettings()),
-        ChangeNotifierProvider(create: (_) => AudioLevel()),
-        ChangeNotifierProvider(create: (_) => Statistics()),
-        ChangeNotifierProvider(create: (_) => AppStatus()),
-      ],
-      child: MaterialApp(
-        theme: thDefault,
-        scrollBehavior: const MaterialScrollBehavior().copyWith(
-          dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch},
-        ),
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          backgroundColor: cAppBackground,
-          body: const Main(),
-        ),
-      ),
-    ),
+    MultiProvider(providers: [
+      ChangeNotifierProvider(create: (_) => Frame()),
+      ChangeNotifierProvider(create: (_) => MaskProvider()),
+      ChangeNotifierProvider(create: (_) => ScopeSettings()),
+      ChangeNotifierProvider(create: (_) => AudioLevel()),
+      ChangeNotifierProvider(create: (_) => Statistics()),
+      ChangeNotifierProvider(create: (_) => AppStatus()),
+    ], child: const Main()),
   );
 
   doWhenWindowReady(() {
@@ -92,19 +84,113 @@ class Main extends StatefulWidget {
 
 class _MainState extends State<Main> with WindowListener {
   NDISource? selectedSource;
-  bool refOpen = false;
-  bool settingsOpen = false;
   bool portraitLayout = false;
 
   late ScrollController _vScopeScroll;
   late ScrollController _frameBrowserScroll;
   late ScrollController _settingsScroll;
 
+  late Map<Type, Action<Intent>> _actions;
+
+  final Map<ShortcutActivator, Intent> _shortcuts = {
+    LogicalKeySet(LogicalKeyboardKey.keyC): ToggleFalseColorIntent(),
+    LogicalKeySet(LogicalKeyboardKey.keyT): ToggleTransparencyIntent(),
+    LogicalKeySet(LogicalKeyboardKey.keyX): ToggleSettingsIntent(),
+    LogicalKeySet(LogicalKeyboardKey.keyB): ToggleFramebrowserIntent(),
+    LogicalKeySet(LogicalKeyboardKey.keyM): ToggleMaskIntent(),
+    LogicalKeySet(LogicalKeyboardKey.add): CaptureFrameIntent(),
+    // for US Keyboard and other:
+    const CharacterActivator("+"): CaptureFrameIntent(),
+    LogicalKeySet(LogicalKeyboardKey.keyS): SelectSourceIntent(),
+    LogicalKeySet(LogicalKeyboardKey.delete): DisableOverlayIntent(),
+    LogicalKeySet(LogicalKeyboardKey.keyD): ToggleSplitDirection(),
+    LogicalKeySet(LogicalKeyboardKey.keyF): ToggleSplitSide(),
+  };
+
+  GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     _vScopeScroll = ScrollController();
     _frameBrowserScroll = ScrollController();
     _settingsScroll = ScrollController();
+
+    // add back default shortcuts
+    // Focus and Scroll
+    _shortcuts.addAll(WidgetsApp.defaultShortcuts);
+
+    // override actions with custom actions
+    _actions = {
+      ToggleFalseColorIntent: CallbackAction<ToggleFalseColorIntent>(
+        onInvoke: (intent) {
+          context.read<Frame>().toggleFalseColor();
+          return null;
+        },
+      ),
+      ToggleTransparencyIntent: CallbackAction<ToggleTransparencyIntent>(
+        onInvoke: (intent) {
+          context.read<Frame>().toggleGrid();
+          return null;
+        },
+      ),
+      ToggleSettingsIntent: CallbackAction<ToggleSettingsIntent>(
+        onInvoke: (intent) {
+          context.read<AppStatus>().toggleSettings();
+          return null;
+        },
+      ),
+      ToggleFramebrowserIntent: CallbackAction<ToggleFramebrowserIntent>(
+        onInvoke: (intent) {
+          context.read<AppStatus>().toggleFrames();
+          return null;
+        },
+      ),
+      ToggleMaskIntent: CallbackAction<ToggleMaskIntent>(
+        onInvoke: (intent) {
+          final m = context.read<MaskProvider>();
+          m.toggle();
+          ndi.updateMask(m.rect, m.active);
+          return null;
+        },
+      ),
+      CaptureFrameIntent: CallbackAction<CaptureFrameIntent>(
+        onInvoke: (intent) {
+          onSaveFrame();
+          return null;
+        },
+      ),
+      SelectSourceIntent: CallbackAction<SelectSourceIntent>(
+        onInvoke: (intent) {
+          showSelectSource();
+          return null;
+        },
+      ),
+      DisableOverlayIntent: CallbackAction<DisableOverlayIntent>(
+        onInvoke: (intent) {
+          context.read<Frame>().toggleOverlay(enabled: false);
+          return null;
+        },
+      ),
+      ToggleSplitDirection: CallbackAction<ToggleSplitDirection>(
+        onInvoke: (intent) {
+          final frame = context.read<Frame>();
+          frame.updateOverlayMode(
+            frame.overlayMode != OverlayMode.splitVertical ? OverlayMode.splitVertical : OverlayMode.splitHorizontal,
+          );
+          return null;
+        },
+      ),
+      ToggleSplitSide: CallbackAction<ToggleSplitSide>(
+        onInvoke: (intent) {
+          final frame = context.read<Frame>();
+          frame.updateFlipSplit(!frame.flipSplit);
+          return null;
+        },
+      ),
+    };
+    // add back default actions
+    // Focus and Scroll
+    _actions.addAll(WidgetsApp.defaultActions);
 
     // listen for window events
     windowManager.addListener(this);
@@ -190,13 +276,13 @@ class _MainState extends State<Main> with WindowListener {
       setState(() {});
       return;
     }
-    final pS = ndi.getSourceAt(index);
+    final pSource = ndi.getSourceAt(index);
 
-    if (pS != null) {
+    if (pSource != null) {
       await Future.wait([ndi.stopGetFrames(), ndi.stopGetAudio()]);
 
       // update the current selected source
-      selectedSource = NDISource(pS);
+      selectedSource = NDISource(pSource);
       setState(() {});
 
       // * START RECEIVING VIDEO
@@ -230,253 +316,274 @@ class _MainState extends State<Main> with WindowListener {
     rpcUpdate(selectedSource?.name);
   }
 
+  bool _preventOpenSourceDialog = false;
+
+  void showSelectSource() {
+    if (_preventOpenSourceDialog) return;
+    _preventOpenSourceDialog = true;
+    showDialog(
+      context: navKey.currentState?.overlay?.context ?? context,
+      builder: (context) {
+        return SourceSelectDialog(
+          // pass the selected source to parent widget
+          onSelectSource: onSelectSource,
+        );
+      },
+    ).then((_) {
+      _preventOpenSourceDialog = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<ScopeSettings>();
     final status = context.watch<AppStatus>();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double aspect = constraints.maxWidth / constraints.maxHeight;
-        portraitLayout = aspect < 1.3;
-        int scopesCountX = portraitLayout ? 2 : 3;
-        double width = constraints.maxWidth;
-        if (settings.audioLevelEnabled && !portraitLayout) {
-          width -= 125;
-        }
+    return MaterialApp(
+      navigatorKey: navKey,
+      theme: thDefault,
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch},
+      ),
+      debugShowCheckedModeBanner: false,
+      shortcuts: _shortcuts,
+      actions: _actions,
+      home: Scaffold(
+        backgroundColor: cAppBackground,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            double aspect = constraints.maxWidth / constraints.maxHeight;
+            portraitLayout = aspect < 1.3;
+            int scopesCountX = portraitLayout ? 2 : 3;
+            double width = constraints.maxWidth;
+            if (settings.audioLevelEnabled && !portraitLayout) {
+              width -= 125;
+            }
 
-        if (status.shutdown) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Shutting down...",
-                  style: tThin.copyWith(fontSize: 55),
-                ),
-                Text(
-                  status.statusText,
-                  style: tThin.copyWith(fontSize: 15),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (status.loading) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(
-                  flex: 2,
-                ),
-                Text(
-                  "NDIScopes",
-                  style: tBold.copyWith(fontSize: 55),
-                ),
-                Text(
-                  "by MindStudio",
-                  style: tThin.copyWith(fontSize: 33),
-                ),
-                Expanded(
-                  child: Center(
-                    child: Text(
+            if (status.shutdown) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Shutting down...",
+                      style: tThin.copyWith(fontSize: 55),
+                    ),
+                    Text(
                       status.statusText,
                       style: tThin.copyWith(fontSize: 15),
                     ),
+                  ],
+                ),
+              );
+            }
+
+            if (status.loading) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Spacer(
+                      flex: 2,
+                    ),
+                    Text(
+                      "NDIScopes",
+                      style: tBold.copyWith(fontSize: 55),
+                    ),
+                    Text(
+                      "by MindStudio",
+                      style: tThin.copyWith(fontSize: 33),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          status.statusText,
+                          style: tThin.copyWith(fontSize: 15),
+                        ),
+                      ),
+                    ),
+                    const Spacer()
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                WindowTitleBar(
+                  sourceName: selectedSource?.name ?? "No Source",
+                ),
+                //* top part
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      Flexible(
+                        flex: 2,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            //* FRAME VIEWER
+                            Expanded(
+                              child: RepaintBoundary(
+                                child: FrameViewer(
+                                  onSaveFrame: onSaveFrame,
+                                  onSelectSource: showSelectSource,
+                                ),
+                              ),
+                            ),
+                            //* FRAME BROWSER
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              width: status.framesOpen ? 175 : 0,
+                              curve: Curves.easeInOutQuad,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const NeverScrollableScrollPhysics(),
+                                controller: _frameBrowserScroll,
+                                child: SizedBox(
+                                  width: 175,
+                                  child: FocusTraversalGroup(
+                                    descendantsAreFocusable: status.framesOpen,
+                                    descendantsAreTraversable: status.framesOpen,
+                                    child: const FrameBrowserV2(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            //* SETTINGS
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              width: status.settingsOpen ? 175 : 0,
+                              curve: Curves.easeInOutQuad,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                controller: _settingsScroll,
+                                physics: const NeverScrollableScrollPhysics(),
+                                child: SizedBox(
+                                  width: 175,
+                                  child: FocusTraversalGroup(
+                                    descendantsAreFocusable: status.settingsOpen,
+                                    descendantsAreTraversable: status.settingsOpen,
+                                    child: Settings(
+                                      onToggleAudioOut: (enabled) {
+                                        ndi.updateAudio(enabled);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      //* VSCOPE in portrait layout
+                      if (!portraitLayout)
+                        Flexible(
+                          flex: 1,
+                          child: Container(
+                            color: Colors.black,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                VerticalDivider(
+                                  width: 2,
+                                  thickness: 2,
+                                  color: cPrimary,
+                                  endIndent: 0,
+                                  indent: 0,
+                                ),
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    controller: _vScopeScroll,
+                                    child: const VScope(
+                                      title: "UV Vectorscope",
+                                      imgId: TextureIDs.texVscope,
+                                      ovlId: TextureIDs.texVscopeO,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                const Spacer()
+                //* bottom part
+                Container(
+                  color: Colors.black,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IntrinsicHeight(
+                        child: FocusTraversalGroup(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              SizedBox(
+                                width: width / scopesCountX,
+                                child: const ScopeSelector(
+                                  layoutIndex: 0,
+                                ),
+                              ),
+                              SizedBox(
+                                width: width / scopesCountX,
+                                child: const ScopeSelector(
+                                  layoutIndex: 1,
+                                ),
+                              ),
+                              if (!portraitLayout)
+                                SizedBox(
+                                  width: width / scopesCountX,
+                                  child: const ScopeSelector(
+                                    layoutIndex: 2,
+                                  ),
+                                ),
+                              if (settings.audioLevelEnabled && !portraitLayout) const AudioMeters(),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (portraitLayout)
+                        IntrinsicHeight(
+                          child: FocusTraversalGroup(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                SizedBox(
+                                  width: width / scopesCountX,
+                                  child: const ScopeSelector(
+                                    layoutIndex: 2,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: width / scopesCountX / 2,
+                                  child: const VScope(
+                                    title: "UV Vectorscope",
+                                    imgId: TextureIDs.texVscope,
+                                    ovlId: TextureIDs.texVscopeO,
+                                  ),
+                                ),
+                                if (settings.audioLevelEnabled) const AudioMeters(),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
               ],
-            ),
-          );
-        }
-
-        return Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            WindowTitleBar(
-              sourceName: selectedSource?.name ?? "No Source",
-            ),
-            //* top part
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Flexible(
-                    flex: 2,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        //* FRAME VIEWER
-                        Expanded(
-                          child: RepaintBoundary(
-                            child: FrameViewer(
-                              onSaveFrame: () => onSaveFrame(),
-                              onSelectSource: (index) => onSelectSource(index),
-                              onToggleFrameBrowser: (open) {
-                                setState(() {
-                                  refOpen = open;
-                                });
-                              },
-                              onToggleSettings: (open) {
-                                setState(() {
-                                  settingsOpen = open;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                        //* FRAME BROWSER
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          width: refOpen ? 175 : 0,
-                          curve: Curves.easeInOutQuad,
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const NeverScrollableScrollPhysics(),
-                            controller: _frameBrowserScroll,
-                            child: SizedBox(
-                              width: 175,
-                              child: FocusTraversalGroup(
-                                descendantsAreFocusable: refOpen,
-                                descendantsAreTraversable: refOpen,
-                                child: const FrameBrowserV2(),
-                              ),
-                            ),
-                          ),
-                        ),
-                        //* SETTINGS
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          width: settingsOpen ? 175 : 0,
-                          curve: Curves.easeInOutQuad,
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            controller: _settingsScroll,
-                            physics: const NeverScrollableScrollPhysics(),
-                            child: SizedBox(
-                              width: 175,
-                              child: FocusTraversalGroup(
-                                descendantsAreFocusable: settingsOpen,
-                                descendantsAreTraversable: settingsOpen,
-                                child: Settings(
-                                  onToggleAudioOut: (enabled) {
-                                    ndi.updateAudio(enabled);
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  //* VSCOPE in portrait layout
-                  if (!portraitLayout)
-                    Flexible(
-                      flex: 1,
-                      child: Container(
-                        color: Colors.black,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            VerticalDivider(
-                              width: 2,
-                              thickness: 2,
-                              color: cPrimary,
-                              endIndent: 0,
-                              indent: 0,
-                            ),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                controller: _vScopeScroll,
-                                child: const VScope(
-                                  title: "UV Vectorscope",
-                                  imgId: TextureIDs.texVscope,
-                                  ovlId: TextureIDs.texVscopeO,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            //* bottom part
-            Container(
-              color: Colors.black,
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  IntrinsicHeight(
-                    child: FocusTraversalGroup(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          SizedBox(
-                            width: width / scopesCountX,
-                            child: const ScopeSelector(
-                              layoutIndex: 0,
-                            ),
-                          ),
-                          SizedBox(
-                            width: width / scopesCountX,
-                            child: const ScopeSelector(
-                              layoutIndex: 1,
-                            ),
-                          ),
-                          if (!portraitLayout)
-                            SizedBox(
-                              width: width / scopesCountX,
-                              child: const ScopeSelector(
-                                layoutIndex: 2,
-                              ),
-                            ),
-                          if (settings.audioLevelEnabled && !portraitLayout) const AudioMeters(),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (portraitLayout)
-                    IntrinsicHeight(
-                      child: FocusTraversalGroup(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            SizedBox(
-                              width: width / scopesCountX,
-                              child: const ScopeSelector(
-                                layoutIndex: 2,
-                              ),
-                            ),
-                            SizedBox(
-                              width: width / scopesCountX / 2,
-                              child: const VScope(
-                                title: "UV Vectorscope",
-                                imgId: TextureIDs.texVscope,
-                                ovlId: TextureIDs.texVscopeO,
-                              ),
-                            ),
-                            if (settings.audioLevelEnabled) const AudioMeters(),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            )
-          ],
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

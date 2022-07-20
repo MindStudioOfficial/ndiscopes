@@ -12,7 +12,7 @@ class MaskProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void toogle({bool? active}) {
+  void toggle({bool? active}) {
     _active = active ?? !_active;
     notifyListeners();
   }

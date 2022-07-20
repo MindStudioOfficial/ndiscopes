@@ -1,6 +1,8 @@
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:ndiscopes/providers/appstatusprovider.dart';
 import 'package:ndiscopes/providers/frameprovider.dart';
 import 'package:ndiscopes/providers/maskprovider.dart';
 import 'package:ndiscopes/service/ndi/ndi.dart';
@@ -20,17 +22,13 @@ enum OverlayMode {
 /// Displays the incoming NDI frames aswell as a selected overlay
 /// and all necessary buttons for source selection reference frame controls and mask controls
 class FrameViewer extends StatefulWidget {
-  final Function(int index) onSelectSource;
+  final Function() onSelectSource;
   final Function() onSaveFrame;
-  final Function(bool open) onToggleFrameBrowser;
-  final Function(bool open) onToggleSettings;
 
   const FrameViewer({
     Key? key,
     required this.onSelectSource,
     required this.onSaveFrame,
-    required this.onToggleFrameBrowser,
-    required this.onToggleSettings,
   }) : super(key: key);
 
   @override
@@ -38,9 +36,6 @@ class FrameViewer extends StatefulWidget {
 }
 
 class _FrameViewerState extends State<FrameViewer> {
-  bool frameBrowserOpen = false;
-  bool settingsOpen = false;
-
   final ScrollController _buttonListScrollController = ScrollController();
   final ScrollController _falseColorOuterScollController = ScrollController();
   final ScrollController _falseColorInnerScollController = ScrollController();
@@ -73,6 +68,7 @@ class _FrameViewerState extends State<FrameViewer> {
   Widget build(BuildContext context) {
     final frame = context.watch<Frame>();
     final mask = context.watch<MaskProvider>();
+    final status = context.watch<AppStatus>();
 
     bool texturesInitialized = frame.texturesInitialized;
 
@@ -102,17 +98,10 @@ class _FrameViewerState extends State<FrameViewer> {
                 //* select source button
                 CustomIconButton(
                   tooltip: "Select NDI Source",
+                  shortcutKeys: LogicalKeySet(LogicalKeyboardKey.keyS),
                   onPressed: () {
                     // pop-up dialog for selecting a source
-                    showDialog(
-                      context: context,
-                      builder: (context) {
-                        return SourceSelectDialog(
-                          // pass the selected source to parent widget
-                          onSelectSource: (widget.onSelectSource),
-                        );
-                      },
-                    );
+                    widget.onSelectSource();
                   },
                   iconData: FluentIcons.video_24_regular,
                 ),
@@ -126,27 +115,25 @@ class _FrameViewerState extends State<FrameViewer> {
                     children: [
                       //* select reference frames
                       CustomIconButton(
-                        tooltip: "Select Reference Frame",
-                        onPressed: () {
-                          frameBrowserOpen = !frameBrowserOpen;
-                          widget.onToggleFrameBrowser(frameBrowserOpen);
-                        },
+                        shortcutKeys: LogicalKeySet(LogicalKeyboardKey.keyB),
+                        tooltip: "${status.framesOpen ? "Close" : "Open"} Reference Frame Browser",
+                        onPressed: status.toggleFrames,
                         iconData: FluentIcons.image_24_regular,
-                        active: frameBrowserOpen,
+                        active: status.framesOpen,
                       ),
 
                       //* disable overlay button
                       if (context.watch<Frame>().overlayEnabled) ...[
                         CustomIconButton(
+                          shortcutKeys: LogicalKeySet(LogicalKeyboardKey.delete),
                           tooltip: "Disable Overlay",
-                          onPressed: () {
-                            frame.toggleOverlay(enabled: false);
-                          },
+                          onPressed: () => frame.toggleOverlay(enabled: false),
                           iconData: FluentIcons.dismiss_24_regular,
                         ),
                         if (frame.overlayMode != OverlayMode.opacity) ...[
                           //* split mode toggle button
                           CustomIconButton(
+                            shortcutKeys: LogicalKeySet(LogicalKeyboardKey.keyD),
                             tooltip: frame.overlayMode == OverlayMode.splitHorizontal
                                 ? "Split Vertical"
                                 : "Split Horizontal",
@@ -164,10 +151,9 @@ class _FrameViewerState extends State<FrameViewer> {
 
                           //* flip overlay toogle button
                           CustomIconButton(
+                            shortcutKeys: LogicalKeySet(LogicalKeyboardKey.keyF),
                             tooltip: "Flip Overlay Side",
-                            onPressed: () {
-                              frame.updateFlipSplit(!frame.flipSplit);
-                            },
+                            onPressed: () => frame.updateFlipSplit(!frame.flipSplit),
                             iconData: frame.overlayMode == OverlayMode.splitHorizontal
                                 ? FluentIcons.flip_vertical_24_regular
                                 : FluentIcons.flip_horizontal_24_regular,
@@ -176,6 +162,7 @@ class _FrameViewerState extends State<FrameViewer> {
                       ],
                       //* save reference frame button
                       CustomIconButton(
+                        shortcutKeys: LogicalKeySet(LogicalKeyboardKey.add),
                         tooltip: "Save Reference Frame",
                         onPressed: () {
                           widget.onSaveFrame();
@@ -190,11 +177,13 @@ class _FrameViewerState extends State<FrameViewer> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     //* toogle mask button
+
                     CustomIconButton(
+                      shortcutKeys: LogicalKeySet(LogicalKeyboardKey.keyM),
                       tooltip: "Toogle Mask",
                       onPressed: () {
                         ndi.updateMask(mask.rect, !mask.active);
-                        mask.toogle();
+                        mask.toggle();
                       },
                       iconData: FluentIcons.crop_24_regular,
                       active: mask.active,
@@ -229,25 +218,25 @@ class _FrameViewerState extends State<FrameViewer> {
                   ],
                 ),
                 CustomIconButton(
+                  shortcutKeys: LogicalKeySet(LogicalKeyboardKey.keyT),
                   tooltip: "Toggle Transparancy Grid",
-                  onPressed: () => frame.toogleGrid(),
+                  onPressed: frame.toggleGrid,
                   iconData: FluentIcons.tab_in_private_24_regular,
                   active: frame.gridEnabled,
                 ),
                 CustomIconButton(
+                  shortcutKeys: LogicalKeySet(LogicalKeyboardKey.keyC),
                   tooltip: "Toggle False Color",
-                  onPressed: () => frame.toggleFalseColor(),
+                  onPressed: frame.toggleFalseColor,
                   iconData: FluentIcons.color_24_regular,
                   active: frame.falseColorEnabled,
                 ),
                 CustomIconButton(
+                  shortcutKeys: LogicalKeySet(LogicalKeyboardKey.keyX),
                   tooltip: "Toggle Settings",
-                  onPressed: () {
-                    settingsOpen = !settingsOpen;
-                    widget.onToggleSettings(settingsOpen);
-                  },
+                  onPressed: status.toggleSettings,
                   iconData: FluentIcons.settings_24_regular,
-                  active: settingsOpen,
+                  active: status.settingsOpen,
                 ),
               ],
             ),
