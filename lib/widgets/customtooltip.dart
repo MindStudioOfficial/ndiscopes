@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:ndiscopes/models/textstyles.dart';
 
 Color toolTipBackgroundColor = const Color.fromRGBO(5, 5, 5, .7);
@@ -54,9 +53,9 @@ class DelayedCustomTooltip extends StatelessWidget {
     String s = "";
     if (shortcutKeys != null) {
       keyS.write("[");
-      shortcutKeys!.keys.forEach((key) {
+      for (var key in shortcutKeys!.keys) {
         keyS.write(key.keyLabel + " + ");
-      });
+      }
       keyS.write("]");
       s = keyS.toString();
       s = s.replaceAll(" + ]", "]");

@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   screen_retriever
   texturerender
   url_launcher_windows
+  win32audio
   window_manager
 )
 

@@ -11,6 +11,7 @@
 #include <screen_retriever/screen_retriever_plugin.h>
 #include <texturerender/texturerender_plugin.h>
 #include <url_launcher_windows/url_launcher_windows.h>
+#include <win32audio/win32audio_plugin_c_api.h>
 #include <window_manager/window_manager_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
@@ -24,6 +25,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("TexturerenderPlugin"));
   UrlLauncherWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("UrlLauncherWindows"));
+  Win32audioPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("Win32audioPluginCApi"));
   WindowManagerPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("WindowManagerPlugin"));
 }

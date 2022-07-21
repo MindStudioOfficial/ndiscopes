@@ -55,6 +55,7 @@ dependencies:
   ffi: ^1.2.1
   ffigen: ^6.0.0
   aligned_dialog: ^0.0.6
+  win32audio: ^1.0.2
 
 dev_dependencies:
   flutter_test:

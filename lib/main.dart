@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ndiscopes/models/models.dart';
+import 'package:ndiscopes/providers/audiodeviceprovider.dart';
 import 'package:ndiscopes/providers/providers.dart';
 import 'package:ndiscopes/service/gfx/gfx.dart';
 import 'package:ndiscopes/service/intents.dart';
@@ -15,7 +16,9 @@ import 'package:ndiscopes/service/discordrpc.dart';
 import 'package:ndiscopes/util/saveloadframe.dart';
 import 'package:ndiscopes/widgets/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:win32audio/win32audio.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:ndiscopes/util/prettyprint.dart';
 
 // DONE: Select Scope Types
 // DONE: YUV Parade
@@ -30,6 +33,7 @@ import 'package:window_manager/window_manager.dart';
 // DONE: Create Application folder on startup if not exist
 // DONE: Keyboard shortcuts
 // DONE: Prevent spamming S open multiple source dialogs
+// DONE: Select Audio Device
 // TODO: Capture frame responsive
 // TODO: Number hotkeys for different reference frames
 // TODO: Scope specific settings
@@ -52,6 +56,7 @@ void main() {
       ChangeNotifierProvider(create: (_) => AudioLevel()),
       ChangeNotifierProvider(create: (_) => Statistics()),
       ChangeNotifierProvider(create: (_) => AppStatus()),
+      ChangeNotifierProvider(create: (_) => AudioDevices()),
     ], child: const Main()),
   );
 
@@ -84,6 +89,7 @@ class Main extends StatefulWidget {
 
 class _MainState extends State<Main> with WindowListener {
   NDISource? selectedSource;
+  int? audioDeviceIndex;
   bool portraitLayout = false;
 
   late ScrollController _vScopeScroll;
@@ -218,6 +224,36 @@ class _MainState extends State<Main> with WindowListener {
     await loadSettings();
     await Future.delayed(const Duration(milliseconds: 150));
 
+    context.read<AppStatus>().updateStatusText("loading AudioDevices...");
+    // get all audio devices
+    await context.read<AudioDevices>().enumerateDevices();
+
+    // get audio device from settings
+    String audioDevUID = context.read<ScopeSettings>().audioDeviceUID;
+
+    // if no device in settings update settings with default audio device
+    if (audioDevUID.isEmpty) {
+      // get the ID of the default device
+      String? defUID = (await Audio.getDefaultDevice(AudioDeviceType.output))?.id;
+
+      // update if device exists
+      if (defUID != null) context.read<ScopeSettings>().updateAudioDeviceUID(defUID);
+    }
+    if (audioDevUID.isNotEmpty) {
+      int devIndex = context.read<AudioDevices>().getAudioDeviceIDbyUID(audioDevUID) ?? 0;
+      setState(() {
+        audioDeviceIndex = devIndex;
+      });
+    }
+
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    if (kDebugMode) {
+      print("Found the following Audio Outputs:");
+      final ad = context.read<AudioDevices>().audioDevices;
+      print(List<String>.generate(ad.length, (index) => ad[index].name).toPrettyString());
+    }
+
     context.read<AppStatus>().updateStatusText("");
     await Future.delayed(const Duration(milliseconds: 150));
     context.read<AppStatus>().toggleLoading(loading: false);
@@ -310,6 +346,7 @@ class _MainState extends State<Main> with WindowListener {
           context.read<AudioLevel>().setLevels(level.channelLevels);
         },
         context.read<ScopeSettings>().audioOutputEnabled,
+        audioDeviceIndex ?? 0,
       );
     }
     // update the discord rich presence with the new source information (or null for NO SOURCE)
@@ -472,7 +509,13 @@ class _MainState extends State<Main> with WindowListener {
                                     descendantsAreTraversable: status.settingsOpen,
                                     child: Settings(
                                       onToggleAudioOut: (enabled) {
-                                        ndi.updateAudio(enabled);
+                                        ndi.updateAudioEnabled(enabled);
+                                      },
+                                      onAudioDeviceSelect: (index) {
+                                        setState(() {
+                                          audioDeviceIndex = index;
+                                        });
+                                        ndi.updateAudioDevice(index);
                                       },
                                     ),
                                   ),

@@ -154,7 +154,7 @@ packages:
       name: fluentui_system_icons
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.174"
+    version: "1.1.175"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -210,10 +210,10 @@ packages:
     description:
       path: "."
       ref: master
-      resolved-ref: "35a1518bb84f24f3f15b4c7a92064434ada72ebf"
+      resolved-ref: "62b9bff5e15bd50f5c53a9c914cad17b1fe1a3f1"
       url: "https://github.com/MindStudioOfficial/libao.git"
     source: git
-    version: "0.2.0"
+    version: "0.2.1"
   lints:
     dependency: transitive
     description:
@@ -423,7 +423,7 @@ packages:
       name: url_launcher
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.4"
+    version: "6.1.5"
   url_launcher_android:
     dependency: transitive
     description:
@@ -487,6 +487,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.6.1"
+  win32audio:
+    dependency: "direct main"
+    description:
+      name: win32audio
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.1.0"
   window_manager:
     dependency: "direct main"
     description:
@@ -509,5 +516,5 @@ packages:
     source: hosted
     version: "3.1.1"
 sdks:
-  dart: ">=2.17.0 <3.0.0"
+  dart: ">=2.17.5 <3.0.0"
   flutter: ">=3.0.0"

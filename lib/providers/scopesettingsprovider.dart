@@ -10,6 +10,7 @@ class ScopeSettings with ChangeNotifier {
     bool? audioLevelEnabled,
     bool? audioOutputEnabled,
     List<ScopeTypes>? scopeLayout,
+    String? audioDeviceUID,
   }) {
     _vScopeScale = vScopeScale ?? _vScopeScale;
     _audioLevelEnabled = audioLevelEnabled ?? _audioLevelEnabled;
@@ -18,6 +19,7 @@ class ScopeSettings with ChangeNotifier {
     _linesEnabled = linesEnabled ?? _linesEnabled;
     _scaleEnabled = scaleEnabled ?? _scaleEnabled;
     _scaleTypes = scaleTypes ?? _scaleTypes;
+    _audioDeviceUID = audioDeviceUID ?? _audioDeviceUID;
   }
 
   double _vScopeScale = 1;
@@ -35,6 +37,8 @@ class ScopeSettings with ChangeNotifier {
     growable: false,
   );
 
+  String _audioDeviceUID = "";
+
   double get vScopeScale => _vScopeScale;
   List<bool> get scaleEnabled => _scaleEnabled;
   List<bool> get linesEnabled => _linesEnabled;
@@ -42,8 +46,8 @@ class ScopeSettings with ChangeNotifier {
   bool get audioLevelEnabled => _audioLevelEnabled;
   bool get audioOutputEnabled => _audioOutputEnabled;
   List<ScopeTypes> get scopeLayout => _scopeLayout;
-
   Set<ScopeTypes> get scopeTypes => Set<ScopeTypes>.from(scopeLayout);
+  String get audioDeviceUID => _audioDeviceUID;
 
   void updateVScopeScale(double scale) {
     _vScopeScale = scale;
@@ -89,6 +93,12 @@ class ScopeSettings with ChangeNotifier {
     _audioLevelEnabled = n.audioLevelEnabled;
     _audioOutputEnabled = n.audioOutputEnabled;
     _scopeLayout = n.scopeLayout;
+    _audioDeviceUID = n.audioDeviceUID;
+    notifyListeners();
+  }
+
+  void updateAudioDeviceUID(String uid) {
+    _audioDeviceUID = uid;
     notifyListeners();
   }
 
@@ -107,6 +117,7 @@ class ScopeSettings with ChangeNotifier {
         3,
         (index) => ScopeTypes.values[json["scopeLayout"]?[index] ?? index],
       ),
+      audioDeviceUID: json["audioDeviceUID"] ?? "",
     );
   }
 
@@ -125,6 +136,7 @@ class ScopeSettings with ChangeNotifier {
         ScopeTypes.values.length,
         (index) => _scaleTypes[index].index,
       ),
+      "audioDeviceUID": _audioDeviceUID,
     };
   }
 

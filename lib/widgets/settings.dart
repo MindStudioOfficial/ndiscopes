@@ -1,12 +1,19 @@
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:ndiscopes/models/colors.dart';
 import 'package:ndiscopes/models/textstyles.dart';
+import 'package:ndiscopes/providers/audiodeviceprovider.dart';
 import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'package:provider/provider.dart';
 
 class Settings extends StatefulWidget {
   final void Function(bool enabled) onToggleAudioOut;
-  const Settings({Key? key, required this.onToggleAudioOut}) : super(key: key);
+  final void Function(int index) onAudioDeviceSelect;
+  const Settings({
+    Key? key,
+    required this.onToggleAudioOut,
+    required this.onAudioDeviceSelect,
+  }) : super(key: key);
 
   @override
   State<Settings> createState() => _SettingsState();
@@ -24,6 +31,7 @@ class _SettingsState extends State<Settings> {
   @override
   Widget build(BuildContext context) {
     final scopeSettings = context.watch<ScopeSettings>();
+    final audioDev = context.watch<AudioDevices>();
     return SingleChildScrollView(
       controller: _settingsScrollController,
       child: Column(
@@ -47,63 +55,6 @@ class _SettingsState extends State<Settings> {
             activeColor: cHighlight,
           ),
           Divider(color: cHighlight),
-          /*
-          const SizedBox(height: 8),
-          Text("Waveforms", style: tSmall.copyWith(fontSize: 18)),
-          CheckboxListTile(
-            title: Text("Labels", style: tSmall),
-            value: scopeSettings.scaleEnabled[ScopeTypes.luma.index],
-            onChanged: (v) {
-              scopeSettings.toggleShowScale(ScopeTypes.luma, show: v);
-            },
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () {
-                      scopeSettings.updateWVScaleType(ScopeTypes.luma, WFScaleTypes.percentage);
-                    },
-                    focusColor: cFocused,
-                    child: Ink(
-                      color: scopeSettings.scaleTypes[ScopeTypes.luma.index] == WFScaleTypes.percentage
-                          ? cHighlight
-                          : cAccent,
-                      child: Center(
-                          child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text("%", style: tBold.copyWith(fontSize: 15)),
-                      )),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: InkWell(
-                    onTap: () {
-                      scopeSettings.updateWVScaleType(ScopeTypes.luma, WFScaleTypes.bits);
-                    },
-                    focusColor: cFocused,
-                    child: Ink(
-                      color:
-                          scopeSettings.scaleTypes[ScopeTypes.luma.index] == WFScaleTypes.bits ? cHighlight : cAccent,
-                      child: Center(
-                          child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text("8Bit", style: tBold.copyWith(fontSize: 15)),
-                      )),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Divider(color: cHighlight),
-          */
           const SizedBox(height: 8),
           Text("Audio", style: tSmall.copyWith(fontSize: 18)),
           CheckboxListTile(
@@ -119,6 +70,40 @@ class _SettingsState extends State<Settings> {
             onChanged: (v) {
               scopeSettings.toggleAudioOutput(enable: v);
               widget.onToggleAudioOut(v ?? false);
+            },
+          ),
+          DropdownButton<int>(
+            dropdownColor: cDialogBackground,
+            isDense: false,
+            icon: const Icon(
+              FluentIcons.caret_down_24_filled,
+              size: 15,
+            ),
+            focusColor: cFocused,
+            style: tThin,
+            isExpanded: true,
+            itemHeight: 60,
+            underline: Container(),
+            value: audioDev.getAudioDeviceIDbyUID(scopeSettings.audioDeviceUID),
+            items: List<DropdownMenuItem<int>>.generate(
+              audioDev.count,
+              (index) => DropdownMenuItem<int>(
+                value: index,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    audioDev.audioDevices[index].name,
+                    style: tThin.copyWith(fontSize: 15),
+                    textAlign: TextAlign.left,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+              ),
+            ),
+            onChanged: (val) {
+              scopeSettings.updateAudioDeviceUID(audioDev.audioDevices[val ?? 0].id);
+              widget.onAudioDeviceSelect((val != null ? val + 1 : null) ?? 0);
             },
           ),
         ],

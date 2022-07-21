@@ -577,6 +577,7 @@ class NDI {
     Pointer<NDIlib_source_t> source,
     Function(NDIAudioLevelFrame level) onLevel,
     bool outputEnabled,
+    int audioDeviceIndex,
   ) async {
     final completer = Completer();
 
@@ -599,7 +600,13 @@ class NDI {
 
     _aIsolate = await Isolate.spawn(
       _getAudio,
-      _AMObject(_aReceiveport!.sendPort, source.address, _pRecv.address, outputEnabled),
+      _AMObject(
+        _aReceiveport!.sendPort,
+        source.address,
+        _pRecv.address,
+        outputEnabled,
+        audioDeviceIndex,
+      ),
     );
 
     return completer.future;
@@ -627,6 +634,7 @@ class NDI {
     ReceivePort rP = ReceivePort();
 
     bool outputEnabled = object.outputEnabled;
+    int audioDeviceIndex = object.audioDeviceIndex;
     // listen for messages from main thread
     rP.listen((message) {
       if (message is bool) {
@@ -634,6 +642,9 @@ class NDI {
       }
       if (message is String) {
         if (message == "end") end = true;
+      }
+      if (message is int) {
+        audioDeviceIndex = message;
       }
     });
 
@@ -651,7 +662,7 @@ class NDI {
 
     int frame = -1;
 
-    player.openDriver();
+    player.openDriver(audioDeviceIndex);
 
     while (!end) {
       // async break to listen for receivport messages
@@ -666,7 +677,7 @@ class NDI {
       int stride = pAudioFrame.ref.channel_stride_in_bytes;
       int rate = pAudioFrame.ref.sample_rate;
       // update player based on new info (only updates if info is different to last)
-      player.updateDriver(channels, rate, 16);
+      player.updateDriver(channels, rate, 16, audioDeviceIndex);
       // get the pointer to the 32 Float audio
       Pointer<Float> data = pAudioFrame.ref.p_data;
 
@@ -717,9 +728,14 @@ class NDI {
   /// Update the Audio Isolate with new value(s)
   ///
   /// set [outputEnabled] to true if you want to play the audio
-  void updateAudio(bool outputEnabled) {
+  void updateAudioEnabled(bool outputEnabled) {
     if (_aSendport == null) return;
     _aSendport!.send(outputEnabled);
+  }
+
+  void updateAudioDevice(int index) {
+    if (_aSendport == null) return;
+    _aSendport!.send(index);
   }
 
   /// Deinitializes the NDI Library
@@ -746,7 +762,14 @@ class _AMObject {
   int pRecvA;
   int pSourceA;
   bool outputEnabled;
-  _AMObject(this.sendPort, this.pSourceA, this.pRecvA, this.outputEnabled);
+  int audioDeviceIndex;
+  _AMObject(
+    this.sendPort,
+    this.pSourceA,
+    this.pRecvA,
+    this.outputEnabled,
+    this.audioDeviceIndex,
+  );
 }
 
 /// the object used for initializing thread with parameters to find new sources
