@@ -84,7 +84,20 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] BGRA (stills and alpha)
 - [ ] NDI Output
 
-  
+## Keyboard Shortcuts
+
+- <kbd>C</kbd> Toggle False `C`olor
+- <kbd>T</kbd> Toggle `T`ransparency Grid
+- <kbd>X</kbd> Toggle Settings
+- <kbd>B</kbd> Toggle Frame `B`rowser
+- <kbd>M</kbd> Toggle `M`ask
+- <kbd>+</kbd> Capture new Reference Frame
+- <kbd>S</kbd> Select `S`ource
+- <kbd>Del</kbd> Disable Reference Frame Overlay
+- <kbd>D</kbd> Toggle Split `D`irection
+- <kbd>F</kbd> `F`lip Split Side
+
+(Feel free to suggest alternative shortcuts as a Feature Request Issue)
 
 ## GPU Support
 - NVIDIA
