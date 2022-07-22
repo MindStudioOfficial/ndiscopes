@@ -30,23 +30,25 @@ An open source Windows application to display several diffrent scopes/waveforms 
 </div>
 <br>
 
-![Screenshot](blob/sc5.jpg)
-![Screenshot](blob/sc4.jpg)
+![Screenshot](blob/sc7.jpg)
+
+| Luminance: ![Luma Waveform](blob/sc_luma.jpg) | RGB Overlayed: ![RGB Waveform](blob/sc_rgb.jpg) | RGB Parade: ![RGB Parade](blob/sc_rgbParade.jpg) |
+| ---------------------------------- | -------------------------------- | --- |
+| **15% RGB Blacklevel:**  ![Black Level](blob/sc_blacklevel.jpg) | **YCbCr Parade:** ![YUV Parade](blob/sc_yuvparade.jpg) | **YUV Vectorscope:** ![Vectorscope](blob/sc_vectorscope.jpg) |
+| **With Alpha background:**  ![Alpha Background](blob/sc_alpha.jpg) |  **Without Alpha Background:**![Alpha Background](blob/sc_alpha2.jpg) | **Audiometers dBu:** <br><img src="blob/sc_audiometers.jpg" height=200> |
+
+| False Color: ![False Color](blob/sc_falseColor2.jpg) | Splitscreen:![Splitscreen](blob/sc_splitscreen.jpg) |
+| --- | --- |
 
 ## Requirements
 
 The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is required to run this software. See *GPU Support* to see exaxtly what GPUs are supported.
 
+## Platform Support
 
-## Roadmap
+![Windows](https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/Windows_logo_-_2012_%28dark_blue%29.svg/88px-Windows_logo_-_2012_%28dark_blue%29.svg.png)
 
-### Platform Support
-
-- [x] Windows
-- [ ] Linux
-- [ ] MacOS
-
-### Features
+## Features
 
 - Waveforms/Scopes
   - [x] Luma Waveform
@@ -54,9 +56,8 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] RGB Parade
   - [x] UV Vectorscope
   - [x] False-Color display of source and reference overlay
+  - [x] YUV Parade
   - [ ] Color Space Coverage
-  - [ ] Histogram
-  - [ ] YUV Parade
 - Settings
   - [x] Scale vectorscope x0.5 to x5
   - [x] Toggle waveform scale labels
@@ -64,30 +65,28 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] Waveform scale as 8Bit value
   - [x] Save and load settings on startup
   - [x] Enable Audiometer 
+  - [x] Select Audio Device
 - [x] Reference Frame
   - [x] Save/Load
   - [x] Overlay on source as splitscreen
-  - [x] Overlay on scopes as background
   - [x] Overlay on scopes as splitscreen
-  - [x] Show thumbnails in frame browse
+  - [x] Show thumbnails in frame browser
 - [x] Draw Masks on source/reference frame
 - Audio
   - [x] Audiometer for every audio channel of the NDI source in dBu scale
   - [x] Audio playback to default audio device (toggleable) 
+  - [x] Selectable audio device
   - [ ] Audio channel routing
-  - [ ] Selectable audio device
   - [ ] Audio waveform
   - [ ] Audio spectrum
 - NDI Codec support
-  - **This software now requests the frames to be in UYVY or BGRA format to maximize compatibility.**
   - [x] UYVY (most common, fastest)
   - [x] BGRA (stills and alpha)
-  - others are very uncommon IMO
 - [ ] NDI Output
 
   
 
-### GPU Support
+## GPU Support
 - NVIDIA
   - [x] CC 8.x **Ampere** RTX 30 Series, RTX A Series,
   - [x] CC 7.x **Volta/Turing** RTX 20 Series, GTX 16 Series, RTX Quadro Series, TITAN RTX, TITAN V
