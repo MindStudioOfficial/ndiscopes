@@ -18,9 +18,13 @@ class AudioDevices extends ChangeNotifier {
   }
 
   int? getAudioDeviceIDbyUID(String uid) {
-    int id = _audioDevices.indexWhere((element) => element.id == uid);
+    int id = _audioDevices.indexWhere((element) => element.name == uid);
     if (id == -1) return null;
     return id;
+  }
+
+  bool deviceWithNameExists(String name) {
+    return _audioDevices.any((element) => element.name == name);
   }
 
   void updateAudioDevices(List<AudioDevice> devices) {

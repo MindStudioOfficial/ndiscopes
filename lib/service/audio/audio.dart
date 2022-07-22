@@ -10,7 +10,8 @@ class AudioPlayer {
   int _bits = 16;
   int _channels = 2;
   int _sampleRate = 48000;
-  int _devId = 0;
+  int _devID = 0;
+  String _devName = "";
 
   AudioPlayer() {
     _ao = Libao.open("bin/libao.dll");
@@ -18,13 +19,35 @@ class AudioPlayer {
     _driverId = _ao.defaultDriverId();
   }
 
-  openDriver(int devId) {
+  openDriver(int index) {
     Pointer<AoOption> options = calloc<AoOption>();
+
     options.ref.key = "id".toNativeUtf8();
-    options.ref.value = devId.toString().toNativeUtf8();
+    options.ref.value = index.toString().toNativeUtf8();
 
-    _devId = devId;
+    _devID = index;
 
+    _device = _ao.openLive(
+      _driverId,
+      bits: _bits,
+      channels: _channels,
+      matrix: AudioChannelMapping.fivepointone,
+      rate: _sampleRate,
+      options: options,
+    );
+    _ao.freeOptions(options);
+  }
+
+  openDriverByName(String name) {
+    Pointer<AoOption> options = calloc<AoOption>();
+
+    options.ref.key = "dev".toNativeUtf8();
+    // libao cuts off the name after the 31. character.
+    // If name is longer libao won't find a match
+    String dev = name.isNotEmpty ? name.substring(0, name.length >= 32 ? 31 : name.length) : "default";
+
+    options.ref.value = dev.toNativeUtf8();
+    _devName = name;
     _device = _ao.openLive(
       _driverId,
       bits: _bits,
@@ -41,14 +64,24 @@ class AudioPlayer {
     _ao.play(_device!, bytes);
   }
 
-  updateDriver(int channels, int sampleRate, int bits, int devId) {
-    if (channels == _channels && sampleRate == _sampleRate && bits == _bits && devId == _devId) return;
+  updateDriver(int channels, int sampleRate, int bits, int devID) {
+    if (channels == _channels && sampleRate == _sampleRate && bits == _bits && devID == _devID) return;
     if (_device != null) _ao.close(_device!);
     _channels = channels;
     _sampleRate = sampleRate;
     _bits = bits;
-    _devId = devId;
-    openDriver(devId);
+    _devID = devID;
+    openDriver(devID);
+  }
+
+  updateDriverWithName(int channels, int sampleRate, int bits, String name) {
+    if (channels == _channels && sampleRate == _sampleRate && bits == _bits && name == _devName) return;
+    if (_device != null) _ao.close(_device!);
+    _channels = channels;
+    _sampleRate = sampleRate;
+    _bits = bits;
+    _devName = name;
+    openDriverByName(name);
   }
 
   dispose() {

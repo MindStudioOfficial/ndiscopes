@@ -89,7 +89,7 @@ class Main extends StatefulWidget {
 
 class _MainState extends State<Main> with WindowListener {
   NDISource? selectedSource;
-  int? audioDeviceIndex;
+  String? audioDeviceName;
   bool portraitLayout = false;
 
   late ScrollController _vScopeScroll;
@@ -234,16 +234,17 @@ class _MainState extends State<Main> with WindowListener {
     // if no device in settings update settings with default audio device
     if (audioDevUID.isEmpty) {
       // get the ID of the default device
-      String? defUID = (await Audio.getDefaultDevice(AudioDeviceType.output))?.id;
+      String? defUID = (await Audio.getDefaultDevice(AudioDeviceType.output))?.name;
 
       // update if device exists
       if (defUID != null) context.read<ScopeSettings>().updateAudioDeviceUID(defUID);
     }
     if (audioDevUID.isNotEmpty) {
-      int devIndex = context.read<AudioDevices>().getAudioDeviceIDbyUID(audioDevUID) ?? 0;
-      setState(() {
-        audioDeviceIndex = devIndex;
-      });
+      if (context.read<AudioDevices>().deviceWithNameExists(audioDevUID)) {
+        setState(() {
+          audioDeviceName = audioDevUID;
+        });
+      }
     }
 
     await Future.delayed(const Duration(milliseconds: 150));
@@ -346,7 +347,7 @@ class _MainState extends State<Main> with WindowListener {
           context.read<AudioLevel>().setLevels(level.channelLevels);
         },
         context.read<ScopeSettings>().audioOutputEnabled,
-        audioDeviceIndex ?? 0,
+        audioDeviceName ?? "",
       );
     }
     // update the discord rich presence with the new source information (or null for NO SOURCE)
@@ -511,11 +512,11 @@ class _MainState extends State<Main> with WindowListener {
                                       onToggleAudioOut: (enabled) {
                                         ndi.updateAudioEnabled(enabled);
                                       },
-                                      onAudioDeviceSelect: (index) {
+                                      onAudioDeviceSelect: (name) {
                                         setState(() {
-                                          audioDeviceIndex = index;
+                                          audioDeviceName = name;
                                         });
-                                        ndi.updateAudioDevice(index);
+                                        ndi.updateAudioDevice(name);
                                       },
                                     ),
                                   ),

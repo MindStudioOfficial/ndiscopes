@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 class Settings extends StatefulWidget {
   final void Function(bool enabled) onToggleAudioOut;
-  final void Function(int index) onAudioDeviceSelect;
+  final void Function(String name) onAudioDeviceSelect;
   const Settings({
     Key? key,
     required this.onToggleAudioOut,
@@ -84,7 +84,7 @@ class _SettingsState extends State<Settings> {
             isExpanded: true,
             itemHeight: 60,
             underline: Container(),
-            value: audioDev.getAudioDeviceIDbyUID(scopeSettings.audioDeviceUID),
+            value: audioDev.getAudioDeviceIDbyUID(scopeSettings.audioDeviceUID) ?? 0,
             items: List<DropdownMenuItem<int>>.generate(
               audioDev.count,
               (index) => DropdownMenuItem<int>(
@@ -102,8 +102,8 @@ class _SettingsState extends State<Settings> {
               ),
             ),
             onChanged: (val) {
-              scopeSettings.updateAudioDeviceUID(audioDev.audioDevices[val ?? 0].id);
-              widget.onAudioDeviceSelect((val != null ? val + 1 : null) ?? 0);
+              scopeSettings.updateAudioDeviceUID(audioDev.audioDevices[val ?? 0].name);
+              widget.onAudioDeviceSelect(audioDev.audioDevices[val ?? 0].name);
             },
           ),
         ],

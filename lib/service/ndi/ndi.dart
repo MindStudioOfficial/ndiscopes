@@ -577,7 +577,7 @@ class NDI {
     Pointer<NDIlib_source_t> source,
     Function(NDIAudioLevelFrame level) onLevel,
     bool outputEnabled,
-    int audioDeviceIndex,
+    String audioDeviceName,
   ) async {
     final completer = Completer();
 
@@ -605,7 +605,7 @@ class NDI {
         source.address,
         _pRecv.address,
         outputEnabled,
-        audioDeviceIndex,
+        audioDeviceName,
       ),
     );
 
@@ -634,7 +634,7 @@ class NDI {
     ReceivePort rP = ReceivePort();
 
     bool outputEnabled = object.outputEnabled;
-    int audioDeviceIndex = object.audioDeviceIndex;
+    String audioDeviceName = object.audioDeviceName;
     // listen for messages from main thread
     rP.listen((message) {
       if (message is bool) {
@@ -643,8 +643,8 @@ class NDI {
       if (message is String) {
         if (message == "end") end = true;
       }
-      if (message is int) {
-        audioDeviceIndex = message;
+      if (message is Map<String, String>) {
+        if (message["name"] != null) audioDeviceName = message["name"] ?? "";
       }
     });
 
@@ -662,7 +662,7 @@ class NDI {
 
     int frame = -1;
 
-    player.openDriver(audioDeviceIndex);
+    player.openDriverByName(audioDeviceName);
 
     while (!end) {
       // async break to listen for receivport messages
@@ -677,7 +677,7 @@ class NDI {
       int stride = pAudioFrame.ref.channel_stride_in_bytes;
       int rate = pAudioFrame.ref.sample_rate;
       // update player based on new info (only updates if info is different to last)
-      player.updateDriver(channels, rate, 16, audioDeviceIndex);
+      player.updateDriverWithName(channels, rate, 16, audioDeviceName);
       // get the pointer to the 32 Float audio
       Pointer<Float> data = pAudioFrame.ref.p_data;
 
@@ -733,9 +733,9 @@ class NDI {
     _aSendport!.send(outputEnabled);
   }
 
-  void updateAudioDevice(int index) {
+  void updateAudioDevice(String name) {
     if (_aSendport == null) return;
-    _aSendport!.send(index);
+    _aSendport!.send(<String, String>{"name": name});
   }
 
   /// Deinitializes the NDI Library
@@ -762,13 +762,13 @@ class _AMObject {
   int pRecvA;
   int pSourceA;
   bool outputEnabled;
-  int audioDeviceIndex;
+  String audioDeviceName;
   _AMObject(
     this.sendPort,
     this.pSourceA,
     this.pRecvA,
     this.outputEnabled,
-    this.audioDeviceIndex,
+    this.audioDeviceName,
   );
 }
 
