@@ -8,7 +8,7 @@ class AppConfig {
   }
 
   AppConfig._internal();
-  String get version => "v0.6.0-beta"; //! TODO: Update version each new release!!! Also Update Readme
+  String get version => "v0.6.1-beta"; //! TODO: Update version each new release!!! Also Update Readme
   String get minGPUDriver => "511.23";
   int get minMajorCC => 3;
   int get minMinorCC => 5;

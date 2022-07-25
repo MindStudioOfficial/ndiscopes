@@ -90,19 +90,22 @@ __device__ static inline uint8_t atomicCAS8(uint8_t *address, uint8_t expected, 
 
 __device__ static inline uint8_t atomicAddClamp(uint8_t *address, uint8_t val)
 {
-    uint8_t old = *address; // get value at address
-    uint8_t expected;
+    uint8_t actual_previous = *address; // get value at address
+    uint8_t expected_previous;
     do
     {
         // save previous value at address to check if it got changed in between atomics later
-        expected = old;
+        expected_previous = actual_previous;
         // update the old value with the actual value at that address before the addition
         // sets value at address to val + the expected value at address
         // fails if expected is no longer the value at that address because another thread has changed it
-        old = atomicCAS8(address, expected, clampUint8((int)val + (int)expected));
-        // if expected > old the addition has failed because another thread added something in between and we need to try again
-    } while (expected > old);
-    return old;
+        actual_previous = atomicCAS8(
+            address,
+            expected_previous,
+            clampUint8((int)val + (int)expected_previous));
+        // if expected  old the addition has failed because another thread added something in between and we need to try again
+    } while (expected_previous < actual_previous);
+    return actual_previous;
 }
 
 __device__ static inline uint8_t atomicSwapIfGreaterThan(uint8_t *address, uint8_t desired)
@@ -223,8 +226,8 @@ __global__ void kernelScopes(
     uint8_t *d_vScope,
     uint8_t *d_falseC,
     uint8_t *d_yuvParade,
-    //uint8_t *d_histogram,
-    //int *d_histogram_data,
+    // uint8_t *d_histogram,
+    // int *d_histogram_data,
     uint8_t *d_blacklevel,
     int bright)
 {
@@ -268,7 +271,7 @@ __global__ void kernelScopes(
 
     if (d_wf)
     {
-        int scopeY = minInt((int)rint(SH * (1 - (y / 219.0))), SH - 1);
+        int scopeY = minInt((int)rint(SH * (1 - ((y+16) / 256.0f))), SH - 1);
         int scopePix = (scopeX + scopeY * SW) * 4;
         if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
         {
@@ -284,9 +287,9 @@ __global__ void kernelScopes(
     // ========================
 
     int scopeRGBY[] = {
-        minInt((int)rint(SH * (1 - (r / 255.0))), SH - 1),
-        minInt((int)rint(SH * (1 - (g / 255.0))), SH - 1),
-        minInt((int)rint(SH * (1 - (b / 255.0))), SH - 1)};
+        minInt((int)rintf(SH * (1 - (r / 256.0f))), SH - 1),
+        minInt((int)rintf(SH * (1 - (g / 256.0f))), SH - 1),
+        minInt((int)rintf(SH * (1 - (b / 256.0f))), SH - 1)};
 
     if (d_wfRgb)
     {
@@ -332,8 +335,8 @@ __global__ void kernelScopes(
 
     if (d_vScope)
     {
-        int scopeXU = minInt((int)rintf(SH * u / 255.0f), SH - 1);
-        int scopeYV = minInt((int)rintf(SH * (1 - v / 255.0f)), SH - 1);
+        int scopeXU = minInt((int)rintf(SH * u / 256.0f), SH - 1);
+        int scopeYV = minInt((int)rintf(SH * (1 - v / 256.0f)), SH - 1);
         int scopePixByte = (scopeYV * SH + scopeXU) * 4;
         if (scopePixByte >= 0 && scopePixByte < (SH * SH * 4) - 3)
         {
@@ -353,9 +356,9 @@ __global__ void kernelScopes(
     if (d_yuvParade)
     {
         int scopeYUVY[] = {
-            minInt((int)rintf(SH * (1 - ((y + 16) / 255.0f))), SH - 1),
-            minInt((int)rintf(SH * (1 - (u / 255.0f))), SH - 1),
-            minInt((int)rintf(SH * (1 - (v / 255.0f))), SH - 1)};
+            minInt((int)rintf(SH * (1 - ((y + 16) / 256.0f))), SH - 1),
+            minInt((int)rintf(SH * (1 - (u / 256.0f))), SH - 1),
+            minInt((int)rintf(SH * (1 - (v / 256.0f))), SH - 1)};
 
         for (int i = 0; i < 3; i++)
         {
@@ -365,7 +368,7 @@ __global__ void kernelScopes(
 
             if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
             {
-                atomicAddClamp(d_yuvParade + scopePix + 3, alphaMultiplied(bright * 4, a));
+                atomicAddClamp(d_yuvParade + scopePix + 3, alphaMultiplied(bright, a));
                 uint8_t currentAlpha = d_yuvParade[scopePix + 3];
 
                 Color8_t c;
@@ -426,7 +429,6 @@ __global__ void kernelScopes(
             }
         }
     }
-
 }
 
 EXTERNC float renderScopes(
