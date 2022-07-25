@@ -8,18 +8,22 @@ class AppStatus with ChangeNotifier {
   bool _settingsOpen = false;
   bool _framesOpen = false;
 
+  bool _capturingFrame = false;
+
   AppStatus({
     String? statusText,
     bool? loading,
     bool? shutdown,
     bool? settingsOpen,
     bool? framesOpen,
+    bool? capturingFrame,
   }) {
     _statusText = statusText ?? _statusText;
     _loading = loading ?? _loading;
     _shutdown = shutdown ?? _shutdown;
     _settingsOpen = settingsOpen ?? _settingsOpen;
     _framesOpen = framesOpen ?? _framesOpen;
+    _capturingFrame = capturingFrame ?? _capturingFrame;
   }
 
   String get statusText => _statusText;
@@ -27,6 +31,7 @@ class AppStatus with ChangeNotifier {
   bool get shutdown => _shutdown;
   bool get settingsOpen => _settingsOpen;
   bool get framesOpen => _framesOpen;
+  bool get capturingFrame => _capturingFrame;
 
   void updateStatusText(String text) {
     _statusText = text;
@@ -50,6 +55,11 @@ class AppStatus with ChangeNotifier {
 
   void toggleFrames({bool? open}) {
     _framesOpen = open ?? !_framesOpen;
+    notifyListeners();
+  }
+
+  void toggleCapturingFrame({bool? capturing}) {
+    _capturingFrame = capturing ?? !_capturingFrame;
     notifyListeners();
   }
 }

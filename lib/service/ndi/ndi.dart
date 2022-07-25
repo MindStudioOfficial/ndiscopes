@@ -541,9 +541,9 @@ class NDI {
     int i = 0;
     NDIInputFormat format = NDIInputFormat.uyvy;
 
-    while (frame != NDIlib_frame_type_e.NDIlib_frame_type_video && i < 50) {
+    while (frame != NDIlib_frame_type_e.NDIlib_frame_type_video && i < 5) {
       i++;
-      frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 200);
+      frame = _ndi.NDIlib_recv_capture_v3(pNDIrecv, pVideoFrame, nullptr, nullptr, 1000);
 
       if (frame != NDIlib_frame_type_e.NDIlib_frame_type_video) continue;
       //if (pVideoFrame.ref.FourCC != NDIlib_FourCC_video_type_e.NDIlib_FourCC_type_UYVY) continue;

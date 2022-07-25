@@ -121,11 +121,76 @@ class _MainState extends State<Main> with WindowListener {
     _frameBrowserScroll = ScrollController();
     _settingsScroll = ScrollController();
 
+    // override actions with custom actions
+    setActions();
+
+    // listen for window events
+    windowManager.addListener(this);
+    // set to manually close the app in the onWindowClose handler
+    windowManager.setPreventClose(true).then((value) => setState(() {}));
+
+    super.initState();
+
+    initialize();
+  }
+
+  Future<void> initialize() async {
+    // register all textures and notify parts of the ui when completed
+    await initTextures();
+    context.read<Frame>().toggleTexturesInitialized(initialized: true);
+    await Future.delayed(const Duration(milliseconds: 150));
+    context.read<AppStatus>().updateStatusText("initializing renderer...");
+    await Future.delayed(const Duration(milliseconds: 150));
+    // check GPU version
+    context.read<AppStatus>().updateStatusText("checking GPU...");
+    checkGPU(context);
+    await Future.delayed(const Duration(milliseconds: 150));
+    // load settings from file
+    context.read<AppStatus>().updateStatusText("loading settings...");
+    await loadSettings();
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    context.read<AppStatus>().updateStatusText("loading AudioDevices...");
+    // get all audio devices
+    await context.read<AudioDevices>().enumerateDevices();
+
+    // get audio device from settings
+    String audioDevUID = context.read<ScopeSettings>().audioDeviceUID;
+
+    // if no device in settings update settings with default audio device
+    if (audioDevUID.isEmpty) {
+      // get the ID of the default device
+      String? defUID = (await Audio.getDefaultDevice(AudioDeviceType.output))?.name;
+
+      // update if device exists
+      if (defUID != null) context.read<ScopeSettings>().updateAudioDeviceUID(defUID);
+    }
+    if (audioDevUID.isNotEmpty) {
+      if (context.read<AudioDevices>().deviceWithNameExists(audioDevUID)) {
+        setState(() {
+          audioDeviceName = audioDevUID;
+        });
+      }
+    }
+
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    if (kDebugMode) {
+      print("Found the following Audio Outputs:");
+      final ad = context.read<AudioDevices>().audioDevices;
+      print(List<String>.generate(ad.length, (index) => ad[index].name).toPrettyString());
+    }
+
+    context.read<AppStatus>().updateStatusText("");
+    await Future.delayed(const Duration(milliseconds: 150));
+    context.read<AppStatus>().toggleLoading(loading: false);
+  }
+
+  void setActions() {
     // add back default shortcuts
     // Focus and Scroll
     _shortcuts.addAll(WidgetsApp.defaultShortcuts);
 
-    // override actions with custom actions
     _actions = {
       ToggleFalseColorIntent: CallbackAction<ToggleFalseColorIntent>(
         onInvoke: (intent) {
@@ -197,67 +262,6 @@ class _MainState extends State<Main> with WindowListener {
     // add back default actions
     // Focus and Scroll
     _actions.addAll(WidgetsApp.defaultActions);
-
-    // listen for window events
-    windowManager.addListener(this);
-    // set to manually close the app in the onWindowClose handler
-    windowManager.setPreventClose(true).then((value) => setState(() {}));
-
-    super.initState();
-
-    initialize();
-  }
-
-  Future<void> initialize() async {
-    // register all textures and notify parts of the ui when completed
-    await initTextures();
-    context.read<Frame>().toggleTexturesInitialized(initialized: true);
-    await Future.delayed(const Duration(milliseconds: 150));
-    context.read<AppStatus>().updateStatusText("initializing renderer...");
-    await Future.delayed(const Duration(milliseconds: 150));
-    // check GPU version
-    context.read<AppStatus>().updateStatusText("checking GPU...");
-    checkGPU(context);
-    await Future.delayed(const Duration(milliseconds: 150));
-    // load settings from file
-    context.read<AppStatus>().updateStatusText("loading settings...");
-    await loadSettings();
-    await Future.delayed(const Duration(milliseconds: 150));
-
-    context.read<AppStatus>().updateStatusText("loading AudioDevices...");
-    // get all audio devices
-    await context.read<AudioDevices>().enumerateDevices();
-
-    // get audio device from settings
-    String audioDevUID = context.read<ScopeSettings>().audioDeviceUID;
-
-    // if no device in settings update settings with default audio device
-    if (audioDevUID.isEmpty) {
-      // get the ID of the default device
-      String? defUID = (await Audio.getDefaultDevice(AudioDeviceType.output))?.name;
-
-      // update if device exists
-      if (defUID != null) context.read<ScopeSettings>().updateAudioDeviceUID(defUID);
-    }
-    if (audioDevUID.isNotEmpty) {
-      if (context.read<AudioDevices>().deviceWithNameExists(audioDevUID)) {
-        setState(() {
-          audioDeviceName = audioDevUID;
-        });
-      }
-    }
-
-    await Future.delayed(const Duration(milliseconds: 150));
-
-    if (kDebugMode) {
-      print("Found the following Audio Outputs:");
-      final ad = context.read<AudioDevices>().audioDevices;
-      print(List<String>.generate(ad.length, (index) => ad[index].name).toPrettyString());
-    }
-
-    context.read<AppStatus>().updateStatusText("");
-    await Future.delayed(const Duration(milliseconds: 150));
-    context.read<AppStatus>().toggleLoading(loading: false);
   }
 
   @override
@@ -292,16 +296,20 @@ class _MainState extends State<Main> with WindowListener {
 
   void onSaveFrame() {
     if (selectedSource == null) return;
-    // TODO: Make this better...!
+    context.read<AppStatus>().toggleCapturingFrame(capturing: true);
     ndi.getSingleFrame(
       selectedSource!.source,
-      (frame) {
-        saveInputFrame(frame);
+      (frame) async {
+        await saveInputFrame(frame);
+        context.read<AppStatus>().toggleCapturingFrame(capturing: false);
       },
       context.read<MaskProvider>().rect,
       context.read<MaskProvider>().active,
       context.read<ScopeSettings>().scopeTypes,
     );
+    Future.delayed(const Duration(seconds: 5), () {
+      context.read<AppStatus>().toggleCapturingFrame(capturing: false);
+    });
   }
 
   void onSelectSource(int index) async {

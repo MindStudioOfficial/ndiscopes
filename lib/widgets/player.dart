@@ -168,6 +168,7 @@ class _FrameViewerState extends State<FrameViewer> {
                           widget.onSaveFrame();
                         },
                         iconData: FluentIcons.camera_add_24_regular,
+                        loading: status.capturingFrame,
                       ),
                     ],
                   ),
