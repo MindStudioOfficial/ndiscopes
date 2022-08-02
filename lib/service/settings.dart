@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:ndiscopes/providers/scopesettingsprovider.dart';
 import 'package:path_provider/path_provider.dart';
 
-Future<ScopeSettings> loadScopeSettings() async {
+Future<ScopeSettings?> loadScopeSettings(void Function() onError) async {
   final supportDir = await getApplicationSupportDirectory();
   ScopeSettings s = ScopeSettings();
   File settingsFile = File(supportDir.path + "/config.json");
@@ -13,7 +13,14 @@ Future<ScopeSettings> loadScopeSettings() async {
     await settingsFile.writeAsString(jsonEncode(s.toJson()));
     return s;
   }
-  s = ScopeSettings.fromJson(jsonDecode(await settingsFile.readAsString()));
+  try {
+    s = ScopeSettings.fromJson(jsonDecode(await settingsFile.readAsString()));
+  } catch (e) {
+    // _TypeError
+    onError();
+    return null;
+  }
+
   return s;
 }
 

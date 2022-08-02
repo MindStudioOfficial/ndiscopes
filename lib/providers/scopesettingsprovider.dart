@@ -11,6 +11,7 @@ class ScopeSettings with ChangeNotifier {
     bool? audioOutputEnabled,
     List<ScopeTypes>? scopeLayout,
     String? audioDeviceUID,
+    bool? acurateRendering,
   }) {
     _vScopeScale = vScopeScale ?? _vScopeScale;
     _audioLevelEnabled = audioLevelEnabled ?? _audioLevelEnabled;
@@ -20,6 +21,7 @@ class ScopeSettings with ChangeNotifier {
     _scaleEnabled = scaleEnabled ?? _scaleEnabled;
     _scaleTypes = scaleTypes ?? _scaleTypes;
     _audioDeviceUID = audioDeviceUID ?? _audioDeviceUID;
+    _acurateRendering = acurateRendering ?? _acurateRendering;
   }
 
   double _vScopeScale = 1;
@@ -38,6 +40,7 @@ class ScopeSettings with ChangeNotifier {
   );
 
   String _audioDeviceUID = "";
+  bool _acurateRendering = false;
 
   double get vScopeScale => _vScopeScale;
   List<bool> get scaleEnabled => _scaleEnabled;
@@ -48,6 +51,7 @@ class ScopeSettings with ChangeNotifier {
   List<ScopeTypes> get scopeLayout => _scopeLayout;
   Set<ScopeTypes> get scopeTypes => Set<ScopeTypes>.from(scopeLayout);
   String get audioDeviceUID => _audioDeviceUID;
+  bool get acurateRendering => _acurateRendering;
 
   void updateVScopeScale(double scale) {
     _vScopeScale = scale;
@@ -85,6 +89,11 @@ class ScopeSettings with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleAcurateRendering({bool? acurate}) {
+    _acurateRendering = acurate ?? !_acurateRendering;
+    notifyListeners();
+  }
+
   void update(ScopeSettings n) {
     _linesEnabled = n.linesEnabled;
     _scaleEnabled = n.scaleEnabled;
@@ -94,6 +103,7 @@ class ScopeSettings with ChangeNotifier {
     _audioOutputEnabled = n.audioOutputEnabled;
     _scopeLayout = n.scopeLayout;
     _audioDeviceUID = n.audioDeviceUID;
+    _acurateRendering = n.acurateRendering;
     notifyListeners();
   }
 
@@ -104,8 +114,8 @@ class ScopeSettings with ChangeNotifier {
 
   factory ScopeSettings.fromJson(Map<String, dynamic> json) {
     return ScopeSettings(
-      linesEnabled: List<bool>.from(json["linesEnabled"]),
-      scaleEnabled: List<bool>.from(json["scaleEnabled"]),
+      linesEnabled: json["linesEnabled"] != null ? List<bool>.from(json["linesEnabled"]) : null,
+      scaleEnabled: json["scaleEnabled"] != null ? List<bool>.from(json["scaleEnabled"]) : null,
       scaleTypes: List<WFScaleTypes>.generate(
         ScopeTypes.values.length,
         (index) => WFScaleTypes.values[json["scaleTypes"]?[index] ?? 0],
@@ -117,7 +127,8 @@ class ScopeSettings with ChangeNotifier {
         3,
         (index) => ScopeTypes.values[json["scopeLayout"]?[index] ?? index],
       ),
-      audioDeviceUID: json["audioDeviceUID"] ?? "",
+      audioDeviceUID: json["audioDeviceUID"],
+      acurateRendering: json["acurateRendering"],
     );
   }
 
@@ -137,6 +148,7 @@ class ScopeSettings with ChangeNotifier {
         (index) => _scaleTypes[index].index,
       ),
       "audioDeviceUID": _audioDeviceUID,
+      "acurateRendering": _acurateRendering,
     };
   }
 

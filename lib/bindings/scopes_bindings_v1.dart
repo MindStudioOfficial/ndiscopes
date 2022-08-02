@@ -29,6 +29,7 @@ class ScopesFFI {
     ffi.Pointer<ffi.Uint8> yuvParade,
     ffi.Pointer<ffi.Uint8> blacklevel,
     int inputType,
+    bool acurate,
   ) {
     return _renderScopes(
       srcWidth,
@@ -43,6 +44,7 @@ class ScopesFFI {
       yuvParade,
       blacklevel,
       inputType,
+      acurate,
     );
   }
 
@@ -61,6 +63,7 @@ class ScopesFFI {
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
     ffi.Int32,
+    ffi.Bool,
   )>>("renderScopes");
 
   late final _renderScopes = _renderScopesPtr.asFunction<
@@ -77,6 +80,7 @@ class ScopesFFI {
     ffi.Pointer<ffi.Uint8>,
     ffi.Pointer<ffi.Uint8>,
     int,
+    bool,
   )>();
 
   // ====================

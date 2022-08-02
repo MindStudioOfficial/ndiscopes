@@ -93,3 +93,12 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+install(FILES "../bin/libao.dll" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/bin" 
+  COMPONENT Runtime)
+
+install(FILES "../bin/scopes.dll" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/bin" 
+  COMPONENT Runtime)
+
+install(FILES "../bin/Processing.NDI.Lib.x64.dll" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/bin" 
+  COMPONENT Runtime)

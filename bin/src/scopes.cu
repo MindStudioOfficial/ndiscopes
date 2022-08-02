@@ -88,7 +88,7 @@ __device__ static inline uint8_t atomicCAS8(uint8_t *address, uint8_t expected, 
     return old;
 }
 
-__device__ static inline uint8_t atomicAddClamp(uint8_t *address, uint8_t val)
+__device__ static inline uint8_t atomicAddClamp(uint8_t *address, uint8_t val, bool acurate)
 {
     uint8_t actual_previous = *address; // get value at address
     uint8_t expected_previous;
@@ -104,7 +104,8 @@ __device__ static inline uint8_t atomicAddClamp(uint8_t *address, uint8_t val)
             expected_previous,
             clampUint8((int)val + (int)expected_previous));
         // if expected  old the addition has failed because another thread added something in between and we need to try again
-    } while (expected_previous < actual_previous);
+        // while (expected_previous < actual_previous);
+    } while (acurate ? expected_previous < actual_previous : expected_previous > actual_previous);
     return actual_previous;
 }
 
@@ -229,7 +230,8 @@ __global__ void kernelScopes(
     // uint8_t *d_histogram,
     // int *d_histogram_data,
     uint8_t *d_blacklevel,
-    int bright)
+    int bright,
+    bool acurate)
 {
 
     int pix = blockIdx.x * blockDim.x + threadIdx.x;
@@ -271,12 +273,12 @@ __global__ void kernelScopes(
 
     if (d_wf)
     {
-        int scopeY = minInt((int)rint(SH * (1 - ((y+16) / 256.0f))), SH - 1);
+        int scopeY = minInt((int)rint(SH * (1 - ((y + 16) / 256.0f))), SH - 1);
         int scopePix = (scopeX + scopeY * SW) * 4;
         if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
         {
             // add brightness to the green byte of waveform
-            atomicAddClamp(d_wf + scopePix + 1, (uint8_t)((float)bright * a / 255.0f));
+            atomicAddClamp(d_wf + scopePix + 1, (uint8_t)((float)bright * a / 255.0f),acurate);
             // set alpha of that pixel to source alpha only IF present value is smaller
             atomicSwapIfGreaterThan(d_wf + scopePix + 3, a);
         }
@@ -300,7 +302,7 @@ __global__ void kernelScopes(
             if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
             {
                 // add brightness to the green byte of waveform
-                atomicAddClamp(d_wfRgb + scopePix + i, (uint8_t)((float)bright * a / 255.0f));
+                atomicAddClamp(d_wfRgb + scopePix + i, (uint8_t)((float)bright * a / 255.0f),acurate);
                 // set alpha of that pixel to source alpha only IF present value is smaller
                 atomicSwapIfGreaterThan(d_wfRgb + scopePix + 3, a);
             }
@@ -322,7 +324,7 @@ __global__ void kernelScopes(
             if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
             {
                 // add brightness to the green byte of waveform
-                atomicAddClamp(d_wfParade + scopePix + i, (uint8_t)((float)bright * a / 255.0f));
+                atomicAddClamp(d_wfParade + scopePix + i, (uint8_t)((float)bright * a / 255.0f),acurate);
                 // set alpha of that pixel to source alpha only IF present value is smaller
                 atomicSwapIfGreaterThan(d_wfParade + scopePix + 3, a);
             }
@@ -340,7 +342,7 @@ __global__ void kernelScopes(
         int scopePixByte = (scopeYV * SH + scopeXU) * 4;
         if (scopePixByte >= 0 && scopePixByte < (SH * SH * 4) - 3)
         {
-            atomicAddClamp(d_vScope + scopePixByte + 3, (uint8_t)ceil(bright * 4 * a / (double)255));
+            atomicAddClamp(d_vScope + scopePixByte + 3, (uint8_t)ceil(bright * 4 * a / (double)255),acurate);
             uint8_t ca = d_vScope[scopePixByte + 3];
 
             atomicSwapIfGreaterThan(d_vScope + scopePixByte, (uint8_t)ceilf(r * a / 255.0f * ca / 255.0f));
@@ -368,7 +370,7 @@ __global__ void kernelScopes(
 
             if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3)
             {
-                atomicAddClamp(d_yuvParade + scopePix + 3, alphaMultiplied(bright, a));
+                atomicAddClamp(d_yuvParade + scopePix + 3, alphaMultiplied(bright, a),acurate);
                 uint8_t currentAlpha = d_yuvParade[scopePix + 3];
 
                 Color8_t c;
@@ -422,7 +424,7 @@ __global__ void kernelScopes(
                 if (scopePix >= 0 && scopePix < (SW * SH * 4) - 3) // fill y
                 {
                     // add brightness to the green byte of waveform
-                    atomicAddClamp(d_blacklevel + scopePix + i, (uint8_t)((float)bright * a / 255.0f));
+                    atomicAddClamp(d_blacklevel + scopePix + i, (uint8_t)((float)bright * a / 255.0f),acurate);
                     // set alpha of that pixel to source alpha only IF present value is smaller
                     atomicSwapIfGreaterThan(d_blacklevel + scopePix + 3, a);
                 }
@@ -443,7 +445,8 @@ EXTERNC float renderScopes(
     uint8_t *falseC,
     uint8_t *yuvParade,
     uint8_t *blacklevel,
-    Scope_input_frame_type_e inputType)
+    Scope_input_frame_type_e inputType,
+    bool acurate)
 {
     if (src == nullptr)
         return -1;
@@ -529,7 +532,8 @@ EXTERNC float renderScopes(
         d_falseC,
         d_yuvParade,
         d_blacklevel,
-        bright);
+        bright,
+        acurate);
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);

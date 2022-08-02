@@ -191,6 +191,7 @@ class NDI {
     Rect mask,
     bool maskActive,
     Set<ScopeTypes> scopeTypes,
+    bool acurateRendering,
   ) async {
     final completer = Completer();
     _fReceivePort = ReceivePort();
@@ -210,7 +211,15 @@ class NDI {
     // create the isolate that continously receives NDI frames and finishes once stopGetFrames() is called
     _fIsolate = await Isolate.spawn(
       _getFrames,
-      _FMObject(source.address, _pRecv.address, _fReceivePort!.sendPort, mask, maskActive, scopeTypes),
+      _FMObject(
+        source.address,
+        _pRecv.address,
+        _fReceivePort!.sendPort,
+        mask,
+        maskActive,
+        scopeTypes,
+        acurateRendering,
+      ),
       debugName: "Video Frame Isolate",
     );
     // return intermediate future until receiving has ended
@@ -311,6 +320,7 @@ class NDI {
     bool maskActive = object.maskActive;
     bool end = false;
     bool pause = false;
+    bool acurateRendering = object.acurateRendering;
     Set<ScopeTypes> scopeTypes = object.scopeTypes;
     // send back the sendport for bidirectional communication
     object.sendPort.send(rP.sendPort);
@@ -421,6 +431,7 @@ class NDI {
             pYUVParade,
             pBlacklevel,
             ScopeInputFrameTypeE.uyvy,
+            acurateRendering,
           );
 
           break;
@@ -444,6 +455,7 @@ class NDI {
             pYUVParade,
             pBlacklevel,
             ScopeInputFrameTypeE.bgra,
+            acurateRendering,
           );
 
           //! replace with CPU/GPU compatible
@@ -493,7 +505,7 @@ class NDI {
     _sfReceivePort = ReceivePort();
     await Isolate.spawn(
       _getSingleFrame,
-      _FMObject(pSource.address, _pRecv.address, _sfReceivePort!.sendPort, mask, maskActive, scopes),
+      _FMObject(pSource.address, _pRecv.address, _sfReceivePort!.sendPort, mask, maskActive, scopes, true),
       debugName: "get Single Frame Isolate",
     );
     _sfReceivePort!.listen((data) {
@@ -787,7 +799,16 @@ class _FMObject {
   Rect mask;
   bool maskActive;
   Set<ScopeTypes> scopeTypes;
-  _FMObject(this.pSourceA, this.pRecvA, this.sendPort, this.mask, this.maskActive, this.scopeTypes);
+  bool acurateRendering;
+  _FMObject(
+    this.pSourceA,
+    this.pRecvA,
+    this.sendPort,
+    this.mask,
+    this.maskActive,
+    this.scopeTypes,
+    this.acurateRendering,
+  );
 }
 
 class NDIAudioLevelFrame {

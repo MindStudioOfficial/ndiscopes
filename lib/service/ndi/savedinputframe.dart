@@ -143,6 +143,7 @@ class SavedInputFrame {
           //pHistogram,
           pBlacklevel,
           ScopeInputFrameTypeE.uyvy,
+          true,
         );
         break;
       case NDIInputFormat.bgra:
@@ -160,6 +161,7 @@ class SavedInputFrame {
           pYUVParade,
           pBlacklevel,
           ScopeInputFrameTypeE.bgra,
+          true,
         );
         break;
       default:

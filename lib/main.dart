@@ -34,15 +34,18 @@ import 'package:ndiscopes/util/prettyprint.dart';
 // DONE: Keyboard shortcuts
 // DONE: Prevent spamming S open multiple source dialogs
 // DONE: Select Audio Device
-// TODO: Capture frame responsive
-// TODO: Number hotkeys for different reference frames
+// DONE: Capture frame responsive
 // TODO: Scope specific settings
 // TODO: Toggle Vectorscope Colorize
 // TODO: Change Luminance Scope Color
+// TODO: RGBA Channel Isolation
+// TODO: Timecode
+// TODO: Audio Scales
 // TODO: Audio Waveform
 // TODO: Audio Spectrum
 // TODO: Audio Vectorscope
 // TODO: Color Space Coverage
+// TODO: Number hotkeys for different reference frames
 
 void main() {
   // initialize components
@@ -275,7 +278,12 @@ class _MainState extends State<Main> with WindowListener {
   }
 
   Future<void> loadSettings() async {
-    ScopeSettings s = await loadScopeSettings();
+    ScopeSettings s = await loadScopeSettings(
+          () {
+            context.read<AppStatus>().updateStatusText("ERROR reading settings file. Initializing with defaults...");
+          },
+        ) ??
+        ScopeSettings();
     context.read<ScopeSettings>().update(s);
   }
 
@@ -346,6 +354,7 @@ class _MainState extends State<Main> with WindowListener {
         context.read<MaskProvider>().active,
         // the currently active Scopes that need rendering
         context.read<ScopeSettings>().scopeTypes,
+        context.read<ScopeSettings>().acurateRendering,
       );
 
       // * START RECEIVING AUDIO
