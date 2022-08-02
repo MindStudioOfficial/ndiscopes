@@ -29,7 +29,7 @@ class ScopesFFI {
     ffi.Pointer<ffi.Uint8> yuvParade,
     ffi.Pointer<ffi.Uint8> blacklevel,
     int inputType,
-    bool acurate,
+    bool accurate,
   ) {
     return _renderScopes(
       srcWidth,
@@ -44,7 +44,7 @@ class ScopesFFI {
       yuvParade,
       blacklevel,
       inputType,
-      acurate,
+      accurate,
     );
   }
 

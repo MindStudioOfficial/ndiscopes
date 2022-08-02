@@ -11,7 +11,7 @@ class ScopeSettings with ChangeNotifier {
     bool? audioOutputEnabled,
     List<ScopeTypes>? scopeLayout,
     String? audioDeviceUID,
-    bool? acurateRendering,
+    bool? accurateRendering,
   }) {
     _vScopeScale = vScopeScale ?? _vScopeScale;
     _audioLevelEnabled = audioLevelEnabled ?? _audioLevelEnabled;
@@ -21,7 +21,7 @@ class ScopeSettings with ChangeNotifier {
     _scaleEnabled = scaleEnabled ?? _scaleEnabled;
     _scaleTypes = scaleTypes ?? _scaleTypes;
     _audioDeviceUID = audioDeviceUID ?? _audioDeviceUID;
-    _acurateRendering = acurateRendering ?? _acurateRendering;
+    _accurateRendering = accurateRendering ?? _accurateRendering;
   }
 
   double _vScopeScale = 1;
@@ -40,7 +40,7 @@ class ScopeSettings with ChangeNotifier {
   );
 
   String _audioDeviceUID = "";
-  bool _acurateRendering = false;
+  bool _accurateRendering = false;
 
   double get vScopeScale => _vScopeScale;
   List<bool> get scaleEnabled => _scaleEnabled;
@@ -51,7 +51,7 @@ class ScopeSettings with ChangeNotifier {
   List<ScopeTypes> get scopeLayout => _scopeLayout;
   Set<ScopeTypes> get scopeTypes => Set<ScopeTypes>.from(scopeLayout);
   String get audioDeviceUID => _audioDeviceUID;
-  bool get acurateRendering => _acurateRendering;
+  bool get accurateRendering => _accurateRendering;
 
   void updateVScopeScale(double scale) {
     _vScopeScale = scale;
@@ -89,8 +89,8 @@ class ScopeSettings with ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleAcurateRendering({bool? acurate}) {
-    _acurateRendering = acurate ?? !_acurateRendering;
+  void toggleAccurateRendering({bool? accurate}) {
+    _accurateRendering = accurate ?? !_accurateRendering;
     notifyListeners();
   }
 
@@ -103,7 +103,7 @@ class ScopeSettings with ChangeNotifier {
     _audioOutputEnabled = n.audioOutputEnabled;
     _scopeLayout = n.scopeLayout;
     _audioDeviceUID = n.audioDeviceUID;
-    _acurateRendering = n.acurateRendering;
+    _accurateRendering = n.accurateRendering;
     notifyListeners();
   }
 
@@ -128,7 +128,7 @@ class ScopeSettings with ChangeNotifier {
         (index) => ScopeTypes.values[json["scopeLayout"]?[index] ?? index],
       ),
       audioDeviceUID: json["audioDeviceUID"],
-      acurateRendering: json["acurateRendering"],
+      accurateRendering: json["accurateRendering"],
     );
   }
 
@@ -148,7 +148,7 @@ class ScopeSettings with ChangeNotifier {
         (index) => _scaleTypes[index].index,
       ),
       "audioDeviceUID": _audioDeviceUID,
-      "acurateRendering": _acurateRendering,
+      "accurateRendering": _accurateRendering,
     };
   }
 

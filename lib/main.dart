@@ -354,7 +354,7 @@ class _MainState extends State<Main> with WindowListener {
         context.read<MaskProvider>().active,
         // the currently active Scopes that need rendering
         context.read<ScopeSettings>().scopeTypes,
-        context.read<ScopeSettings>().acurateRendering,
+        context.read<ScopeSettings>().accurateRendering,
       );
 
       // * START RECEIVING AUDIO

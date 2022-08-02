@@ -191,7 +191,7 @@ class NDI {
     Rect mask,
     bool maskActive,
     Set<ScopeTypes> scopeTypes,
-    bool acurateRendering,
+    bool accurateRendering,
   ) async {
     final completer = Completer();
     _fReceivePort = ReceivePort();
@@ -218,7 +218,7 @@ class NDI {
         mask,
         maskActive,
         scopeTypes,
-        acurateRendering,
+        accurateRendering,
       ),
       debugName: "Video Frame Isolate",
     );
@@ -320,7 +320,7 @@ class NDI {
     bool maskActive = object.maskActive;
     bool end = false;
     bool pause = false;
-    bool acurateRendering = object.acurateRendering;
+    bool accurateRendering = object.accurateRendering;
     Set<ScopeTypes> scopeTypes = object.scopeTypes;
     // send back the sendport for bidirectional communication
     object.sendPort.send(rP.sendPort);
@@ -431,7 +431,7 @@ class NDI {
             pYUVParade,
             pBlacklevel,
             ScopeInputFrameTypeE.uyvy,
-            acurateRendering,
+            accurateRendering,
           );
 
           break;
@@ -455,7 +455,7 @@ class NDI {
             pYUVParade,
             pBlacklevel,
             ScopeInputFrameTypeE.bgra,
-            acurateRendering,
+            accurateRendering,
           );
 
           //! replace with CPU/GPU compatible
@@ -799,7 +799,7 @@ class _FMObject {
   Rect mask;
   bool maskActive;
   Set<ScopeTypes> scopeTypes;
-  bool acurateRendering;
+  bool accurateRendering;
   _FMObject(
     this.pSourceA,
     this.pRecvA,
@@ -807,7 +807,7 @@ class _FMObject {
     this.mask,
     this.maskActive,
     this.scopeTypes,
-    this.acurateRendering,
+    this.accurateRendering,
   );
 }
 
