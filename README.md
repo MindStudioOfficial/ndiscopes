@@ -1,6 +1,6 @@
 <h1 align="center"> NDIScopes</h1>
 <p align="center">
-Use several different [Waveforms/Scopes](https://github.com/MindStudioOfficial/ndiscopes_releases#waveformsscopes) to analyze a <a href="https://ndi.tv">NDI®</a> Stream. 
+Use several different <a href="https://github.com/MindStudioOfficial/ndiscopes_releases#waveformsscopes">Waveforms/Scopes</a> to analyze a <a href="https://ndi.tv">NDI®</a> Stream. 
 </p>
 
 <div align="center">
