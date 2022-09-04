@@ -1,31 +1,31 @@
 <h1 align="center"> NDIScopes</h1>
 <p align="center">
-Use several different <a href="https://github.com/MindStudioOfficial/ndiscopes_releases#waveformsscopes">Waveforms/Scopes</a> to analyze a <a href="https://ndi.tv">NDI®</a> Stream. 
+Use several different <a href="https://github.com/MindStudioOfficial/ndiscopes#waveformsscopes">Waveforms/Scopes</a> to analyze a <a href="https://ndi.tv">NDI®</a> Stream. 
 </p>
 
 <div align="center">
 
-<a href="https://github.com/MindStudioOfficial/ndiscopes_releases/releases">
-<img src="https://img.shields.io/github/downloads-pre/MindStudioOfficial/ndiscopes_releases/total?style=flat-square&label=Downloads"></a>
-<a href="https://github.com/MindStudioOfficial/ndiscopes_releases/releases">
-<img src="https://img.shields.io/github/downloads-pre/MindStudioOfficial/ndiscopes_releases/latest/total?style=flat-square&label=Downloads@latest"></a>
+<a href="https://github.com/MindStudioOfficial/ndiscopes/releases">
+<img src="https://img.shields.io/github/downloads-pre/MindStudioOfficial/ndiscopes/total?style=flat-square&label=Downloads"></a>
+<a href="https://github.com/MindStudioOfficial/ndiscopes/releases">
+<img src="https://img.shields.io/github/downloads-pre/MindStudioOfficial/ndiscopes/latest/total?style=flat-square&label=Downloads@latest"></a>
 <!--<a href="">
-<img src="https://img.shields.io/tokei/lines/github/MindStudioOfficial/ndiscopes_releases"></a>-->
+<img src="https://img.shields.io/tokei/lines/github/MindStudioOfficial/ndiscopes"></a>-->
 
 </div>
 <div align="center">
 
-<a href="https://github.com/MindStudioOfficial/ndiscopes_releases/releases">
-<img src="https://img.shields.io/github/v/release/MindStudioOfficial/ndiscopes_releases?style=flat-square&include_prereleases&label=Version"></a>
+<a href="https://github.com/MindStudioOfficial/ndiscopes/releases">
+<img src="https://img.shields.io/github/v/release/MindStudioOfficial/ndiscopes?style=flat-square&include_prereleases&label=Version"></a>
 
 
 </div>
 <div align="center">
 
-<a href="https://github.com/MindStudioOfficial/ndiscopes_releases">
-<img src="https://img.shields.io/github/stars/MindStudioOfficial/ndiscopes_releases?style=flat-square"></a>
-<a href="https://github.com/MindStudioOfficial/ndiscopes_releases">
-<img src="https://img.shields.io/github/watchers/MindStudioOfficial/ndiscopes_releases?style=flat-square"></a>
+<a href="https://github.com/MindStudioOfficial/ndiscopes">
+<img src="https://img.shields.io/github/stars/MindStudioOfficial/ndiscopes?style=flat-square"></a>
+<a href="https://github.com/MindStudioOfficial/ndiscopes">
+<img src="https://img.shields.io/github/watchers/MindStudioOfficial/ndiscopes?style=flat-square"></a>
 
 </div>
 <br>
@@ -120,7 +120,7 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 
 ## Download
 
-Download the latest version under [Releases](https://github.com/MindStudioOfficial/ndiscopes_releases/releases).
+Download the latest version under [Releases](https://github.com/MindStudioOfficial/ndiscopes/releases).
 
 
 ## License
