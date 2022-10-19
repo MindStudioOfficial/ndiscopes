@@ -32,17 +32,28 @@ Use several different <a href="https://github.com/MindStudioOfficial/ndiscopes#w
 
 ![Screenshot](blob/sc7.jpg)
 
-| Luminance: ![Luma Waveform](blob/sc_luma.jpg) | RGB Overlayed: ![RGB Waveform](blob/sc_rgb.jpg) | RGB Parade: ![RGB Parade](blob/sc_rgbParade.jpg) |
-| ---------------------------------- | -------------------------------- | --- |
-| **15% RGB Blacklevel:**  ![Black Level](blob/sc_blacklevel.jpg) | **YCbCr Parade:** ![YUV Parade](blob/sc_yuvparade.jpg) | **YUV Vectorscope:** ![Vectorscope](blob/sc_vectorscope.jpg) |
-| **With Alpha background:**  ![Alpha Background](blob/sc_alpha.jpg) |  **Without Alpha Background:**![Alpha Background](blob/sc_alpha2.jpg) | **Audiometers dBu:** <br><img src="blob/sc_audiometers.jpg" height=200> |
+| Luminance: ![Luma Waveform](blob/sc_luma.jpg)                      | RGB Overlayed: ![RGB Waveform](blob/sc_rgb.jpg)                      | RGB Parade: ![RGB Parade](blob/sc_rgbParade.jpg)                        |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **15% RGB Blacklevel:**  ![Black Level](blob/sc_blacklevel.jpg)    | **YCbCr Parade:** ![YUV Parade](blob/sc_yuvparade.jpg)               | **YUV Vectorscope:** ![Vectorscope](blob/sc_vectorscope.jpg)            |
+| **With Alpha background:**  ![Alpha Background](blob/sc_alpha.jpg) | **Without Alpha Background:**![Alpha Background](blob/sc_alpha2.jpg) | **Audiometers dBu:** <br><img src="blob/sc_audiometers.jpg" height=200> |
 
 | False Color: ![False Color](blob/sc_falseColor2.jpg) | Splitscreen:![Splitscreen](blob/sc_splitscreen.jpg) |
-| --- | --- |
+| ---------------------------------------------------- | --------------------------------------------------- |
 
 ## Requirements
 
-The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is required to run this software. See *GPU Support* to see exaxtly what GPUs are supported.
+The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is required to run this software. See [GPU Support](https://github.com/MindStudioOfficial/ndiscopes#gpu-support) to see exaxtly what GPUs are supported.
+
+- OS: 
+  | Windows | Tested |
+  | ------- | ------ |
+  | 11      | ?      |
+  | 10      | ✔      |
+- CPU: x64, >= 4 Cores
+- GPU: See [GPU Support](https://github.com/MindStudioOfficial/ndiscopes#gpu-support)
+- RAM: Software uses at max 2GB (rarely)
+- NVIDIA Driver: >= 452.39 (522.06 recommended)
+- Networking: NDI works best on a wired >=1GBit/s ethernet link.
 
 ## Platform Support
 
@@ -73,9 +84,6 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 - [x] Audiometer for every audio channel of the NDI source in dBu scale
 - [x] Audio playback to default audio device (toggleable) 
 - [x] Selectable audio device
-- [ ] Audio channel routing
-- [ ] Audio waveform
-- [ ] Audio spectrum
 
 ### Other
 - [x] Reference Frame
@@ -84,9 +92,8 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
   - [x] Overlay on scopes as splitscreen
   - [x] Show thumbnails in frame browser
 - [x] Draw Masks on source frame
-- [X] View Timecode
-- [X] View Embeded Metadata
-- [ ] NDI Output
+- [x] View Timecode
+- [x] View Embeded Metadata
 ### NDI Codec support
 - [x] UYVY (most common, fastest)
 - [x] BGRA (stills and alpha)
@@ -107,15 +114,18 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 (Feel free to suggest alternative shortcuts as a Feature Request Issue)
 
 ## GPU Support
-- NVIDIA
-  - [x] CC 8.x **Ampere** RTX 30 Series, RTX A Series,
-  - [x] CC 7.x **Volta/Turing** RTX 20 Series, GTX 16 Series, RTX Quadro Series, TITAN RTX, TITAN V
-  - [x] CC 6.x **Pascal** GTX 10 Series, Titan X, Quadro
-  - [x] CC 5.x **Maxwell** GTX 750 - GTX 980 Ti
-  - [x] CC >=3.5 **Kepler** GT 640 - GTX 780 Ti, TITAN Z 
-  - [ ] CC <3.2 not supported by CUDA 11.x
-- [ ] AMD
-- [ ] other
+NVIDIA Cards only:
+  | CC      | Name                 | Cards                                                               | Compatible | Tested |
+  | ------- | -------------------- | ------------------------------------------------------------------- | ---------- | ------ |
+  | 9.0     | Hopper               | H100                                                                | ✔          | ?      |
+  | 8.9     | Ada Lovelace         | RTX 40 Series, RTX 6000                                             | ✔          | ?      |
+  | 8.0-8.7 | Ampere               | RTX 30 Series, RTX A Series                                         | ✔          | ✔      |
+  | 7.x     | Volta/Turing         | RTX 20 Series, GTX 16 Series, Quadro RTX Series, TITAN RTX, TITAN V | ✔          | ✔      |
+  | 6.x     | Pacal                | GTX 10 Series, Titan X, Quadro P Series                             | ✔          | ✔      |
+  | 5.x     | Maxwell              | GTX 750 - GTX 980 Ti                                                | ✔          | ?      |
+  | >= 3.5  | Kepler               | GT 640 - GTX 780 Ti, TITAN Z                                        | ✔          | ?      |
+  | < 3.5   | Kepler, Fermi, Tesla |                                                                     | ❌          |        |
+
   
 
 ## Download
