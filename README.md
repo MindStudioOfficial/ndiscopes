@@ -47,7 +47,7 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 - OS: 
   | Windows | Tested |
   | ------- | ------ |
-  | 11      | ?      |
+  | 11      | ✔      |
   | 10      | ✔      |
 - CPU: x64, >= 4 Cores
 - GPU: See [GPU Support](https://github.com/MindStudioOfficial/ndiscopes#gpu-support)
@@ -136,3 +136,7 @@ Download the latest version under [Releases](https://github.com/MindStudioOffici
 ## License
 
 [License Agreement](license.md)
+
+## Author
+
+developed by **Marc Bach** _"MindStudio"_
