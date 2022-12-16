@@ -139,4 +139,4 @@ Download the latest version under [Releases](https://github.com/MindStudioOffici
 
 ## Author
 
-developed by **Marc Bach** _"MindStudio"_
+developed by [**Marc Bach** _"MindStudio"_](https://github.com/MindStudioOfficial/)
