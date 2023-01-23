@@ -100,16 +100,17 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 
 ## Keyboard Shortcuts
 
-- <kbd>C</kbd> Toggle False `C`olor
-- <kbd>T</kbd> Toggle `T`ransparency Grid
-- <kbd>X</kbd> Toggle Settings
+- <kbd>A</kbd> Toggle `A`lpha Grid
 - <kbd>B</kbd> Toggle Frame `B`rowser
-- <kbd>M</kbd> Toggle `M`ask
-- <kbd>+</kbd> Capture new Reference Frame
-- <kbd>S</kbd> Select `S`ource
-- <kbd>Del</kbd> Disable Reference Frame Overlay
+- <kbd>C</kbd> Toggle False `C`olor
 - <kbd>D</kbd> Toggle Split `D`irection
 - <kbd>F</kbd> `F`lip Split Side
+- <kbd>M</kbd> Toggle `M`ask
+- <kbd>S</kbd> Select `S`ource
+- <kbd>T</kbd> Toggle `T`imecode
+- <kbd>X</kbd> Toggle Settings
+- <kbd>+</kbd> Capture new Reference Frame
+- <kbd>Del</kbd> Disable Reference Frame Overlay
 
 (Feel free to suggest alternative shortcuts as a Feature Request Issue)
 
