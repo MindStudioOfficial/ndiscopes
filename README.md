@@ -53,7 +53,7 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 - GPU: See [GPU Support](https://github.com/MindStudioOfficial/ndiscopes#gpu-support)
 - RAM: Software uses at max 2GB (rarely)
 - NVIDIA Driver: >= 452.39 (522.06 recommended)
-- Networking: NDI works best on a wired >=1GBit/s ethernet link.
+- Networking: NDI® works best on a wired >=1GBit/s ethernet link.
 
 ## Platform Support
 
@@ -81,7 +81,7 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 - [x] Select Audio Device
 
 ### Audio
-- [x] Audiometer for every audio channel of the NDI source in dBu scale
+- [x] Audiometer for every audio channel of the NDI® source in dBu scale
 - [x] Audio playback to default audio device (toggleable) 
 - [x] Selectable audio device
 
@@ -94,7 +94,7 @@ The software uses **CUDA** to compute the frames and scopes. A **NVIDIA GPU** is
 - [x] Draw Masks on source frame
 - [x] View Timecode
 - [x] View Embeded Metadata
-### NDI Codec support
+### NDI® Codec support
 - [x] UYVY (most common, fastest)
 - [x] BGRA (stills and alpha)
 
@@ -136,8 +136,12 @@ Download the latest version under [Releases](https://github.com/MindStudioOffici
 
 ## License
 
-[License Agreement](license.md)
+[End User License Agreement](LICENSE.md)
 
 ## Author
 
 developed by [**Marc Bach** _"MindStudio"_](https://github.com/MindStudioOfficial/)
+
+<hr> 
+
+*NDI® is a registered trademark of Vizrt Group.*

@@ -5,9 +5,11 @@
 ### Added
 - 🧙🏼‍♂️ Added Installer 
 - 📜 Added End-User-License-Agreement `EULA.txt`
+- 📃 Added About Text in About Menu
 
 ### Changed
 - 🚀 Improved rendering performance by optimizing GPU memory management
+- 🐞 Fixed: Application not shutting down completely and staying active in background in some cases
 - ⌨ Changed keyboard shortcuts to 
   - <kbd>T</kbd> Timecode
   - <kbd>A</kbd> Alpha Grid
