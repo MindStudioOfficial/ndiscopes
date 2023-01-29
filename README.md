@@ -26,9 +26,15 @@ Use several different <a href="https://github.com/MindStudioOfficial/ndiscopes#w
 <img src="https://img.shields.io/github/stars/MindStudioOfficial/ndiscopes?style=flat-square"></a>
 <a href="https://github.com/MindStudioOfficial/ndiscopes">
 <img src="https://img.shields.io/github/watchers/MindStudioOfficial/ndiscopes?style=flat-square"></a>
-
 </div>
 <br>
+<hr>
+<div align="center">
+<h3>We've re-branded as "LiveScopes.tv"</h3>
+<a href="https://github.com/MindStudioOfficial/livescopestv">New GitHub Page</a>
+</div>
+
+<hr>
 
 ![Screenshot](blob/sc7.jpg)
 
